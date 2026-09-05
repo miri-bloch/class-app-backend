@@ -1,3 +1,4 @@
+// קובץ frontend/app.js המעודכן (עם כתובת API יחסית לפריסה ב-Render):
 const API_URL = '/api';
 let currentUserId = null;
 
@@ -143,7 +144,6 @@ function initDashboard(userName, email) {
   loadWeeklyCalendar();
 }
 
-// עדכון מונה מחוברות ברקע (Heartbeat)
 setInterval(async () => {
   if (!currentUserId) return;
   try {
@@ -160,7 +160,6 @@ setInterval(async () => {
   } catch (err) {}
 }, 30000);
 
-// לוח מודעות
 document.getElementById('notice-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const title = document.getElementById('notice-title').value;
@@ -217,7 +216,6 @@ async function deleteNotice(noticeId) {
   }
 }
 
-// מטלות (כולל כפתור מחיקה מתוקן)
 async function loadAssignments() {
   const list = document.getElementById('assignments-list');
   try {
@@ -322,7 +320,6 @@ async function loadAssignmentStats() {
   } catch (err) {}
 }
 
-// מערכת שעות שבועית - שבבים א'
 async function loadShvabimSchedule() {
   const grid = document.getElementById('shvabim-schedule-grid');
   if (!grid) return;
@@ -397,7 +394,6 @@ async function loadShvabimSchedule() {
   });
 }
 
-// הצגת שיעורי הבית הפעילים למקצוע שנלחץ במערכת השעות
 async function showSubjectAssignments(subjectName) {
   try {
     const res = await fetch(`${API_URL}/assignments?userId=${currentUserId}`);
@@ -454,7 +450,6 @@ async function showSubjectAssignments(subjectName) {
   }
 }
 
-// תורנות חלב
 async function loadMilkRotation() {
   try {
     const res = await fetch(`${API_URL}/milk`);
@@ -555,7 +550,6 @@ async function fulfillMilkDuty() {
   }
 }
 
-// לוח שנה שבועי ואירועים
 let weekOffset = 0;
 
 function getWeekDates(offset = 0) {
@@ -675,7 +669,6 @@ function deleteEvent(id) {
   showToast('האירוע נמחק בהצלחה');
 }
 
-// נגישות וניהול
 function toggleAccessibilityMenu() {
   const modal = document.getElementById('accessibility-modal');
   if (modal.style.display === 'flex') {

@@ -18,6 +18,26 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'frontend', 'index.html'));
 });
 
+// תיקון נדרש בראש קובץ השרת (server.js או index.js) לפתרון תקלת שליחת המיילים בענן של Render:
+
+const dns = require('dns');
+dns.setDefaultResultOrder('ipv4first'); // פותר את בעיית ה-IPv6 בשרתי ענן
+
+// בעת הגדרת Nodemailer בשרת, יש לוודא שמוגדר family: 4:
+const nodemailer = require('nodemailer');
+
+const transporter = nodemailer.createTransport({
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  },
+  family: 4 // מכריח שימוש ב-IPv4 בלבד ועוקף את שגיאת ENETUNREACH
+});
+
+
 // הפעלת מתזמן המיילים האוטומטי
 initScheduler();
 
