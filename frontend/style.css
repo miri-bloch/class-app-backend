@@ -1,0 +1,292 @@
+:root {
+  --bg-dark: #050508;
+  --neon-purple: #c084fc;
+  --neon-purple-glow: #a855f7;
+  --neon-cyan: #22d3ee;
+  --neon-cyan-glow: #06b6d4;
+  --text-main: #ffffff;
+  --text-muted: #d1d5db;
+  --glass-bg: rgba(13, 13, 20, 0.75);
+}
+
+body {
+  background-color: var(--bg-dark);
+  font-family: 'Heebo', sans-serif;
+  margin: 0;
+  min-height: 100vh;
+  color: var(--text-main);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-image: radial-gradient(circle at 50% 0%, rgba(168, 85, 247, 0.12) 0%, transparent 60%);
+}
+
+header {
+  margin-top: 30px;
+  margin-bottom: 30px;
+}
+
+.brand-card-wrapper {
+  position: relative;
+  padding: 3px;
+  border-radius: 22px;
+  background: linear-gradient(90deg, var(--neon-cyan), var(--neon-purple), var(--neon-cyan));
+  background-size: 300% 300%;
+  animation: borderSweep 4s linear infinite;
+  box-shadow: 0 0 25px rgba(6, 182, 212, 0.4), 0 0 50px rgba(168, 85, 247, 0.3);
+}
+
+@keyframes borderSweep {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.brand-container {
+  direction: ltr;
+  background: #0d0d14;
+  padding: 18px 36px;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.logo-main {
+  font-size: 2.5rem;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  line-height: 1;
+}
+
+.code-slash {
+  color: var(--neon-cyan);
+  font-weight: 400;
+  font-size: 2rem;
+  text-shadow: 0 0 10px var(--neon-cyan);
+}
+
+.logo-dev { color: #ffffff; }
+.logo-space {
+  background: linear-gradient(135deg, #38bdf8, var(--neon-purple), #f43f5e);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.slogan {
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin-top: 6px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.container {
+  width: 100%;
+  max-width: 1200px;
+  padding: 0 20px;
+  box-sizing: border-box;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 25px;
+  margin-bottom: 40px;
+}
+
+.glass-card {
+  background: var(--glass-bg);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(34, 211, 238, 0.03);
+  backdrop-filter: blur(10px);
+}
+
+.glass-card.full-width {
+  grid-column: 1 / -1;
+}
+
+.glass-card h2 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-shadow: 0 0 10px var(--neon-cyan);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 10px;
+}
+
+.input-group {
+  margin-bottom: 15px;
+}
+
+input, textarea, select {
+  width: 100%;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: 8px;
+  color: white;
+  font-family: 'Heebo', sans-serif;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+}
+
+input:focus, textarea:focus {
+  outline: none;
+  border-color: var(--neon-purple);
+  box-shadow: 0 0 15px rgba(168, 85, 247, 0.4);
+}
+
+/* עיצוב צ'ק-בוקס מותאם אישית עם V ממורכז באופן מושלם */
+.custom-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: rgba(0, 0, 0, 0.4);
+  border: 2px solid var(--neon-cyan);
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  vertical-align: middle;
+  transition: all 0.3s ease;
+}
+
+.custom-checkbox:checked {
+  background-color: var(--neon-cyan);
+  box-shadow: 0 0 10px var(--neon-cyan);
+}
+
+.custom-checkbox:checked::after {
+  content: '✓';
+  color: #050508;
+  font-size: 13px;
+  font-weight: 900;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.neon-btn {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(90deg, var(--neon-purple), var(--neon-cyan));
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Heebo', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 15px rgba(168, 85, 247, 0.3);
+}
+
+.neon-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 20px rgba(34, 211, 238, 0.5);
+}
+
+.neon-btn.outline {
+  background: transparent;
+  border: 2px solid var(--neon-cyan);
+  color: var(--neon-cyan);
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.15);
+}
+
+.neon-btn.outline:hover {
+  background: rgba(34, 211, 238, 0.1);
+  box-shadow: 0 0 15px rgba(34, 211, 238, 0.3);
+}
+
+.assignments-grid {
+  display: grid;
+  gap: 12px;
+  max-height: 350px;
+  overflow-y: auto;
+  padding-left: 5px;
+}
+
+.assignment-card {
+  background: rgba(0, 0, 0, 0.35);
+  border-right: 4px solid var(--neon-purple);
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.assignment-title {
+  font-weight: 700;
+  color: var(--neon-cyan);
+  font-size: 0.95rem;
+}
+
+.assignment-date {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.message-text {
+  text-align: center;
+  margin-top: 10px;
+  font-weight: 500;
+  font-size: 0.9rem;
+  min-height: 18px;
+}
+
+footer {
+  margin-top: 60px;
+  margin-bottom: 40px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 25px;
+  letter-spacing: 1px;
+}
+
+footer span {
+  color: var(--neon-cyan);
+  font-weight: 700;
+  text-shadow: 0 0 8px rgba(34, 211, 238, 0.4);
+}
+
+#toast-notification {
+  position: fixed;
+  bottom: 25px;
+  left: 25px;
+  background: rgba(13, 13, 20, 0.95);
+  border: 1px solid var(--neon-cyan);
+  color: white;
+  padding: 15px 22px;
+  border-radius: 12px;
+  box-shadow: 0 0 20px rgba(34, 211, 238, 0.3);
+  font-size: 0.95rem;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transform: translateY(150%);
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  backdrop-filter: blur(10px);
+}
+
+#toast-notification.show {
+  transform: translateY(0);
+}
+
+#toast-notification.error {
+  border-color: #f43f5e;
+  box-shadow: 0 0 20px rgba(244, 63, 94, 0.3);
+}

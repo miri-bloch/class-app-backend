@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Class App - DevSpace Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- סרגל עליון -->
+  <header style="position: relative; width: 100%; max-width: 1200px; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; box-sizing: border-box; margin-top: 40px; margin-bottom: 35px; min-height: 80px;">
+    
+    <!-- צד ימין: מונה מחוברות עכשיו -->
+    <div id="online-users-badge" style="background: rgba(34,211,238,0.1); border: 1px solid var(--neon-cyan); padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; color: var(--neon-cyan); z-index: 2;">
+      מחוברות כעת: <span id="online-count">1</span> 🟢
+    </div>
+<!-- לוגו מחובר ומשמש כקישור רענון במרכז המסך -->
+    <div class="brand-card-wrapper" style="position: absolute; left: 50%; transform: translateX(-50%); z-index: 1;">
+      <a href="" onclick="window.location.reload(); return false;" style="text-decoration: none; cursor: pointer;">
+        <div class="brand-container">
+          <div class="logo-main">
+            <span class="code-slash">//</span><span class="logo-dev">Dev</span><span class="logo-space">Space</span>
+          </div>
+          <div class="slogan">Beyond Code - Class System</div>
+        </div>
+      </a>
+    </div>
+    
+    <!-- צד שמאל: פרופיל משתמשת וכפתור התנתקות -->
+    <div id="user-profile-header" style="display: none; align-items: center; gap: 12px; background: var(--glass-bg); padding: 8px 15px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); z-index: 2;">
+      <div id="user-avatar-circle" style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--neon-purple), var(--neon-cyan)); display: flex; align-items: center; justify-content: center; font-weight: bold; color: #050508; font-size: 0.95rem; box-shadow: 0 0 10px rgba(34,211,238,0.4);"></div>
+      <span id="user-profile-name" style="font-size: 0.9rem; font-weight: 500; color: white;"></span>
+      <button onclick="logoutSession()" class="neon-btn outline" style="padding: 4px 10px; font-size: 0.75rem; width: auto; border-color: #f43f5e; color: #f43f5e;">התנתקי</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- מסך התחברות / הרשמה -->
+    <div id="auth-container">
+      <section id="login-section" class="glass-card" style="max-width: 450px; margin: 0 auto;">
+        <h2>התחברות למערכת</h2>
+        <form id="login-form">
+          <div class="input-group">
+            <input type="email" id="email" placeholder="דואר אלקטרוני" required>
+          </div>
+          <div class="input-group">
+            <input type="password" id="password" placeholder="סיסמה" required>
+          </div>
+          <div style="text-align: right; margin-top: 8px; margin-bottom: 12px;">
+            <a href="#" id="forgot-password-link" style="color: var(--neon-cyan); font-size: 0.85rem; text-decoration: none;">שכחת סיסמה?</a>
+          </div>
+          <button type="submit" class="neon-btn">היכנסי</button>
+        </form>
+        <p id="login-message" class="message-text"></p>
+        <div style="margin-top: 20px; text-align: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+          <button id="show-register-btn" class="neon-btn outline" style="font-size: 0.9rem;">אין לך חשבון? הירשמי כאן</button>
+        </div>
+      </section>
+
+      <section id="register-section" class="glass-card" style="max-width: 450px; margin: 0 auto; display: none;">
+        <h2>הרשמה למערכת</h2>
+        <form id="register-form">
+          <div class="input-group">
+            <input type="text" id="reg-name" placeholder="שם מלא" required>
+          </div>
+          <div class="input-group">
+            <input type="email" id="reg-email" placeholder="דואר אלקטרוני" required>
+          </div>
+          <div class="input-group">
+            <input type="password" id="reg-password" placeholder="סיסמה" required>
+          </div>
+          <button type="submit" class="neon-btn">הירשמי</button>
+        </form>
+        <p id="register-message" class="message-text"></p>
+        <div style="margin-top: 15px; text-align: center;">
+          <button id="show-login-btn" class="neon-btn outline" style="font-size: 0.9rem;">חזרה להתחברות</button>
+        </div>
+      </section>
+    </div>
+
+    <!-- לוח הבקרה הראשי -->
+    <div id="dashboard-app" style="display: none;">
+      
+      <div class="glass-card full-width" style="text-align: center; padding: 15px; margin-bottom: 25px;">
+        <h2 id="greeting-banner" style="margin: 0; border: none; font-size: 1.4rem; color: var(--neon-cyan);">שלום וברכה! 🌟</h2>
+      </div>
+
+      <div class="dashboard-grid">
+        
+        <!-- אזור 1: לוח מודעות והודעות כיתתיות -->
+        <section class="glass-card">
+          <h2>📢 לוח מודעות והודעות</h2>
+          <form id="notice-form" style="margin-bottom: 15px;">
+            <div class="input-group">
+              <input type="text" id="notice-title" placeholder="כותרת ההודעה" required>
+            </div>
+            <div class="input-group">
+              <textarea id="notice-content" placeholder="תוכן ההודעה (שולח מייל לכולן)..." rows="2" required></textarea>
+            </div>
+            <button type="submit" class="neon-btn outline" style="font-size: 0.9rem; padding: 8px;">פרסמי מודעה ושלחי מייל</button>
+          </form>
+          <div id="notices-list" class="assignments-grid"></div>
+        </section>
+
+        <!-- אזור 2: מטלות ושיעורי בית עם רשימת בחירה למקצועות -->
+        <section class="glass-card">
+          <h2>📚 מטלות ושיעורי בית</h2>
+          <form id="add-assignment-form" style="margin-bottom: 15px;">
+            <div class="input-group">
+              <select id="new-assignment-subject" required>
+                <option value="" disabled selected>בחרי מקצוע מהרשימה...</option>
+                <option value="מבני נתונים">מבני נתונים</option>
+                <option value="פרויקט C#">פרויקט C#</option>
+                <option value="core">core</option>
+                <option value="full stack - angular">full stack - angular</option>
+                <option value="תכנות מתקדם עם C#">תכנות מתקדם עם C#</option>
+                <option value="תכנות מתקדם עם ג׳אווה">תכנות מתקדם עם ג׳אווה</option>
+                <option value="תקשורת נתונים ואבטחת מידע">תקשורת נתונים ואבטחת מידע</option>
+                <option value="ארגון המחשב">ארגון המחשב</option>
+                <option value="מערכות הפעלה">מערכות הפעלה</option>
+                <option value="פייתון">פייתון</option>
+                <option value="unit test & qa">unit test & qa</option>
+                <option value="לינוקס">לינוקס</option>
+                <option value="full stack - react">full stack - react</option>
+                <option value="node.js">node.js</option>
+                <option value="עקרונות פיתוח עם AI וחדשנות">עקרונות פיתוח עם AI וחדשנות</option>
+              </select>
+            </div>
+            <div class="input-group"><input type="text" id="new-assignment-title" placeholder="כותרת המטלה" required></div>
+            <div class="input-group"><input type="date" id="new-assignment-date" required></div>
+            <button type="submit" class="neon-btn outline" style="font-size: 0.9rem; padding: 8px;">הוסיפי מטלה</button>
+          </form>
+          <div id="assignments-list" class="assignments-grid"></div>
+        </section>
+
+        <!-- אזור 3: תורנות חלב -->
+        <section class="glass-card">
+          <h2>🥛 תורנות חלב (סבב אוטומטי)</h2>
+          <div style="background: rgba(0,0,0,0.4); padding: 15px; border-radius: 8px; border-right: 4px solid var(--neon-cyan); margin-bottom: 15px;">
+            <div style="font-size: 0.9rem; color: var(--text-muted);">התורנית כרגע בתור:</div>
+            <div id="current-milk-person" style="font-size: 1.2rem; font-weight: bold; color: var(--neon-cyan); margin: 5px 0;">טוען...</div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+              <button onclick="joinMilkQueue()" class="neon-btn outline" style="font-size: 0.85rem; padding: 6px; flex: 1;">הירשמי לתור ➕</button>
+              <div id="fulfill-milk-container" style="flex: 1; display: none;">
+                <button onclick="fulfillMilkDuty()" class="neon-btn" style="font-size: 0.85rem; padding: 6px; width: 100%;">קניתי והעברתי תור 🛒</button>
+              </div>
+            </div>
+            <div id="not-your-turn-msg" style="font-size: 0.8rem; color: #f43f5e; margin-top: 8px; text-align: center; display: none;">* רק התורנית הנוכחית יכולה לסמן שקנתה את החלב.</div>
+          </div>
+        </section>
+
+        <!-- אזור 4: סטטיסטיקות ביצוע -->
+        <section class="glass-card">
+          <h2>📊 סטטיסטיקות ביצוע</h2>
+          <div id="stats-list" class="assignments-grid"></div>
+        </section>
+
+      </div>
+
+      <!-- אזור מערכת שעות שבועית - שבבים א' -->
+      <section class="glass-card full-width" style="margin-bottom: 25px;">
+        <h2>🗓️ מערכת שעות שבועית - שבבים א' (לחצי על מקצוע לצפייה במטלות פעילות)</h2>
+        <div id="shvabim-schedule-grid" style="display: grid; grid-template-columns: repeat(6, minmax(150px, 1fr)); gap: 10px; overflow-x: auto; padding-bottom: 10px;"></div>
+      </section>
+
+      <!-- אזור 5: לוח שנה מלא -->
+      <section class="glass-card full-width">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+          <h2 style="margin: 0; border: none;">📅 לוח שנה שבועי</h2>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <button onclick="changeWeek(-1)" class="neon-btn outline" style="width: auto; padding: 6px 12px; font-size: 0.85rem;">שבוע קודם ◀</button>
+            <span id="current-week-label" style="color: var(--neon-cyan); font-weight: bold; font-size: 0.95rem;"></span>
+            <button onclick="changeWeek(1)" class="neon-btn outline" style="width: auto; padding: 6px 12px; font-size: 0.85rem;">▶ שבוע הבא</button>
+          </div>
+        </div>
+
+        <form id="calendar-event-form" style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;">
+          <input type="text" id="event-title" placeholder="שם האירוע / מבחן / פגישה" required style="flex: 2; min-width: 200px;">
+          <input type="date" id="event-date" required style="flex: 1; min-width: 140px;">
+          <button type="submit" class="neon-btn" style="flex: 1; min-width: 120px; padding: 10px;">שמרי בלוח השנה</button>
+        </form>
+
+        <div id="weekly-calendar-grid" style="display: grid; grid-template-columns: repeat(7, minmax(160px, 1fr)); gap: 12px; overflow-x: auto; padding-bottom: 10px;"></div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- אייקון נגישות וניהול דיסקרטי בצד המסך -->
+  <div style="position: fixed; bottom: 20px; left: 20px; z-index: 1000;">
+    <button onclick="toggleAccessibilityMenu()" title="תפריט נגישות וניהול" style="background: var(--glass-bg); border: 1px solid rgba(255,255,255,0.1); color: var(--neon-cyan); width: 45px; height: 45px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; box-shadow: 0 0 15px rgba(0,0,0,0.5); transition: all 0.3s;" onmouseover="this.style.borderColor='var(--neon-cyan)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'">
+      ⚙️
+    </button>
+  </div>
+
+  <!-- תפריט נגישות וניהול מאובטח -->
+  <div id="accessibility-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5,5,8,0.85); backdrop-filter: blur(5px); z-index: 2000; justify-content: center; align-items: center;">
+    <div class="glass-card" style="width: 100%; max-width: 420px; text-align: center; border: 1px solid var(--neon-cyan); position: relative;">
+      <button onclick="toggleAccessibilityMenu()" style="position: absolute; top: 15px; left: 15px; background: none; border: none; color: #f43f5e; cursor: pointer; font-size: 1rem;">✕</button>
+      
+      <h2 style="color: var(--neon-cyan); margin-top: 0; font-size: 1.2rem;">♿ נגישות והגדרות מערכת</h2>
+      
+      <div style="display: flex; flex-direction: column; gap: 10px; margin: 20px 0; text-align: right;">
+        <div style="font-size: 0.9rem; font-weight: bold; color: white; margin-bottom: 5px;">כלי נגישות לתצוגה:</div>
+        <button onclick="adjustFontSize(1)" class="neon-btn outline" style="font-size: 0.85rem; padding: 8px; width: 100%;">הגדל טקסט במערכת 🔍+</button>
+        <button onclick="adjustFontSize(-1)" class="neon-btn outline" style="font-size: 0.85rem; padding: 8px; width: 100%;">הקטן טקסט במערכת 🔍-</button>
+        <button onclick="toggleHighContrast()" class="neon-btn outline" style="font-size: 0.85rem; padding: 8px; width: 100%;">החלף ניגודיות גבוהה 🌓</button>
+      </div>
+
+      <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 20px 0;">
+
+      <div style="text-align: right;">
+        <div style="font-size: 0.9rem; font-weight: bold; color: var(--neon-purple); margin-bottom: 8px;">אזור מנהלות:</div>
+        <div id="admin-login-box" style="display: flex; gap: 8px;">
+          <input type="password" id="admin-password-input" placeholder="הקלידי סיסמת מנהלת..." style="flex: 1; padding: 8px; font-size: 0.85rem;">
+          <button onclick="verifyAdminPassword()" class="neon-btn" style="width: auto; padding: 8px 15px; font-size: 0.85rem;">כנסי</button>
+        </div>
+        
+        <div id="admin-panel-content" style="display: none; margin-top: 15px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h3 style="color: var(--neon-cyan); font-size: 0.95rem; margin: 0;">רשימת משתמשות רשומות</h3>
+            <button onclick="loadUsersList()" class="neon-btn outline" style="width: auto; padding: 3px 8px; font-size: 0.75rem;">רענן</button>
+          </div>
+          <div id="users-management-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; text-align: right;"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="toast-notification">הודעת מערכת</div>
+
+  <!-- חלון הודעה קופץ מעוצב (Custom Modal) -->
+  <div id="custom-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 5, 8, 0.8); backdrop-filter: blur(5px); z-index: 2000; justify-content: center; align-items: center;">
+    <div class="glass-card" style="width: 100%; max-width: 450px; text-align: center; border: 1px solid var(--neon-cyan); box-shadow: 0 0 25px rgba(34, 211, 238, 0.2);">
+      <h3 id="modal-title" style="color: var(--neon-cyan); margin-top: 0; margin-bottom: 15px; font-size: 1.2rem;">כותרת</h3>
+      <div id="modal-content-area" style="text-align: right; margin-bottom: 20px; max-height: 300px; overflow-y: auto;">
+        <p id="modal-desc" style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 20px;"></p>
+        <div class="input-group" id="modal-input-container">
+          <input type="email" id="modal-input-field" placeholder="דואר אלקטרוני..." style="width: 100%;">
+        </div>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <button id="modal-submit-btn" class="neon-btn" style="flex: 1; padding: 10px;">אישור</button>
+        <button id="modal-cancel-btn" class="neon-btn outline" style="flex: 1; padding: 10px; border-color: #f43f5e; color: #f43f5e;">סגור / ביטול</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    פותח ועוצב ע"י <span>M BLOCH</span> | כל הזכויות שמורות © 2026
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
