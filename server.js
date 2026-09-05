@@ -3,12 +3,20 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const pool = require('./db');
 const initScheduler = require('./services/scheduler');
-
+const path = require('path');
 dotenv.config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// הגדרת תיקיית ה-frontend כתיקייה סטטית כדי ששאר הקבצים (CSS, JS) ייטענו נכון
+app.use(express.static(path.join(__dirname, 'frontend')));
+
+// הגדרת נתיב ברירת מחדל שמציג את קובץ ה-index.html בכניסה לאתר
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'frontend', 'index.html'));
+});
 
 // הפעלת מתזמן המיילים האוטומטי
 initScheduler();
