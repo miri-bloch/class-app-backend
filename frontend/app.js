@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:3000/api';
+const API_URL = '/api';
 let currentUserId = null;
 
 const loginSection = document.getElementById('login-section');
