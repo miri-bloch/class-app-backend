@@ -354,6 +354,74 @@ input:focus, textarea:focus {
   padding-left: 5px;
 }
 
+.assignment-list {
+  max-height: 520px;
+  padding: 4px 8px 4px 2px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--neon-cyan) rgba(255, 255, 255, 0.08);
+}
+
+.assignment-list::-webkit-scrollbar {
+  width: 7px;
+}
+
+.assignment-list::-webkit-scrollbar-thumb {
+  background: linear-gradient(var(--neon-purple), var(--neon-cyan));
+  border-radius: 8px;
+}
+
+.assignment-item {
+  padding: 14px 16px;
+  border-right-width: 3px;
+}
+
+.assignment-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.assignment-subject {
+  display: inline-block;
+  margin-bottom: 5px;
+  color: var(--neon-purple);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.assignment-item .assignment-title {
+  line-height: 1.35;
+}
+
+.assignment-delete {
+  flex: 0 0 auto;
+  background: transparent;
+  border: 1px solid rgba(244, 63, 94, 0.45);
+  color: #f43f5e;
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 3px 7px;
+  font-size: 0.75rem;
+}
+
+.assignment-complete {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 9px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+body.light-theme .assignment-complete {
+  border-top-color: rgba(38, 91, 125, 0.14);
+}
+
 .assignment-card {
   background: rgba(0, 0, 0, 0.35);
   border-right: 4px solid var(--neon-purple);

@@ -265,17 +265,20 @@ async function loadAssignments() {
       }
       
       list.innerHTML += `
-        <div class="assignment-card" id="assignment-${a.id}" style="position: relative;">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-            <div class="assignment-title" style="flex-grow: 1;">${a.subject}: ${a.title}</div>
-            <button onclick="deleteAssignment(${a.id})" style="background:none; border:none; color:#f43f5e; cursor:pointer; font-size:0.8rem;" title="מחק מטלה">מחיקה ✕</button>
+        <div class="assignment-card assignment-item" id="assignment-${a.id}">
+          <div class="assignment-card-header">
+            <div>
+              <div class="assignment-subject">${a.subject}</div>
+              <div class="assignment-title">${a.title}</div>
+            </div>
+            <button onclick="deleteAssignment(${a.id})" class="assignment-delete" title="מחק מטלה">✕</button>
           </div>
-          <div class="assignment-date" style="margin-top: 4px;">הגשה: ${gregorianDate} ${hebrewDate ? '(' + hebrewDate + ')' : ''}</div>
+          <div class="assignment-date">הגשה: ${gregorianDate} ${hebrewDate ? '(' + hebrewDate + ')' : ''}</div>
           ${a.drive_file_id ? `<div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
             <a href="${a.drive_web_view_link || `https://drive.google.com/file/d/${a.drive_file_id}/view`}" target="_blank" rel="noopener" class="neon-btn outline" style="width:auto; padding:5px 9px; font-size:0.78rem; text-decoration:none;">📎 ${normalizeAttachmentName(a.attachment_name)}</a>
             <a href="https://drive.google.com/uc?export=download&id=${a.drive_file_id}" target="_blank" rel="noopener" class="neon-btn outline" style="width:auto; padding:5px 9px; font-size:0.78rem; text-decoration:none;">הורדה</a>
           </div>` : ''}
-          <label style="display:flex; align-items:center; gap:8px; margin-top:8px; font-size:0.9rem; cursor:pointer;">
+          <label class="assignment-complete">
             <input type="checkbox" class="complete-checkbox custom-checkbox" ${isChecked} onchange="toggleAssignment(${a.id}, this.checked)"> בוצע ✓
           </label>
         </div>`;
