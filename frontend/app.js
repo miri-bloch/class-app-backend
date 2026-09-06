@@ -719,18 +719,23 @@ function adjustFontSize(direction) {
   showToast('גודל תצוגה עודכן');
 }
 
-let isHighContrast = false;
+let isHighContrast = localStorage.getItem('class_app_theme') === 'light';
+
+function applyTheme() {
+  document.body.classList.toggle('light-theme', isHighContrast);
+  const contrastButton = document.querySelector('[onclick="toggleHighContrast()"]');
+  if (contrastButton) {
+    contrastButton.textContent = isHighContrast ? 'הפעלת מצב כהה 🌙' : 'הפעלת מצב בהיר ☀️';
+  }
+}
+
+applyTheme();
+
 function toggleHighContrast() {
   isHighContrast = !isHighContrast;
-  if (isHighContrast) {
-    document.body.style.backgroundColor = '#000000';
-    document.body.style.color = '#ffffff';
-    showToast('הופעל מצב ניגודיות גבוהה');
-  } else {
-    document.body.style.backgroundColor = '';
-    document.body.style.color = '';
-    showToast('הוחזר מצב תצוגה רגיל');
-  }
+  localStorage.setItem('class_app_theme', isHighContrast ? 'light' : 'dark');
+  applyTheme();
+  showToast(isHighContrast ? 'הופעל מצב בהיר' : 'הופעל מצב כהה');
 }
 
 function verifyAdminPassword() {

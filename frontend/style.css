@@ -7,6 +7,8 @@
   --text-main: #ffffff;
   --text-muted: #d1d5db;
   --glass-bg: rgba(13, 13, 20, 0.75);
+  --input-bg: rgba(0, 0, 0, 0.4);
+  --card-border: rgba(255, 255, 255, 0.1);
 }
 
 body {
@@ -194,6 +196,74 @@ input, textarea, select {
   font-size: 0.95rem;
   box-sizing: border-box;
   transition: all 0.3s ease;
+}
+
+body.light-theme {
+  --bg-dark: #f4f7fb;
+  --text-main: #172033;
+  --text-muted: #526176;
+  --glass-bg: rgba(255, 255, 255, 0.82);
+  --input-bg: rgba(255, 255, 255, 0.92);
+  --card-border: rgba(38, 91, 125, 0.18);
+  background-color: var(--bg-dark);
+  background-image: radial-gradient(circle at 50% 0%, rgba(168, 85, 247, 0.16) 0%, transparent 60%);
+  color: var(--text-main);
+}
+
+body.light-theme .brand-container {
+  background: #ffffff;
+}
+
+body.light-theme .logo-word {
+  color: #172033;
+}
+
+body.light-theme .glass-card {
+  border-color: var(--card-border);
+  box-shadow: 0 10px 30px rgba(38, 91, 125, 0.12), inset 0 0 20px rgba(34, 211, 238, 0.04);
+}
+
+body.light-theme input,
+body.light-theme textarea,
+body.light-theme select {
+  background: var(--input-bg);
+  color: var(--text-main);
+  border-color: rgba(124, 58, 237, 0.3);
+}
+
+body.light-theme input::placeholder,
+body.light-theme textarea::placeholder {
+  color: #64748b;
+}
+
+body.light-theme .assignment-card,
+body.light-theme #weekly-calendar-grid > div,
+body.light-theme #shvabim-schedule-grid > div {
+  background: rgba(255, 255, 255, 0.68) !important;
+  border-color: rgba(38, 91, 125, 0.15) !important;
+}
+
+body.light-theme .custom-checkbox {
+  background-color: #ffffff;
+}
+
+body.light-theme [style*="background: rgba(0,0,0"],
+body.light-theme [style*="background:rgba(0,0,0"] {
+  background: rgba(255, 255, 255, 0.72) !important;
+}
+
+body.light-theme [style*="color: white"],
+body.light-theme [style*="color:#fff"] {
+  color: var(--text-main) !important;
+}
+
+body.light-theme #user-profile-header,
+body.light-theme #online-users-badge {
+  background: rgba(255, 255, 255, 0.72) !important;
+}
+
+body.light-theme footer {
+  border-top-color: rgba(38, 91, 125, 0.15);
 }
 
 input:focus, textarea:focus {
