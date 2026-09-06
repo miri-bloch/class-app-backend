@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
-const { sendEmail } = require('../services/emailService');
+const { sendBrandedEmail } = require('../services/emailService');
 
 // שליפת כל המודעות
 router.get('/', async (req, res) => {
@@ -34,22 +34,11 @@ router.post('/', async (req, res) => {
     const usersResult = await pool.query('SELECT email FROM users WHERE email IS NOT NULL');
     for (const user of usersResult.rows) {
       try {
-        const htmlContent = `
-          <div dir="rtl" style="background-color: #050508; color: #ffffff; padding: 30px; border-radius: 16px; border: 1px solid rgba(34, 211, 238, 0.3); font-family: 'Heebo', Arial, sans-serif;">
-            <div style="text-align: center; margin-bottom: 20px;">
-              <span style="color: #22d3ee; font-size: 24px; font-weight: 900;">// Dev</span><span style="color: #c084fc; font-size: 24px; font-weight: 900;">Space</span>
-              <div style="font-size: 11px; color: #d1d5db; letter-spacing: 2px; text-transform: uppercase; margin-top: 5px;">Class System Notification</div>
-            </div>
-            <div style="background: rgba(13, 13, 20, 0.8); padding: 20px; border-radius: 12px; border-right: 4px solid #c084fc;">
-              <h3 style="color: #22d3ee; margin-top: 0; font-size: 18px;">${title}</h3>
-              <p style="font-size: 15px; color: #d1d5db; line-height: 1.6;">${content}</p>
-            </div>
-            <div style="text-align: center; margin-top: 25px; font-size: 12px; color: #d1d5db; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 15px;">
-              כל הזכויות שמורות © M BLOCH - DevSpace
-            </div>
-          </div>
+        const contentHtml = `
+          <div style="font-size: 20px; font-weight: bold; color: #22d3ee; margin-bottom: 15px;">📢 ${title}</div>
+          <div style="font-size: 15px; color: #d1d5db; line-height: 1.6;">${content}</div>
         `;
-        await sendEmail(user.email, `📢 הודעה חדשה בלוח המודעות: ${title}`, htmlContent, 'אפליקציית הכיתה');
+        await sendBrandedEmail(user.email, `📢 הודעה חדשה בלוח המודעות: ${title}`, 'CLASS SYSTEM NOTIFICATION', contentHtml, 'אפליקציית הכיתה');
       } catch (mailErr) {
         console.error('שגיאה בשליחת מייל למשתמשת:', user.email, mailErr);
       }

@@ -62,6 +62,10 @@ function getBaseEmailTemplate(subtitleText, contentHtml) {
   `;
 }
 
+async function sendBrandedEmail(toEmail, subject, subtitleText, contentHtml, senderName) {
+  await sendEmail(toEmail, subject, getBaseEmailTemplate(subtitleText, contentHtml), senderName);
+}
+
 // 1. מייל שחזור סיסמה מעוצב בדיוק לפי הדרישה והתמונה
 async function sendPasswordResetEmail(toEmail, userName, password) {
   const content = `
@@ -137,4 +141,4 @@ async function sendMilkDutyEmail(toEmail, userName) {
   );
 }
 
-module.exports = { sendPasswordResetEmail, sendHomeworkDigest, sendMilkDutyEmail, sendEmail };
+module.exports = { sendPasswordResetEmail, sendHomeworkDigest, sendMilkDutyEmail, sendEmail, sendBrandedEmail };
