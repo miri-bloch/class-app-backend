@@ -81,6 +81,12 @@ app.get('/api/health', (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 
+pool.query(`
+  ALTER TABLE assignments ADD COLUMN IF NOT EXISTS drive_file_id VARCHAR(255);
+  ALTER TABLE assignments ADD COLUMN IF NOT EXISTS drive_web_view_link TEXT;
+  ALTER TABLE assignments ADD COLUMN IF NOT EXISTS attachment_name VARCHAR(255);
+`).catch(err => console.error('שגיאה בעדכון עמודות קבצי המטלות:', err));
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

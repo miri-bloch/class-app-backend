@@ -1,6 +1,13 @@
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
 const pool = require('../db');
+const { uploadFileToDrive } = require('../services/driveService');
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }
+});
 
 // 1. קבלת כל המטלות (כולל הערות אישיות וסימון V למשתמשת מסוימת)
 router.get('/', async (req, res) => {
@@ -25,14 +32,28 @@ router.get('/', async (req, res) => {
 });
 
 // 2. הוספת מטלה חדשה
-router.post('/', async (req, res) => {
+router.post('/', upload.single('attachment'), async (req, res) => {
   const { subject, title, description, due_date, difficulty_level } = req.body;
 
   try {
+    let driveData = null;
+    if (req.file) {
+      driveData = await uploadFileToDrive(req.file);
+    }
+
     const newAssignment = await pool.query(
-      `INSERT INTO assignments (subject, title, description, due_date, difficulty_level)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [subject, title, description, due_date, difficulty_level]
+      `INSERT INTO assignments (subject, title, description, due_date, difficulty_level, drive_file_id, drive_web_view_link, attachment_name)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [
+        subject,
+        title,
+        description,
+        due_date,
+        difficulty_level,
+        driveData?.id || null,
+        driveData?.webViewLink || null,
+        req.file?.originalname || null
+      ]
     );
 
     res.status(201).json(newAssignment.rows[0]);

@@ -260,6 +260,10 @@ async function loadAssignments() {
             <button onclick="deleteAssignment(${a.id})" style="background:none; border:none; color:#f43f5e; cursor:pointer; font-size:0.8rem;" title="מחק מטלה">מחיקה ✕</button>
           </div>
           <div class="assignment-date" style="margin-top: 4px;">הגשה: ${gregorianDate} ${hebrewDate ? '(' + hebrewDate + ')' : ''}</div>
+          ${a.drive_file_id ? `<div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
+            <a href="${a.drive_web_view_link || `https://drive.google.com/file/d/${a.drive_file_id}/view`}" target="_blank" rel="noopener" class="neon-btn outline" style="width:auto; padding:5px 9px; font-size:0.78rem; text-decoration:none;">📎 ${a.attachment_name || 'פתיחת קובץ'}</a>
+            <a href="https://drive.google.com/uc?export=download&id=${a.drive_file_id}" target="_blank" rel="noopener" class="neon-btn outline" style="width:auto; padding:5px 9px; font-size:0.78rem; text-decoration:none;">הורדה</a>
+          </div>` : ''}
           <label style="display:flex; align-items:center; gap:8px; margin-top:8px; font-size:0.9rem; cursor:pointer;">
             <input type="checkbox" class="complete-checkbox custom-checkbox" ${isChecked} onchange="toggleAssignment(${a.id}, this.checked)"> בוצע ✓
           </label>
@@ -290,13 +294,20 @@ document.getElementById('add-assignment-form').addEventListener('submit', async 
   const subject = document.getElementById('new-assignment-subject').value;
   const title = document.getElementById('new-assignment-title').value;
   const due_date = document.getElementById('new-assignment-date').value;
+  const attachment = document.getElementById('new-assignment-attachment').files[0];
   const restoreButton = setButtonLoading(e.currentTarget.querySelector('button[type="submit"]'), 'שומרת...');
 
   try {
+    const formData = new FormData();
+    formData.append('subject', subject);
+    formData.append('title', title);
+    formData.append('due_date', due_date);
+    formData.append('difficulty_level', '3');
+    if (attachment) formData.append('attachment', attachment);
+
     const res = await fetch(`${API_URL}/assignments`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subject, title, due_date, difficulty_level: 3 })
+      body: formData
     });
     if (res.ok) {
       document.getElementById('add-assignment-form').reset();

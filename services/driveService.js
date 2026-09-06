@@ -44,6 +44,11 @@ async function uploadFileToDrive(file) {
       fields: 'id, webViewLink',
     });
 
+    await drive.permissions.create({
+      fileId: response.data.id,
+      requestBody: { type: 'anyone', role: 'reader' },
+    });
+
     console.log('הקובץ הועלה בהצלחה לדרייב הפרטי שלך:', response.data.id);
     return response.data;
   } catch (error) {
