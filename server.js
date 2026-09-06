@@ -18,7 +18,7 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'frontend', 'index.html'));
 });
 
-// תיקון נדרש בראש קובץ השרת (server.js או index.js) לפתרון תקלת שליחת המיילים בענן של Render:
+:
 
 const dns = require('dns');
 dns.setDefaultResultOrder('ipv4first'); // פותר את בעיית ה-IPv6 בשרתי ענן
