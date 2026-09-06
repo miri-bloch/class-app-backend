@@ -67,7 +67,7 @@ router.patch('/:id/toggle', async (req, res) => {
             <div style="font-size: 20px; font-weight: bold; color: #22d3ee; margin-bottom: 15px;">שלום ${nextUser.full_name}, הגיע תורך בתורנות החלב! 🥛</div>
             <div style="font-size: 15px; color: #d1d5db; line-height: 1.6;">התור הקודם הושלם בהצלחה, כעת עליך לדאוג לרכש החלב עבור הכיתה.</div>
           `;
-          await sendBrandedEmail(nextUser.email, '🥛 תורן חלב - הגיע תורך!', 'MILK DUTY NOTIFICATION', contentHtml, 'אפליקציית הכיתה');
+          await sendBrandedEmail(nextUser.email, '🥛 תורן חלב - הגיע תורך!', 'MILK DUTY NOTIFICATION', contentHtml);
         } catch (mailErr) {
           console.error('שגיאה בשליחת מייל לתורנית הבאה:', mailErr);
         }

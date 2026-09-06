@@ -114,8 +114,17 @@ router.post('/admin/send-email', async (req, res) => {
     return res.status(403).json({ error: 'אין הרשאה לשליחת מייל' });
   }
 
-  if (!toEmail || !subject || !content) {
+  const recipients = typeof toEmail === 'string'
+    ? toEmail.split(/[\s,;]+/).map(email => email.trim()).filter(Boolean)
+    : Array.isArray(toEmail) ? toEmail.filter(Boolean) : [];
+
+  if (recipients.length === 0 || !subject || !content) {
     return res.status(400).json({ error: 'יש למלא כתובת, נושא ותוכן' });
+  }
+
+  const invalidEmail = recipients.some(email => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
+  if (invalidEmail) {
+    return res.status(400).json({ error: 'אחת מכתובות המייל אינה תקינה' });
   }
 
   try {
@@ -124,8 +133,8 @@ router.post('/admin/send-email', async (req, res) => {
       <div style="font-size: 15px; color: #d1d5db; line-height: 1.7; white-space: pre-line;">${content}</div>
     `;
 
-    await sendBrandedEmail(toEmail, subject, 'PERSONAL MESSAGE', contentHtml, 'DevSpace System');
-    res.json({ message: 'המייל נשלח בהצלחה' });
+    await sendBrandedEmail(recipients, subject, 'PERSONAL MESSAGE', contentHtml);
+    res.json({ message: `המייל נשלח בהצלחה ל-${recipients.length} נמענות` });
   } catch (err) {
     console.error('שגיאה בשליחת מייל מנהלת:', err);
     res.status(500).json({ error: 'שגיאה בשליחת המייל' });

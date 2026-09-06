@@ -806,7 +806,7 @@ if (adminEmailForm) {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
-      showToast('המייל המעוצב נשלח בהצלחה!');
+      showToast(data.message || 'המייל המעוצב נשלח בהצלחה!');
       e.currentTarget.reset();
     } catch (err) {
       showToast(err.message || 'שגיאה בשליחת המייל', true);

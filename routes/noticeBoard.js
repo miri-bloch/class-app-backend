@@ -38,7 +38,7 @@ router.post('/', async (req, res) => {
           <div style="font-size: 20px; font-weight: bold; color: #22d3ee; margin-bottom: 15px;">📢 ${title}</div>
           <div style="font-size: 15px; color: #d1d5db; line-height: 1.6;">${content}</div>
         `;
-        await sendBrandedEmail(user.email, `📢 הודעה חדשה בלוח המודעות: ${title}`, 'CLASS SYSTEM NOTIFICATION', contentHtml, 'אפליקציית הכיתה');
+        await sendBrandedEmail(user.email, `📢 הודעה חדשה בלוח המודעות: ${title}`, 'CLASS SYSTEM NOTIFICATION', contentHtml);
       } catch (mailErr) {
         console.error('שגיאה בשליחת מייל למשתמשת:', user.email, mailErr);
       }

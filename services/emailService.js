@@ -5,16 +5,17 @@ async function sendBrevoEmail(toEmail, subject, htmlContent) {
   await sendEmail(toEmail, subject, htmlContent);
 }
 
-function createBrevoEmail({ toEmail, subject, htmlContent, senderName = 'DevSpace System' }) {
+function createBrevoEmail({ toEmail, subject, htmlContent }) {
+  const recipients = Array.isArray(toEmail) ? toEmail : [toEmail];
   return {
-    sender: { name: senderName, email: process.env.SENDER_EMAIL || process.env.EMAIL_USER },
-    to: [{ email: toEmail }],
+    sender: { name: 'DevSpace System', email: process.env.SENDER_EMAIL || process.env.EMAIL_USER },
+    to: recipients.map(email => ({ email })),
     subject,
     htmlContent,
   };
 }
 
-async function sendEmail(toEmail, subject, htmlContent, senderName) {
+async function sendEmail(toEmail, subject, htmlContent) {
   const response = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
     headers: {
@@ -22,7 +23,7 @@ async function sendEmail(toEmail, subject, htmlContent, senderName) {
       'api-key': process.env.BREVO_API_KEY,
       'content-type': 'application/json',
     },
-    body: JSON.stringify(createBrevoEmail({ toEmail, subject, htmlContent, senderName })),
+    body: JSON.stringify(createBrevoEmail({ toEmail, subject, htmlContent })),
   });
 
   if (!response.ok) {
@@ -62,8 +63,8 @@ function getBaseEmailTemplate(subtitleText, contentHtml) {
   `;
 }
 
-async function sendBrandedEmail(toEmail, subject, subtitleText, contentHtml, senderName) {
-  await sendEmail(toEmail, subject, getBaseEmailTemplate(subtitleText, contentHtml), senderName);
+async function sendBrandedEmail(toEmail, subject, subtitleText, contentHtml) {
+  await sendEmail(toEmail, subject, getBaseEmailTemplate(subtitleText, contentHtml));
 }
 
 // 1. מייל שחזור סיסמה מעוצב בדיוק לפי הדרישה והתמונה
