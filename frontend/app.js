@@ -72,6 +72,19 @@ function showToast(message, isError = false) {
   }, 3500);
 }
 
+function setButtonLoading(button, loadingText) {
+  if (!button) return () => {};
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.classList.add('is-loading');
+  button.textContent = loadingText;
+  return () => {
+    button.disabled = false;
+    button.classList.remove('is-loading');
+    button.textContent = originalText;
+  };
+}
+
 document.getElementById('register-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const full_name = document.getElementById('reg-name').value;
@@ -164,6 +177,8 @@ document.getElementById('notice-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const title = document.getElementById('notice-title').value;
   const content = document.getElementById('notice-content').value;
+  const restoreButton = setButtonLoading(e.currentTarget.querySelector('button[type="submit"]'), 'שולחת מייל...');
+  showToast('המודעה נשמרת והמייל נשלח, נא להמתין...');
 
   try {
     const res = await fetch(`${API_URL}/notices`, {
@@ -178,6 +193,8 @@ document.getElementById('notice-form').addEventListener('submit', async (e) => {
     }
   } catch (err) {
     showToast('שגיאה בפרסום המודעה', true);
+  } finally {
+    restoreButton();
   }
 });
 
@@ -202,7 +219,7 @@ async function loadNotices() {
 }
 
 async function deleteNotice(noticeId) {
-  if (!confirm('האם את בטוחה שברצונך למחוק הודעה זו?')) return;
+  if (!await showCustomConfirm('מחיקת הודעה', 'האם את בטוחה שברצונך למחוק הודעה זו?')) return;
   try {
     const res = await fetch(`${API_URL}/notices/${noticeId}`, { method: 'DELETE' });
     if (res.ok) {
@@ -252,7 +269,7 @@ async function loadAssignments() {
 }
 
 async function deleteAssignment(assignmentId) {
-  if (!confirm('האם את בטוחה שברצונך למחוק מטלה זו?')) return;
+  if (!await showCustomConfirm('מחיקת מטלה', 'האם את בטוחה שברצונך למחוק מטלה זו?')) return;
 
   try {
     const res = await fetch(`${API_URL}/assignments/${assignmentId}`, { method: 'DELETE' });
@@ -273,19 +290,26 @@ document.getElementById('add-assignment-form').addEventListener('submit', async 
   const subject = document.getElementById('new-assignment-subject').value;
   const title = document.getElementById('new-assignment-title').value;
   const due_date = document.getElementById('new-assignment-date').value;
+  const restoreButton = setButtonLoading(e.currentTarget.querySelector('button[type="submit"]'), 'שומרת...');
 
-  const res = await fetch(`${API_URL}/assignments`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ subject, title, due_date, difficulty_level: 3 })
-  });
-  if (res.ok) {
-    document.getElementById('add-assignment-form').reset();
-    loadAssignments();
-    loadAssignmentStats();
-    loadWeeklyCalendar();
-    loadShvabimSchedule();
-    showToast('המטלה נוספה בהצלחה!');
+  try {
+    const res = await fetch(`${API_URL}/assignments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subject, title, due_date, difficulty_level: 3 })
+    });
+    if (res.ok) {
+      document.getElementById('add-assignment-form').reset();
+      loadAssignments();
+      loadAssignmentStats();
+      loadWeeklyCalendar();
+      loadShvabimSchedule();
+      showToast('המטלה נוספה בהצלחה!');
+    }
+  } catch (err) {
+    showToast('שגיאה בהוספת המטלה', true);
+  } finally {
+    restoreButton();
   }
 });
 
@@ -507,6 +531,8 @@ async function joinMilkQueue() {
     return;
   }
 
+  const button = document.querySelector('button[onclick="joinMilkQueue()"]');
+  const restoreButton = setButtonLoading(button, 'נרשמת...');
   try {
     const res = await fetch(`${API_URL}/milk/join`, {
       method: 'POST',
@@ -522,10 +548,14 @@ async function joinMilkQueue() {
     }
   } catch (err) {
     showToast('תקלת תקשורת מול השרת', true);
+  } finally {
+    restoreButton();
   }
 }
 
 async function fulfillMilkDuty() {
+  const button = document.querySelector('button[onclick="fulfillMilkDuty()"]');
+  const restoreButton = setButtonLoading(button, 'שולחת מייל...');
   try {
     const res = await fetch(`${API_URL}/milk`);
     const duties = await res.json();
@@ -547,6 +577,8 @@ async function fulfillMilkDuty() {
     }
   } catch (err) {
     showToast('שגיאה בעדכון התורנות', true);
+  } finally {
+    restoreButton();
   }
 }
 
@@ -736,7 +768,7 @@ async function loadUsersList() {
 }
 
 async function deleteUser(userId) {
-  if (!confirm('האם את בטוחה שאת רוצה למחוק משתמשת זו לצמיתות?')) return;
+  if (!await showCustomConfirm('מחיקת משתמשת', 'האם את בטוחה שאת רוצה למחוק משתמשת זו לצמיתות?')) return;
 
   try {
     const res = await fetch(`${API_URL}/auth/users/${userId}`, {
@@ -753,6 +785,39 @@ async function deleteUser(userId) {
   }
 }
 
+function showCustomConfirm(title, description) {
+  return new Promise(resolve => {
+    const modal = document.getElementById('custom-modal');
+    const titleEl = document.getElementById('modal-title');
+    const descEl = document.getElementById('modal-desc');
+    const inputContainer = document.getElementById('modal-input-container');
+    const submitBtn = document.getElementById('modal-submit-btn');
+    const cancelBtn = document.getElementById('modal-cancel-btn');
+
+    titleEl.textContent = title;
+    descEl.textContent = description;
+    descEl.style.display = 'block';
+    inputContainer.style.display = 'none';
+    submitBtn.style.display = 'block';
+    submitBtn.textContent = 'כן, מחקי';
+    cancelBtn.textContent = 'ביטול';
+    modal.style.display = 'flex';
+
+    const newSubmitBtn = submitBtn.cloneNode(true);
+    const newCancelBtn = cancelBtn.cloneNode(true);
+    submitBtn.parentNode.replaceChild(newSubmitBtn, submitBtn);
+    cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+
+    const close = result => {
+      modal.style.display = 'none';
+      resolve(result);
+    };
+
+    newSubmitBtn.addEventListener('click', () => close(true));
+    newCancelBtn.addEventListener('click', () => close(false));
+  });
+}
+
 function showCustomPrompt(title, description, placeholder, callback) {
   const modal = document.getElementById('custom-modal');
   const titleEl = document.getElementById('modal-title');
@@ -767,6 +832,7 @@ function showCustomPrompt(title, description, placeholder, callback) {
   descEl.style.display = 'block';
   inputContainer.style.display = 'block';
   submitBtn.style.display = 'block';
+  submitBtn.textContent = 'אישור';
   cancelBtn.textContent = 'ביטול';
 
   inputEl.value = '';
@@ -808,6 +874,7 @@ document.addEventListener('click', async (e) => {
       async (email) => {
         if (!email) return;
 
+        showToast('שולחת מייל שחזור, נא להמתין...');
         try {
           const res = await fetch(`${API_URL}/auth/forgot-password`, {
             method: 'POST',

@@ -256,6 +256,14 @@ input:focus, textarea:focus {
   box-shadow: 0 0 20px rgba(34, 211, 238, 0.5);
 }
 
+.neon-btn:disabled,
+.neon-btn.is-loading {
+  opacity: 0.65;
+  cursor: wait;
+  transform: none;
+  box-shadow: none;
+}
+
 .neon-btn.outline {
   background: transparent;
   border: 2px solid var(--neon-cyan);
