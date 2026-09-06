@@ -1,13 +1,22 @@
-const nodemailer = require('nodemailer');
+const SibApiV3Sdk = require('@getbrevo/brevo');
 require('dotenv').config();
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
-});
+// הגדרת חיבור ל-Brevo
+const defaultClient = SibApiV3Sdk.ApiClient.instance;
+const apiKey = defaultClient.authentications['api-key'];
+apiKey.apiKey = process.env.BREVO_API_KEY;
+const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+
+// פונקציית עזר כללית לשליחת מייל דרך Brevo
+async function sendBrevoEmail(toEmail, subject, htmlContent) {
+  const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+  sendSmtpEmail.subject = subject;
+  sendSmtpEmail.htmlContent = htmlContent;
+  sendSmtpEmail.sender = { name: "DevSpace System", email: process.env.EMAIL_USER };
+  sendSmtpEmail.to = [{ email: toEmail }];
+
+  await apiInstance.sendTransacEmail(sendSmtpEmail);
+}
 
 // תבנית מעטפת כללית אחידה לכל מיילי המערכת לפי עיצוב הלוגו והכרטיס המדויק
 function getBaseEmailTemplate(subtitleText, contentHtml) {
@@ -58,12 +67,11 @@ async function sendPasswordResetEmail(toEmail, userName, password) {
     </div>
   `;
 
-  await transporter.sendMail({
-    from: `"DevSpace System" <${process.env.EMAIL_USER}>`,
-    to: toEmail,
-    subject: 'שחזור סיסמה - DevSpace',
-    html: getBaseEmailTemplate('PASSWORD RECOVERY', content)
-  });
+  await sendBrevoEmail(
+    toEmail,
+    'שחזור סיסמה - DevSpace',
+    getBaseEmailTemplate('PASSWORD RECOVERY', content)
+  );
 }
 
 // 2. מייל עדכון שיעורי בית מעוצב במרכז
@@ -89,12 +97,11 @@ async function sendHomeworkDigest(toEmail, userName, assignments) {
     </div>
   `;
 
-  await transporter.sendMail({
-    from: `"DevSpace System" <${process.env.EMAIL_USER}>`,
-    to: toEmail,
-    subject: '🔔 עדכון שיעורי בית ומטלות קרובות',
-    html: getBaseEmailTemplate('HOMEWORK NOTIFICATION', content)
-  });
+  await sendBrevoEmail(
+    toEmail,
+    '🔔 עדכון שיעורי בית ומטלות קרובות',
+    getBaseEmailTemplate('HOMEWORK NOTIFICATION', content)
+  );
 }
 
 // 3. מייל תורנות חלב מעוצב במרכז
@@ -108,12 +115,11 @@ async function sendMilkDutyEmail(toEmail, userName) {
     </div>
   `;
 
-  await transporter.sendMail({
-    from: `"DevSpace System" <${process.env.EMAIL_USER}>`,
-    to: toEmail,
-    subject: '🥛 תורנות חלב - DevSpace',
-    html: getBaseEmailTemplate('MILK DUTY NOTIFICATION', content)
-  });
+  await sendBrevoEmail(
+    toEmail,
+    '🥛 תורנות חלב - DevSpace',
+    getBaseEmailTemplate('MILK DUTY NOTIFICATION', content)
+  );
 }
 
 module.exports = { sendPasswordResetEmail, sendHomeworkDigest, sendMilkDutyEmail };
