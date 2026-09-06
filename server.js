@@ -29,7 +29,7 @@ async function sendEmailViaBrevo(toEmail, toName, subject, htmlContent) {
     },
     body: JSON.stringify({
       sender: { 
-        name: "DevSpace System",
+        name: "HighCode System",
         email: process.env.SENDER_EMAIL || "no-reply@yourdomain.com" 
       },
       to: [{ email: toEmail, name: toName || 'משתמשת' }],

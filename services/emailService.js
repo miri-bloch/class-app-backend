@@ -8,7 +8,7 @@ async function sendBrevoEmail(toEmail, subject, htmlContent) {
 function createBrevoEmail({ toEmail, subject, htmlContent }) {
   const recipients = Array.isArray(toEmail) ? toEmail : [toEmail];
   return {
-    sender: { name: 'DevSpace System', email: process.env.SENDER_EMAIL || process.env.EMAIL_USER },
+    sender: { name: 'HighCode System', email: process.env.SENDER_EMAIL || process.env.EMAIL_USER },
     to: recipients.map(email => ({ email })),
     subject,
     htmlContent,
@@ -43,7 +43,7 @@ function getBaseEmailTemplate(subtitleText, contentHtml) {
         <!-- לוגו המערכת בצבעי הטורקיז והסגול -->
         <div style="margin-bottom: 30px;">
           <h1 style="margin: 0; font-size: 28px; font-weight: 900; letter-spacing: 1px; line-height: 1;">
-            <span style="display: inline-block; background: linear-gradient(135deg, #22d3ee, #c084fc); color: #050508; font-size: 13px; letter-spacing: 0; padding: 7px 6px 5px; border-radius: 7px; vertical-align: middle; margin-left: 8px;">DS</span><span style="color: #ffffff;">DEV</span><span style="color: #22d3ee;">SPACE</span>
+            <span style="display: inline-block; background: linear-gradient(135deg, #22d3ee, #c084fc); color: #050508; font-size: 13px; letter-spacing: 0; padding: 7px 6px 5px; border-radius: 7px; vertical-align: middle; margin-left: 8px;">HC</span><span style="color: #ffffff;">HIGH</span><span style="color: #22d3ee;">CODE</span>
           </h1>
           <p style="color: #64748b; font-size: 11px; margin: 6px 0 0 0; text-transform: uppercase; letter-spacing: 3px; font-weight: bold;">${subtitleText}</p>
         </div>
@@ -55,7 +55,7 @@ function getBaseEmailTemplate(subtitleText, contentHtml) {
 
         <!-- פוטר מערכת -->
         <div style="border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 20px;">
-          <p style="font-size: 11px; color: #64748b; margin: 0;">M BLOCH - DevSpace © כל הזכויות שמורות</p>
+          <p style="font-size: 11px; color: #64748b; margin: 0;">M BLOCH - HighCode © כל הזכויות שמורות</p>
         </div>
 
       </div>
@@ -89,7 +89,7 @@ async function sendPasswordResetEmail(toEmail, userName, password) {
 
   await sendBrevoEmail(
     toEmail,
-    'שחזור סיסמה - DevSpace',
+    'שחזור סיסמה - HighCode',
     getBaseEmailTemplate('PASSWORD RECOVERY', content)
   );
 }
@@ -137,7 +137,7 @@ async function sendMilkDutyEmail(toEmail, userName) {
 
   await sendBrevoEmail(
     toEmail,
-    '🥛 תורנות חלב - DevSpace',
+    '🥛 תורנות חלב - HighCode',
     getBaseEmailTemplate('MILK DUTY NOTIFICATION', content)
   );
 }
