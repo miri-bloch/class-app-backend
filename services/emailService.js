@@ -1,33 +1,36 @@
-const SibApiV3Sdk = require('@getbrevo/brevo');
 require('dotenv').config();
-
-// הגדרת חיבור ל-Brevo
-const configuration = new SibApiV3Sdk.Configuration();
-configuration.apiKey = process.env.BREVO_API_KEY;
-const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi(configuration);
 
 // פונקציית עזר כללית לשליחת מייל דרך Brevo
 async function sendBrevoEmail(toEmail, subject, htmlContent) {
-  const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
-  sendSmtpEmail.subject = subject;
-  sendSmtpEmail.htmlContent = htmlContent;
-  sendSmtpEmail.sender = { name: "DevSpace System", email: process.env.EMAIL_USER };
-  sendSmtpEmail.to = [{ email: toEmail }];
-
-  await apiInstance.sendTransacEmail(sendSmtpEmail);
+  await sendEmail(toEmail, subject, htmlContent);
 }
 
 function createBrevoEmail({ toEmail, subject, htmlContent, senderName = 'DevSpace System' }) {
-  const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
-  sendSmtpEmail.subject = subject;
-  sendSmtpEmail.htmlContent = htmlContent;
-  sendSmtpEmail.sender = { name: senderName, email: process.env.SENDER_EMAIL || process.env.EMAIL_USER };
-  sendSmtpEmail.to = [{ email: toEmail }];
-  return sendSmtpEmail;
+  return {
+    sender: { name: senderName, email: process.env.SENDER_EMAIL || process.env.EMAIL_USER },
+    to: [{ email: toEmail }],
+    subject,
+    htmlContent,
+  };
 }
 
 async function sendEmail(toEmail, subject, htmlContent, senderName) {
-  await apiInstance.sendTransacEmail(createBrevoEmail({ toEmail, subject, htmlContent, senderName }));
+  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      accept: 'application/json',
+      'api-key': process.env.BREVO_API_KEY,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify(createBrevoEmail({ toEmail, subject, htmlContent, senderName })),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Brevo API error (${response.status}): ${errorText}`);
+  }
+
+  return response.json();
 }
 
 // תבנית מעטפת כללית אחידה לכל מיילי המערכת לפי עיצוב הלוגו והכרטיס המדויק
