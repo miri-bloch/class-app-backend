@@ -39,10 +39,10 @@ function getBaseEmailTemplate(subtitleText, contentHtml) {
     <div dir="rtl" style="background-color: #050508; color: #ffffff; font-family: 'Heebo', Arial, sans-serif; padding: 40px 15px; text-align: center;">
       <div style="max-width: 600px; margin: auto;">
         
-        <!-- לוגו מדויק עם שני צבעים וכותרת משנה -->
+        <!-- לוגו המערכת בצבעי הטורקיז והסגול -->
         <div style="margin-bottom: 30px;">
-          <h1 style="margin: 0; font-size: 28px; font-weight: 900; letter-spacing: 1px;">
-            <span style="color: #22d3ee;">// Dev</span><span style="color: #c084fc;">Space</span>
+          <h1 style="margin: 0; font-size: 28px; font-weight: 900; letter-spacing: 1px; line-height: 1;">
+            <span style="display: inline-block; background: linear-gradient(135deg, #22d3ee, #c084fc); color: #050508; font-size: 13px; letter-spacing: 0; padding: 7px 6px 5px; border-radius: 7px; vertical-align: middle; margin-left: 8px;">DS</span><span style="color: #ffffff;">DEV</span><span style="color: #22d3ee;">SPACE</span>
           </h1>
           <p style="color: #64748b; font-size: 11px; margin: 6px 0 0 0; text-transform: uppercase; letter-spacing: 3px; font-weight: bold;">${subtitleText}</p>
         </div>
