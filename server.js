@@ -10,7 +10,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// הגדרת תיקיית ה-frontend כתיקייה סטטית כדי ששאר הקבצים (CSS, JS) ייטענו נכון
+// הגדרת תיקיית ה-frontend כתיקייה סטטית
 app.use(express.static(path.join(__dirname, 'frontend')));
 
 // הגדרת נתיב ברירת מחדל שמציג את קובץ ה-index.html בכניסה לאתר
@@ -18,25 +18,35 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'frontend', 'index.html'));
 });
 
-:
+// פונקציית שליחת מייל דרך Brevo API
+async function sendEmailViaBrevo(toEmail, toName, subject, htmlContent) {
+  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'accept': 'application/json',
+      'api-key': process.env.BREVO_API_KEY,
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      sender: { 
+        name: "מערכת ניהול כיתה", 
+        email: process.env.SENDER_EMAIL || "no-reply@yourdomain.com" 
+      },
+      to: [{ email: toEmail, name: toName || 'משתמשת' }],
+      subject: subject,
+      htmlContent: htmlContent
+    })
+  });
 
-const dns = require('dns');
-dns.setDefaultResultOrder('ipv4first'); // פותר את בעיית ה-IPv6 בשרתי ענן
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'שגיאה בשליחת מייל דרך Brevo');
+  }
 
-// בעת הגדרת Nodemailer בשרת, יש לוודא שמוגדר family: 4:
-const nodemailer = require('nodemailer');
+  return await response.json();
+}
 
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  },
-  family: 4 // מכריח שימוש ב-IPv4 בלבד ועוקף את שגיאת ENETUNREACH
-});
-
+app.locals.sendEmail = sendEmailViaBrevo;
 
 // הפעלת מתזמן המיילים האוטומטי
 initScheduler();
@@ -57,7 +67,7 @@ const milkRoutes = require('./routes/milk');
 const noticeRoutes = require('./routes/noticeBoard');
 const summaryRoutes = require('./routes/summaries');
 
-// חיבור כל הנתיבים (Routes) לקידומת ה-API שלהם ב-Express
+// חיבור כל הנתיבים (Routes) לקידומת ה-API שלהם
 app.use('/api/auth', authRoutes);
 app.use('/api/assignments', assignmentRoutes);
 app.use('/api/milk', milkRoutes);
