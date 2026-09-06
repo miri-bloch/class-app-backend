@@ -262,6 +262,30 @@ body.light-theme #online-users-badge {
   background: rgba(255, 255, 255, 0.72) !important;
 }
 
+.email-preference {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.email-preference input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--neon-cyan);
+  cursor: pointer;
+}
+
+@media (max-width: 760px) {
+  .email-preference span {
+    display: none;
+  }
+}
+
 body.light-theme footer {
   border-top-color: rgba(38, 91, 125, 0.15);
 }

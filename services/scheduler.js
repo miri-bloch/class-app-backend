@@ -3,33 +3,40 @@ const pool = require('../db');
 const { sendHomeworkDigest } = require('./emailService');
 
 function initScheduler() {
-  cron.schedule('0 * * * *', async () => {
-    const currentHour = new Date().getHours();
-
+  cron.schedule('0 20 * * *', async () => {
     try {
       const usersResult = await pool.query(
-        `SELECT id, full_name, email 
+        `SELECT id, full_name, email
          FROM users 
-         WHERE email_notifications = TRUE 
-           AND date_part('hour', notification_time) = $1`,
-        [currentHour]
+         WHERE email_notifications = TRUE`
       );
 
       if (usersResult.rows.length === 0) return;
 
-      const assignmentsResult = await pool.query(
-        `SELECT * FROM assignments WHERE due_date >= CURRENT_DATE ORDER BY due_date ASC`
-      );
-
-      if (assignmentsResult.rows.length === 0) return;
-
       for (const user of usersResult.rows) {
-        await sendHomeworkDigest(user.email, user.full_name, assignmentsResult.rows);
+        const userAssignments = await pool.query(
+          `SELECT a.*
+           FROM assignments a
+           WHERE a.due_date = CURRENT_DATE + 1
+             AND NOT EXISTS (
+               SELECT 1
+               FROM private_notes pn
+               WHERE pn.assignment_id = a.id
+                 AND pn.user_id = $1
+                 AND pn.is_completed = TRUE
+             )
+           ORDER BY a.due_date ASC`,
+          [user.id]
+        );
+
+        if (userAssignments.rows.length > 0) {
+          await sendHomeworkDigest(user.email, user.full_name, userAssignments.rows);
+        }
       }
     } catch (err) {
       console.error('שגיאה בהרצת מתזמן המיילים:', err);
     }
-  });
+  }, { timezone: 'Asia/Jerusalem' });
 }
 
 module.exports = initScheduler;

@@ -82,6 +82,8 @@ app.get('/api/health', (req, res) => {
 const PORT = process.env.PORT || 3000;
 
 pool.query(`
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS email_notifications BOOLEAN DEFAULT TRUE;
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS notification_time TIME DEFAULT '20:00';
   ALTER TABLE assignments ADD COLUMN IF NOT EXISTS drive_file_id VARCHAR(255);
   ALTER TABLE assignments ADD COLUMN IF NOT EXISTS drive_web_view_link TEXT;
   ALTER TABLE assignments ADD COLUMN IF NOT EXISTS attachment_name VARCHAR(255);

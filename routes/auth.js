@@ -20,6 +20,35 @@ router.post('/heartbeat', (req, res) => {
   res.json({ onlineCount: activeUsers.size });
 });
 
+router.get('/notification-settings/:userId', async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT email_notifications FROM users WHERE id = $1',
+      [req.params.userId]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'המשתמשת לא נמצאה' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('שגיאה בטעינת הגדרות מייל:', err);
+    res.status(500).json({ error: 'שגיאה בטעינת הגדרות המייל' });
+  }
+});
+
+router.patch('/notification-settings/:userId', async (req, res) => {
+  const { email_notifications } = req.body;
+  try {
+    const result = await pool.query(
+      'UPDATE users SET email_notifications = $1 WHERE id = $2 RETURNING email_notifications',
+      [Boolean(email_notifications), req.params.userId]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'המשתמשת לא נמצאה' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('שגיאה בעדכון הגדרות מייל:', err);
+    res.status(500).json({ error: 'שגיאה בעדכון הגדרות המייל' });
+  }
+});
+
 // הרשמה למערכת
 router.post('/register', async (req, res) => {
   const { full_name, email, password } = req.body;

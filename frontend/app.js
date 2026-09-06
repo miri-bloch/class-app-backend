@@ -166,6 +166,41 @@ function initDashboard(userName, email) {
   loadMilkRotation();
   loadShvabimSchedule();
   loadWeeklyCalendar();
+  loadEmailPreference();
+}
+
+async function loadEmailPreference() {
+  const toggle = document.getElementById('daily-email-toggle');
+  if (!toggle || !currentUserId) return;
+
+  try {
+    const response = await fetch(`${API_URL}/auth/notification-settings/${currentUserId}`);
+    if (response.ok) {
+      const settings = await response.json();
+      toggle.checked = settings.email_notifications;
+    }
+  } catch (error) {
+    showToast('לא הצלחנו לטעון את העדפת המייל', true);
+  }
+}
+
+async function updateEmailPreference(enabled) {
+  if (!currentUserId) return;
+  const toggle = document.getElementById('daily-email-toggle');
+
+  try {
+    const response = await fetch(`${API_URL}/auth/notification-settings/${currentUserId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email_notifications: enabled })
+    });
+
+    if (!response.ok) throw new Error('Preference update failed');
+    showToast(enabled ? 'המייל היומי הופעל' : 'המייל היומי בוטל');
+  } catch (error) {
+    if (toggle) toggle.checked = !enabled;
+    showToast('לא הצלחנו לשמור את העדפת המייל', true);
+  }
 }
 
 setInterval(async () => {

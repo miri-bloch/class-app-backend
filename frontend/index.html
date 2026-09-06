@@ -35,6 +35,10 @@
     <div id="user-profile-header" style="display: none; align-items: center; gap: 12px; background: var(--glass-bg); padding: 8px 15px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); z-index: 2;">
       <div id="user-avatar-circle" style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--neon-purple), var(--neon-cyan)); display: flex; align-items: center; justify-content: center; font-weight: bold; color: #050508; font-size: 0.95rem; box-shadow: 0 0 10px rgba(34,211,238,0.4);"></div>
       <span id="user-profile-name" style="font-size: 0.9rem; font-weight: 500; color: white;"></span>
+      <label class="email-preference" title="מייל יומי על מטלות למחר">
+        <input type="checkbox" id="daily-email-toggle" onchange="updateEmailPreference(this.checked)">
+        <span>מייל מטלות ב־20:00</span>
+      </label>
       <button onclick="logoutSession()" class="neon-btn outline" style="padding: 4px 10px; font-size: 0.75rem; width: auto; border-color: #f43f5e; color: #f43f5e;">התנתקי</button>
     </div>
   </header>
