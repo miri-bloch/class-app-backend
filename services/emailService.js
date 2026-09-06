@@ -2,10 +2,9 @@ const SibApiV3Sdk = require('@getbrevo/brevo');
 require('dotenv').config();
 
 // הגדרת חיבור ל-Brevo
-const defaultClient = SibApiV3Sdk.ApiClient.instance;
-const apiKey = defaultClient.authentications['api-key'];
-apiKey.apiKey = process.env.BREVO_API_KEY;
-const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+const configuration = new SibApiV3Sdk.Configuration();
+configuration.apiKey = process.env.BREVO_API_KEY;
+const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi(configuration);
 
 // פונקציית עזר כללית לשליחת מייל דרך Brevo
 async function sendBrevoEmail(toEmail, subject, htmlContent) {
@@ -16,6 +15,19 @@ async function sendBrevoEmail(toEmail, subject, htmlContent) {
   sendSmtpEmail.to = [{ email: toEmail }];
 
   await apiInstance.sendTransacEmail(sendSmtpEmail);
+}
+
+function createBrevoEmail({ toEmail, subject, htmlContent, senderName = 'DevSpace System' }) {
+  const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+  sendSmtpEmail.subject = subject;
+  sendSmtpEmail.htmlContent = htmlContent;
+  sendSmtpEmail.sender = { name: senderName, email: process.env.SENDER_EMAIL || process.env.EMAIL_USER };
+  sendSmtpEmail.to = [{ email: toEmail }];
+  return sendSmtpEmail;
+}
+
+async function sendEmail(toEmail, subject, htmlContent, senderName) {
+  await apiInstance.sendTransacEmail(createBrevoEmail({ toEmail, subject, htmlContent, senderName }));
 }
 
 // תבנית מעטפת כללית אחידה לכל מיילי המערכת לפי עיצוב הלוגו והכרטיס המדויק
@@ -122,4 +134,4 @@ async function sendMilkDutyEmail(toEmail, userName) {
   );
 }
 
-module.exports = { sendPasswordResetEmail, sendHomeworkDigest, sendMilkDutyEmail };
+module.exports = { sendPasswordResetEmail, sendHomeworkDigest, sendMilkDutyEmail, sendEmail };

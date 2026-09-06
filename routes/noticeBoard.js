@@ -1,13 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
-const SibApiV3Sdk = require('@getbrevo/brevo');
-
-// הגדרת חיבור ל-Brevo
-const defaultClient = SibApiV3Sdk.ApiClient.instance;
-const apiKey = defaultClient.authentications['api-key'];
-apiKey.apiKey = process.env.BREVO_API_KEY;
-const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+const { sendEmail } = require('../services/emailService');
 
 // שליפת כל המודעות
 router.get('/', async (req, res) => {
@@ -40,9 +34,7 @@ router.post('/', async (req, res) => {
     const usersResult = await pool.query('SELECT email FROM users WHERE email IS NOT NULL');
     for (const user of usersResult.rows) {
       try {
-        const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
-        sendSmtpEmail.subject = `📢 הודעה חדשה בלוח המודעות: ${title}`;
-        sendSmtpEmail.htmlContent = `
+        const htmlContent = `
           <div dir="rtl" style="background-color: #050508; color: #ffffff; padding: 30px; border-radius: 16px; border: 1px solid rgba(34, 211, 238, 0.3); font-family: 'Heebo', Arial, sans-serif;">
             <div style="text-align: center; margin-bottom: 20px;">
               <span style="color: #22d3ee; font-size: 24px; font-weight: 900;">// Dev</span><span style="color: #c084fc; font-size: 24px; font-weight: 900;">Space</span>
@@ -57,10 +49,7 @@ router.post('/', async (req, res) => {
             </div>
           </div>
         `;
-        sendSmtpEmail.sender = { name: "אפליקציית הכיתה", email: process.env.EMAIL_USER };
-        sendSmtpEmail.to = [{ email: user.email }];
-
-        await apiInstance.sendTransacEmail(sendSmtpEmail);
+        await sendEmail(user.email, `📢 הודעה חדשה בלוח המודעות: ${title}`, htmlContent, 'אפליקציית הכיתה');
       } catch (mailErr) {
         console.error('שגיאה בשליחת מייל למשתמשת:', user.email, mailErr);
       }
