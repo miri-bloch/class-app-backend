@@ -228,6 +228,12 @@
             <button onclick="loadUsersList()" class="neon-btn outline" style="width: auto; padding: 3px 8px; font-size: 0.75rem;">רענן</button>
           </div>
           <button onclick="advanceMilkDutyForAdmin()" class="neon-btn outline" style="margin-bottom: 12px; border-color: var(--neon-purple); color: var(--neon-purple); font-size: 0.85rem; padding: 8px;">קידום תור החלב ⏭️</button>
+          <form id="admin-email-form" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;">
+            <input type="email" id="admin-email-to" placeholder="כתובת המייל של הנמענת" required style="padding: 8px; font-size: 0.85rem;">
+            <input type="text" id="admin-email-subject" placeholder="נושא המייל" required style="padding: 8px; font-size: 0.85rem;">
+            <textarea id="admin-email-content" placeholder="תוכן המייל" rows="4" required style="padding: 8px; font-size: 0.85rem;"></textarea>
+            <button type="submit" class="neon-btn" style="font-size: 0.85rem; padding: 8px;">שליחת מייל מעוצב ✉️</button>
+          </form>
           <div id="users-management-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; text-align: right;"></div>
         </div>
       </div>

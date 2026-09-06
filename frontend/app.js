@@ -776,6 +776,7 @@ function toggleHighContrast() {
 function verifyAdminPassword() {
   const pass = document.getElementById('admin-password-input').value;
   if (pass === '123') {
+    sessionStorage.setItem('admin_password', pass);
     document.getElementById('admin-login-box').style.display = 'none';
     document.getElementById('admin-panel-content').style.display = 'block';
     showToast('התחברת בהצלחה לממשק הניהול!');
@@ -783,6 +784,36 @@ function verifyAdminPassword() {
   } else {
     showToast('סיסמה שגויה!', true);
   }
+}
+
+const adminEmailForm = document.getElementById('admin-email-form');
+if (adminEmailForm) {
+  adminEmailForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    const submitButton = e.currentTarget.querySelector('button[type="submit"]');
+    const restoreButton = setButtonLoading(submitButton, 'שולחת מייל...');
+
+    try {
+      const response = await fetch(`${API_URL}/auth/admin/send-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          adminPassword: sessionStorage.getItem('admin_password'),
+          toEmail: document.getElementById('admin-email-to').value,
+          subject: document.getElementById('admin-email-subject').value,
+          content: document.getElementById('admin-email-content').value
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+      showToast('המייל המעוצב נשלח בהצלחה!');
+      e.currentTarget.reset();
+    } catch (err) {
+      showToast(err.message || 'שגיאה בשליחת המייל', true);
+    } finally {
+      restoreButton();
+    }
+  });
 }
 
 async function loadUsersList() {

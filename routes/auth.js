@@ -1,10 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
-const { sendPasswordResetEmail } = require('../services/emailService');
+const { sendPasswordResetEmail, sendBrandedEmail } = require('../services/emailService');
 
 // ניהול משתמשות מחוברות בזמן אמת (Heartbeat)
 const activeUsers = new Map();
+
+const ADMIN_PASSWORD = '123';
 
 router.post('/heartbeat', (req, res) => {
   const { userId } = req.body;
@@ -101,6 +103,32 @@ router.post('/forgot-password', async (req, res) => {
   } catch (err) {
     console.error('שגיאה בשחזור סיסמה:', err);
     res.status(500).json({ error: 'שגיאת שרת בתהליך שחזור הסיסמה' });
+  }
+});
+
+// שליחת מייל מעוצב לכתובת אחת מאזור המנהלת
+router.post('/admin/send-email', async (req, res) => {
+  const { adminPassword, toEmail, subject, content } = req.body;
+
+  if (adminPassword !== ADMIN_PASSWORD) {
+    return res.status(403).json({ error: 'אין הרשאה לשליחת מייל' });
+  }
+
+  if (!toEmail || !subject || !content) {
+    return res.status(400).json({ error: 'יש למלא כתובת, נושא ותוכן' });
+  }
+
+  try {
+    const contentHtml = `
+      <div style="font-size: 20px; font-weight: bold; color: #22d3ee; margin-bottom: 15px;">${subject}</div>
+      <div style="font-size: 15px; color: #d1d5db; line-height: 1.7; white-space: pre-line;">${content}</div>
+    `;
+
+    await sendBrandedEmail(toEmail, subject, 'PERSONAL MESSAGE', contentHtml, 'DevSpace System');
+    res.json({ message: 'המייל נשלח בהצלחה' });
+  } catch (err) {
+    console.error('שגיאה בשליחת מייל מנהלת:', err);
+    res.status(500).json({ error: 'שגיאה בשליחת המייל' });
   }
 });
 
