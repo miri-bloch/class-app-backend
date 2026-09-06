@@ -582,6 +582,41 @@ async function fulfillMilkDuty() {
   }
 }
 
+async function advanceMilkDutyForAdmin() {
+  const confirmed = await showCustomConfirm('קידום תור החלב', 'האם לקדם את התורנית הנוכחית ולהודיע לבאה בתור במייל?');
+  if (!confirmed) return;
+
+  const button = document.querySelector('button[onclick="advanceMilkDutyForAdmin()"]');
+  const restoreButton = setButtonLoading(button, 'מקדמת תור...');
+
+  try {
+    const dutiesResponse = await fetch(`${API_URL}/milk`);
+    if (!dutiesResponse.ok) throw new Error('Failed to load milk duty');
+
+    const duties = await dutiesResponse.json();
+    const activeDuty = duties.find(duty => !duty.is_completed);
+    if (!activeDuty) {
+      showToast('אין כרגע תורנית פעילה לקידום', true);
+      return;
+    }
+
+    const advanceResponse = await fetch(`${API_URL}/milk/${activeDuty.id}/toggle`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ is_completed: true })
+    });
+
+    if (!advanceResponse.ok) throw new Error('Failed to advance milk duty');
+
+    showToast('התור קודם בהצלחה ונשלחה הודעה לבאה בתור!');
+    loadMilkRotation();
+  } catch (err) {
+    showToast('שגיאה בקידום תור החלב', true);
+  } finally {
+    restoreButton();
+  }
+}
+
 let weekOffset = 0;
 
 function getWeekDates(offset = 0) {
