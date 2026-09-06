@@ -45,7 +45,7 @@ header {
 .brand-container {
   direction: ltr;
   background: #0d0d14;
-  padding: 18px 36px;
+  padding: 14px 28px;
   border-radius: 20px;
   display: flex;
   flex-direction: column;
@@ -53,12 +53,32 @@ header {
 }
 
 .logo-main {
-  font-size: 2.5rem;
+  font-size: 1.9rem;
   font-weight: 900;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
   line-height: 1;
+  letter-spacing: 1px;
+}
+
+.brand-mark {
+  color: #050508;
+  background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+  border-radius: 8px;
+  padding: 7px 5px 5px 6px;
+  font-size: 0.82rem;
+  letter-spacing: 0;
+  box-shadow: 0 0 14px rgba(34, 211, 238, 0.45);
+}
+
+.logo-word {
+  color: #ffffff;
+}
+
+.logo-word span {
+  color: var(--neon-cyan);
+  font-weight: 500;
 }
 
 .code-slash {
@@ -76,12 +96,49 @@ header {
 }
 
 .slogan {
-  font-size: 0.85rem;
+  font-size: 0.62rem;
   font-weight: 700;
   margin-top: 6px;
-  letter-spacing: 3px;
+  letter-spacing: 2.5px;
   text-transform: uppercase;
   color: var(--text-muted);
+}
+
+.weekly-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+
+.weekly-calendar-grid > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 760px) {
+  .brand-container {
+    padding: 11px 18px;
+  }
+
+  .logo-main {
+    font-size: 1.35rem;
+    gap: 6px;
+  }
+
+  .brand-mark {
+    padding: 5px 4px 4px 5px;
+    font-size: 0.65rem;
+  }
+
+  .slogan {
+    font-size: 0.48rem;
+    letter-spacing: 1.5px;
+  }
+
+  .weekly-calendar-grid {
+    gap: 4px;
+  }
 }
 
 .container {
