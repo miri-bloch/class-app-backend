@@ -85,6 +85,17 @@ function setButtonLoading(button, loadingText) {
   };
 }
 
+function normalizeAttachmentName(filename) {
+  if (!filename) return 'פתיחת קובץ';
+  try {
+    const bytes = new Uint8Array([...filename].map(character => character.charCodeAt(0) & 0xff));
+    const decoded = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+    return /[\u0590-\u05FF]/.test(decoded) ? decoded : filename;
+  } catch (error) {
+    return filename;
+  }
+}
+
 document.getElementById('register-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const full_name = document.getElementById('reg-name').value;
@@ -261,7 +272,7 @@ async function loadAssignments() {
           </div>
           <div class="assignment-date" style="margin-top: 4px;">הגשה: ${gregorianDate} ${hebrewDate ? '(' + hebrewDate + ')' : ''}</div>
           ${a.drive_file_id ? `<div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
-            <a href="${a.drive_web_view_link || `https://drive.google.com/file/d/${a.drive_file_id}/view`}" target="_blank" rel="noopener" class="neon-btn outline" style="width:auto; padding:5px 9px; font-size:0.78rem; text-decoration:none;">📎 ${a.attachment_name || 'פתיחת קובץ'}</a>
+            <a href="${a.drive_web_view_link || `https://drive.google.com/file/d/${a.drive_file_id}/view`}" target="_blank" rel="noopener" class="neon-btn outline" style="width:auto; padding:5px 9px; font-size:0.78rem; text-decoration:none;">📎 ${normalizeAttachmentName(a.attachment_name)}</a>
             <a href="https://drive.google.com/uc?export=download&id=${a.drive_file_id}" target="_blank" rel="noopener" class="neon-btn outline" style="width:auto; padding:5px 9px; font-size:0.78rem; text-decoration:none;">הורדה</a>
           </div>` : ''}
           <label style="display:flex; align-items:center; gap:8px; margin-top:8px; font-size:0.9rem; cursor:pointer;">

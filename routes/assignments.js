@@ -9,6 +9,11 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 }
 });
 
+function normalizeFilename(filename) {
+  const decoded = Buffer.from(filename, 'latin1').toString('utf8');
+  return /[\u0590-\u05FF]/.test(decoded) ? decoded : filename;
+}
+
 // 1. קבלת כל המטלות (כולל הערות אישיות וסימון V למשתמשת מסוימת)
 router.get('/', async (req, res) => {
   const { userId } = req.query;
@@ -37,8 +42,9 @@ router.post('/', upload.single('attachment'), async (req, res) => {
 
   try {
     let driveData = null;
+    const attachmentName = req.file ? normalizeFilename(req.file.originalname) : null;
     if (req.file) {
-      driveData = await uploadFileToDrive(req.file);
+      driveData = await uploadFileToDrive({ ...req.file, originalname: attachmentName });
     }
 
     const newAssignment = await pool.query(
@@ -52,7 +58,7 @@ router.post('/', upload.single('attachment'), async (req, res) => {
         difficulty_level,
         driveData?.id || null,
         driveData?.webViewLink || null,
-        req.file?.originalname || null
+        attachmentName
       ]
     );
 
