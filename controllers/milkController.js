@@ -1,6 +1,8 @@
+// חיבור למסד הנתונים ושירות המייל של תורנות החלב.
 const pool = require('../data/db');
 const { sendBrandedEmail } = require('../services/emailService');
 
+// מחזיר את רשימת תורנויות החלב עם פרטי המשתמשות.
 async function getMilkDuties(req, res) {
   try {
     const result = await pool.query(
@@ -16,6 +18,7 @@ async function getMilkDuties(req, res) {
   }
 }
 
+// מוסיף משתמשת לתור אם היא עדיין לא רשומה בו.
 async function joinMilkQueue(req, res) {
   const { user_id } = req.body;
   try {
@@ -33,6 +36,7 @@ async function joinMilkQueue(req, res) {
   }
 }
 
+// מסמן תורנות שהושלמה ומודיע למשתמשת הבאה.
 async function toggleMilkDuty(req, res) {
   const { id } = req.params;
   const { is_completed } = req.body;
@@ -74,4 +78,5 @@ async function toggleMilkDuty(req, res) {
   }
 }
 
+// מייצא את פעולות תורנות החלב לשכבת ה-routes.
 module.exports = { getMilkDuties, joinMilkQueue, toggleMilkDuty };

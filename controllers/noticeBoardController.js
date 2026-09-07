@@ -1,6 +1,8 @@
+// חיבור למסד הנתונים ושירות המייל של לוח המודעות.
 const pool = require('../data/db');
 const { sendBrandedEmail } = require('../services/emailService');
 
+// מחזיר את כל המודעות לפי חשיבות ותאריך.
 async function getNotices(req, res) {
   try {
     const result = await pool.query(
@@ -16,6 +18,7 @@ async function getNotices(req, res) {
   }
 }
 
+// יוצר מודעה ושולח עדכון לכל המשתמשות.
 async function createNotice(req, res) {
   const { author_id, title, content, is_important } = req.body;
 
@@ -46,6 +49,7 @@ async function createNotice(req, res) {
   }
 }
 
+// מוחק מודעה לפי מזהה.
 async function deleteNotice(req, res) {
   try {
     await pool.query('DELETE FROM notice_board WHERE id = $1', [req.params.id]);
@@ -56,4 +60,5 @@ async function deleteNotice(req, res) {
   }
 }
 
+// מייצא את פעולות לוח המודעות לשכבת ה-routes.
 module.exports = { getNotices, createNotice, deleteNotice };

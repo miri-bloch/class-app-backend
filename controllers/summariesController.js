@@ -1,6 +1,8 @@
+// חיבור למסד הנתונים ושירות העלאת סיכומים ל-Drive.
 const pool = require('../data/db');
 const { uploadFileToDrive } = require('../services/driveService');
 
+// מחזיר את כל הסיכומים עם שם המשתמשת שהעלתה אותם.
 async function getSummaries(req, res) {
   try {
     const result = await pool.query(
@@ -16,6 +18,7 @@ async function getSummaries(req, res) {
   }
 }
 
+// מעלה סיכום ל-Drive ושומר את פרטיו במסד הנתונים.
 async function uploadSummary(req, res) {
   try {
     if (!req.file) return res.status(400).json({ error: 'לא צורף קובץ להעלאה' });
@@ -48,4 +51,5 @@ async function uploadSummary(req, res) {
   }
 }
 
+// מייצא את פעולות הסיכומים לשכבת ה-routes.
 module.exports = { getSummaries, uploadSummary };

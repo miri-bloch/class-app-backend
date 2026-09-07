@@ -1,9 +1,13 @@
+// חיבור למסד הנתונים ושירותי שליחת המיילים של המשתמשות.
 const pool = require('../data/db');
 const { sendPasswordResetEmail, sendBrandedEmail } = require('../services/emailService');
 
+// זיכרון זמני של משתמשות ששלחו heartbeat לאחרונה.
 const activeUsers = new Map();
+// סיסמת המנהלה עבור פעולות הניהול הקיימות במערכת.
 const ADMIN_PASSWORD = '123';
 
+// מעדכן את המשתמשות הפעילות ומחזיר את מספרן.
 function heartbeat(req, res) {
   const { userId } = req.body;
   if (userId) activeUsers.set(userId, Date.now());
@@ -16,6 +20,7 @@ function heartbeat(req, res) {
   res.json({ onlineCount: activeUsers.size });
 }
 
+// מחזיר את העדפת קבלת המיילים של משתמשת.
 async function getNotificationSettings(req, res) {
   try {
     const result = await pool.query('SELECT email_notifications FROM users WHERE id = $1', [req.params.userId]);
@@ -27,6 +32,7 @@ async function getNotificationSettings(req, res) {
   }
 }
 
+// מעדכן את העדפת קבלת המיילים של משתמשת.
 async function updateNotificationSettings(req, res) {
   const { email_notifications } = req.body;
   try {
@@ -42,6 +48,7 @@ async function updateNotificationSettings(req, res) {
   }
 }
 
+// יוצר משתמשת חדשה לאחר בדיקת מייל קיים.
 async function register(req, res) {
   const { full_name, email, password } = req.body;
   try {
@@ -59,6 +66,7 @@ async function register(req, res) {
   }
 }
 
+// בודק פרטי התחברות ומחזיר את פרטי המשתמשת.
 async function login(req, res) {
   const { email, password } = req.body;
   try {
@@ -75,6 +83,7 @@ async function login(req, res) {
   }
 }
 
+// מחזיר את רשימת המשתמשות עבור אזור הניהול.
 async function getUsers(req, res) {
   try {
     const result = await pool.query('SELECT id, full_name, email FROM users ORDER BY id ASC');
@@ -85,6 +94,7 @@ async function getUsers(req, res) {
   }
 }
 
+// מוחק משתמשת לפי מזהה.
 async function deleteUser(req, res) {
   try {
     await pool.query('DELETE FROM users WHERE id = $1', [req.params.id]);
@@ -95,6 +105,7 @@ async function deleteUser(req, res) {
   }
 }
 
+// שולח למשתמשת את פרטי שחזור הסיסמה במייל.
 async function forgotPassword(req, res) {
   const { email } = req.body;
   try {
@@ -110,6 +121,7 @@ async function forgotPassword(req, res) {
   }
 }
 
+// בודק הרשאת מנהלה ושולח מייל לנמענות שנבחרו.
 async function sendAdminEmail(req, res) {
   const { adminPassword, toEmail, subject, content } = req.body;
   if (adminPassword !== ADMIN_PASSWORD) return res.status(403).json({ error: 'אין הרשאה לשליחת מייל' });
@@ -136,4 +148,5 @@ async function sendAdminEmail(req, res) {
   }
 }
 
+// מייצא את פעולות המשתמשות לשכבת ה-routes.
 module.exports = { heartbeat, getNotificationSettings, updateNotificationSettings, register, login, getUsers, deleteUser, forgotPassword, sendAdminEmail };

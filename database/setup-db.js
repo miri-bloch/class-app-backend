@@ -1,5 +1,7 @@
+// חיבור למסד הנתונים המשמש ליצירת הטבלאות.
 const pool = require('../data/db');
 
+// סכמת הטבלאות והעמודות הדרושות לכל חלקי המערכת.
 const schemaSql = `
 CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY,
@@ -66,6 +68,7 @@ CREATE TABLE IF NOT EXISTS summaries (
 );
 `;
 
+// מריץ את סכמת מסד הנתונים ומסיים את החיבור לאחר מכן.
 async function setup() {
   try {
     await pool.query(schemaSql);
@@ -78,4 +81,5 @@ async function setup() {
   }
 }
 
+// מפעיל את תהליך אתחול מסד הנתונים כשמריצים את הקובץ.
 setup();

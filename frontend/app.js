@@ -1,12 +1,15 @@
-// קובץ frontend/app.js המעודכן (עם כתובת API יחסית לפריסה ב-Render):
+// קובץ frontend/app.js: מנהל את מצב המסך, האירועים והתקשורת מול ה-API.
 const API_URL = '/api';
+// מזהה המשתמשת המחוברת במהלך השימוש במסך.
 let currentUserId = null;
 
+// רכיבי מסך ההתחברות וההרשמה.
 const loginSection = document.getElementById('login-section');
 const registerSection = document.getElementById('register-section');
 const authContainer = document.getElementById('auth-container');
 const dashboardApp = document.getElementById('dashboard-app');
 
+// משחזר session שמור ומציג את לוח הבקרה אם הוא עדיין בתוקף.
 document.addEventListener('DOMContentLoaded', () => {
   const savedUser = localStorage.getItem('class_app_user');
   const savedTime = localStorage.getItem('class_app_time');
@@ -24,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+// שומר את המשתמשת המחוברת ומפעיל את לוח הבקרה.
 function saveSession(user) {
   currentUserId = user.id;
   localStorage.setItem('class_app_user', JSON.stringify(user));
@@ -31,6 +35,7 @@ function saveSession(user) {
   initDashboard(user.full_name, user.email);
 }
 
+// מוחק את פרטי ההתחברות ומחזיר למסך הכניסה.
 function logoutSession() {
   localStorage.removeItem('class_app_user');
   localStorage.removeItem('class_app_time');
@@ -51,6 +56,7 @@ document.getElementById('show-login-btn').addEventListener('click', () => {
   loginSection.style.display = 'block';
 });
 
+// מציג ברכה המתאימה לשעה ולשם המשתמשת.
 function setGreetingBanner(userName) {
   const hour = new Date().getHours();
   let greeting = 'שלום רב';
@@ -62,6 +68,7 @@ function setGreetingBanner(userName) {
   document.getElementById('greeting-banner').textContent = greeting;
 }
 
+// מציג הודעת מערכת קצרה, רגילה או שגיאה.
 function showToast(message, isError = false) {
   const toast = document.getElementById('toast-notification');
   toast.textContent = message;
@@ -72,6 +79,7 @@ function showToast(message, isError = false) {
   }, 3500);
 }
 
+// משבית כפתור בזמן פעולה ומחזיר פונקציה לשחזורו.
 function setButtonLoading(button, loadingText) {
   if (!button) return () => {};
   const originalText = button.textContent;
@@ -85,6 +93,7 @@ function setButtonLoading(button, loadingText) {
   };
 }
 
+// מתקן שם קובץ מצורף שהגיע בקידוד עברי לא תקין.
 function normalizeAttachmentName(filename) {
   if (!filename) return 'פתיחת קובץ';
   try {
@@ -151,6 +160,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
   }
 });
 
+// מאתחל את כל אזורי לוח הבקרה לאחר התחברות.
 function initDashboard(userName, email) {
   authContainer.style.display = 'none';
   dashboardApp.style.display = 'block';
@@ -169,6 +179,7 @@ function initDashboard(userName, email) {
   loadEmailPreference();
 }
 
+// טוען את העדפת המייל היומי של המשתמשת.
 async function loadEmailPreference() {
   const toggle = document.getElementById('daily-email-toggle');
   if (!toggle || !currentUserId) return;
@@ -184,6 +195,7 @@ async function loadEmailPreference() {
   }
 }
 
+// שומר שינוי בהעדפת קבלת המיילים.
 async function updateEmailPreference(enabled) {
   if (!currentUserId) return;
   const toggle = document.getElementById('daily-email-toggle');
@@ -203,6 +215,7 @@ async function updateEmailPreference(enabled) {
   }
 }
 
+// שולח heartbeat תקופתי ומעדכן את מספר המשתמשות הפעילות.
 setInterval(async () => {
   if (!currentUserId) return;
   try {
@@ -244,6 +257,7 @@ document.getElementById('notice-form').addEventListener('submit', async (e) => {
   }
 });
 
+// טוען ומציג את לוח המודעות.
 async function loadNotices() {
   const list = document.getElementById('notices-list');
   try {
@@ -264,6 +278,7 @@ async function loadNotices() {
   } catch (err) { list.innerHTML = 'שגיאה בטעינת מודעות'; }
 }
 
+// מבקש אישור ומוחק מודעה קיימת.
 async function deleteNotice(noticeId) {
   if (!await showCustomConfirm('מחיקת הודעה', 'האם את בטוחה שברצונך למחוק הודעה זו?')) return;
   try {
@@ -279,6 +294,7 @@ async function deleteNotice(noticeId) {
   }
 }
 
+// טוען ומציג את המטלות של המשתמשת.
 async function loadAssignments() {
   const list = document.getElementById('assignments-list');
   try {
@@ -321,6 +337,7 @@ async function loadAssignments() {
   } catch (err) { list.innerHTML = 'שגיאה בטעינת מטלות'; }
 }
 
+// מבקש אישור ומוחק מטלה קיימת.
 async function deleteAssignment(assignmentId) {
   if (!await showCustomConfirm('מחיקת מטלה', 'האם את בטוחה שברצונך למחוק מטלה זו?')) return;
 
@@ -373,6 +390,7 @@ document.getElementById('add-assignment-form').addEventListener('submit', async 
   }
 });
 
+// מעדכן את מצב הביצוע של מטלה עבור המשתמשת.
 async function toggleAssignment(id, isCompleted) {
   await fetch(`${API_URL}/assignments/${id}/note`, {
     method: 'POST',
@@ -382,6 +400,7 @@ async function toggleAssignment(id, isCompleted) {
   loadAssignmentStats();
 }
 
+// טוען ומציג סטטיסטיקות ביצוע לפי מטלה.
 async function loadAssignmentStats() {
   const statsList = document.getElementById('stats-list');
   try {
@@ -405,6 +424,7 @@ async function loadAssignmentStats() {
   } catch (err) {}
 }
 
+// יוצר את תצוגת מערכת השעות השבועית.
 async function loadShvabimSchedule() {
   const grid = document.getElementById('shvabim-schedule-grid');
   if (!grid) return;
@@ -479,6 +499,7 @@ async function loadShvabimSchedule() {
   });
 }
 
+// מציג את המטלות העתידיות של מקצוע שנבחר.
 async function showSubjectAssignments(subjectName) {
   try {
     const res = await fetch(`${API_URL}/assignments?userId=${currentUserId}`);
@@ -535,6 +556,7 @@ async function showSubjectAssignments(subjectName) {
   }
 }
 
+// טוען את תורנות החלב ומציג את המשתמשת הבאה.
 async function loadMilkRotation() {
   try {
     const res = await fetch(`${API_URL}/milk`);
@@ -586,6 +608,7 @@ async function loadMilkRotation() {
   }
 }
 
+// מוסיף את המשתמשת המחוברת לתורנות החלב.
 async function joinMilkQueue() {
   if (!currentUserId) {
     showToast('יש להתחבר קודם', true);
@@ -614,6 +637,7 @@ async function joinMilkQueue() {
   }
 }
 
+// מסמן שהתורנית הנוכחית השלימה את הקנייה.
 async function fulfillMilkDuty() {
   const button = document.querySelector('button[onclick="fulfillMilkDuty()"]');
   const restoreButton = setButtonLoading(button, 'שולחת מייל...');
@@ -643,6 +667,7 @@ async function fulfillMilkDuty() {
   }
 }
 
+// מאפשרת למנהלה לקדם את תורנות החלב ידנית.
 async function advanceMilkDutyForAdmin() {
   const confirmed = await showCustomConfirm('קידום תור החלב', 'האם לקדם את התורנית הנוכחית ולהודיע לבאה בתור במייל?');
   if (!confirmed) return;
@@ -678,8 +703,10 @@ async function advanceMilkDutyForAdmin() {
   }
 }
 
+// מספר השבועות שהוצגו קדימה או אחורה בלוח השנה.
 let weekOffset = 0;
 
+// מחזיר את שבעת התאריכים של השבוע המבוקש.
 function getWeekDates(offset = 0) {
   const now = new Date();
   const currentDay = now.getDay();
@@ -695,11 +722,13 @@ function getWeekDates(offset = 0) {
   return weekDates;
 }
 
+// משנה את השבוע המוצג ומרענן את לוח השנה.
 function changeWeek(direction) {
   weekOffset += direction;
   loadWeeklyCalendar();
 }
 
+// טוען ומציג אירועים ומטלות בלוח השנה השבועי.
 async function loadWeeklyCalendar() {
   const grid = document.getElementById('weekly-calendar-grid');
   const label = document.getElementById('current-week-label');
@@ -773,6 +802,7 @@ async function loadWeeklyCalendar() {
   });
 }
 
+// טופס הוספת אירוע מקומי ללוח השנה.
 const calendarForm = document.getElementById('calendar-event-form');
 if (calendarForm) {
   calendarForm.addEventListener('submit', (e) => {
@@ -789,6 +819,7 @@ if (calendarForm) {
   });
 }
 
+// מוחק אירוע מקומי מלוח השנה.
 function deleteEvent(id) {
   let localCalendarEvents = JSON.parse(localStorage.getItem('class_events')) || [];
   localCalendarEvents = localCalendarEvents.filter(ev => ev.id !== id);
@@ -797,6 +828,7 @@ function deleteEvent(id) {
   showToast('האירוע נמחק בהצלחה');
 }
 
+// פותח או סוגר את תפריט הנגישות והניהול.
 function toggleAccessibilityMenu() {
   const modal = document.getElementById('accessibility-modal');
   if (modal.style.display === 'flex') {
@@ -806,7 +838,9 @@ function toggleAccessibilityMenu() {
   }
 }
 
+// רמת ההגדלה הנוכחית של תצוגת המסך.
 let currentZoom = 1;
+// מגדיל או מקטין את גודל התצוגה בגבולות מוגדרים.
 function adjustFontSize(direction) {
   currentZoom += direction * 0.08;
   if (currentZoom < 0.85) currentZoom = 0.85;
@@ -815,8 +849,10 @@ function adjustFontSize(direction) {
   showToast('גודל תצוגה עודכן');
 }
 
+// שומר את מצב הניגודיות שנבחר על ידי המשתמשת.
 let isHighContrast = localStorage.getItem('class_app_theme') === 'light';
 
+// מחיל את ערכת הצבעים שנשמרה בדפדפן.
 function applyTheme() {
   document.body.classList.toggle('light-theme', isHighContrast);
   const contrastButton = document.querySelector('[onclick="toggleHighContrast()"]');
@@ -827,6 +863,7 @@ function applyTheme() {
 
 applyTheme();
 
+// מחליף בין התצוגה הרגילה לתצוגת ניגודיות גבוהה.
 function toggleHighContrast() {
   isHighContrast = !isHighContrast;
   localStorage.setItem('class_app_theme', isHighContrast ? 'light' : 'dark');
@@ -834,6 +871,7 @@ function toggleHighContrast() {
   showToast(isHighContrast ? 'הופעל מצב בהיר' : 'הופעל מצב כהה');
 }
 
+// שולח את סיסמת המנהלה לבדיקה ומציג את אזור הניהול.
 function verifyAdminPassword() {
   const pass = document.getElementById('admin-password-input').value;
   if (pass === '123') {
@@ -847,6 +885,7 @@ function verifyAdminPassword() {
   }
 }
 
+// טופס שליחת מייל יזום מאזור המנהלה.
 const adminEmailForm = document.getElementById('admin-email-form');
 if (adminEmailForm) {
   adminEmailForm.addEventListener('submit', async e => {
@@ -877,6 +916,7 @@ if (adminEmailForm) {
   });
 }
 
+// טוען את רשימת המשתמשות עבור אזור המנהלה.
 async function loadUsersList() {
   const container = document.getElementById('users-management-list');
   try {
@@ -899,6 +939,7 @@ async function loadUsersList() {
   }
 }
 
+// מוחק משתמשת לאחר אישור מנהלה.
 async function deleteUser(userId) {
   if (!await showCustomConfirm('מחיקת משתמשת', 'האם את בטוחה שאת רוצה למחוק משתמשת זו לצמיתות?')) return;
 
@@ -917,6 +958,7 @@ async function deleteUser(userId) {
   }
 }
 
+// מציג חלון אישור מותאם ומחזיר Promise עם תשובת המשתמשת.
 function showCustomConfirm(title, description) {
   return new Promise(resolve => {
     const modal = document.getElementById('custom-modal');
@@ -950,6 +992,7 @@ function showCustomConfirm(title, description) {
   });
 }
 
+// מציג חלון קלט מותאם ומפעיל callback לאחר אישור.
 function showCustomPrompt(title, description, placeholder, callback) {
   const modal = document.getElementById('custom-modal');
   const titleEl = document.getElementById('modal-title');
@@ -995,6 +1038,7 @@ function showCustomPrompt(title, description, placeholder, callback) {
   };
 }
 
+// מטפל בפעולות כלליות שנלחצו בתוך חלונות האישור והקלט.
 document.addEventListener('click', async (e) => {
   if (e.target && e.target.id === 'forgot-password-link') {
     e.preventDefault();

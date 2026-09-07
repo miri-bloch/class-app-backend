@@ -1,11 +1,14 @@
+// חיבור למסד הנתונים ושירות העלאת קבצים עבור מטלות.
 const pool = require('../data/db');
 const { uploadFileToDrive } = require('../services/driveService');
 
+// מתקן שמות קבצים שהתקבלו בקידוד לא תקין.
 function normalizeFilename(filename) {
   const decoded = Buffer.from(filename, 'latin1').toString('utf8');
   return /[\u0590-\u05FF]/.test(decoded) ? decoded : filename;
 }
 
+// מחזיר את כל המטלות ואת מצב הביצוע האישי של המשתמשת.
 async function getAssignments(req, res) {
   const { userId } = req.query;
 
@@ -27,6 +30,7 @@ async function getAssignments(req, res) {
   }
 }
 
+// יוצר מטלה חדשה ומעלה קובץ מצורף ל-Drive אם צורף.
 async function createAssignment(req, res) {
   const { subject, title, description, due_date, difficulty_level } = req.body;
 
@@ -50,6 +54,7 @@ async function createAssignment(req, res) {
   }
 }
 
+// שומר או מעדכן סימון ביצוע והערה אישית למטלה.
 async function updateAssignmentNote(req, res) {
   const assignmentId = req.params.id;
   const { userId, note_text, is_completed } = req.body;
@@ -71,6 +76,7 @@ async function updateAssignmentNote(req, res) {
   }
 }
 
+// מחשב סטטיסטיקות ביצוע כיתתיות לכל מטלה.
 async function getCompletionStats(req, res) {
   try {
     const result = await pool.query(
@@ -89,6 +95,7 @@ async function getCompletionStats(req, res) {
   }
 }
 
+// מוחק את המטלה ואת ההערות האישיות המקושרות אליה.
 async function deleteAssignment(req, res) {
   const assignmentId = req.params.id;
 
@@ -107,4 +114,5 @@ async function deleteAssignment(req, res) {
   }
 }
 
+// מייצא את פעולות המטלות לשכבת ה-routes.
 module.exports = { getAssignments, createAssignment, updateAssignmentNote, getCompletionStats, deleteAssignment };

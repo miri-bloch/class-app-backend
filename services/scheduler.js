@@ -1,7 +1,9 @@
+// ספריית תזמון, חיבור למסד ושירות שליחת ריכוז המטלות.
 const cron = require('node-cron');
 const pool = require('../db');
 const { sendHomeworkDigest } = require('./emailService');
 
+// מפעיל משימה יומית ששולחת מטלות של המחר בשעה 20:00.
 function initScheduler() {
   cron.schedule('0 20 * * *', async () => {
     try {
@@ -39,4 +41,5 @@ function initScheduler() {
   }, { timezone: 'Asia/Jerusalem' });
 }
 
+// מייצא את פונקציית אתחול המתזמן ל-server.js.
 module.exports = initScheduler;

@@ -1,18 +1,19 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
+// פעולות הבקר שמטפלות בשליפת ובהעלאת סיכומים.
 const summariesController = require('../controllers/summariesController');
 
-// הגדרת Multer לשמירת הקובץ בזיכרון הזמני
+// Multer שומר את קובץ הסיכום בזיכרון לפני העלאה ל-Drive.
 const upload = multer({ 
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 } // מגבלה של 10MB
 });
 
-// קבלת כל הסיכומים
+// מחזיר את הסיכומים הקיימים.
 router.get('/', summariesController.getSummaries);
 
-// העלאת סיכום חדש (השדה בטופס חייב להיקרא 'file')
+// מעלה סיכום חדש דרך שדה טופס בשם file.
 router.post('/upload', upload.single('file'), summariesController.uploadSummary);
 
 module.exports = router;
