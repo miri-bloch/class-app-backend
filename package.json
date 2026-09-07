@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "db:setup": "node database/setup-db.js",
+    "check": "node --check server.js"
   },
   "keywords": [],
   "author": "",
