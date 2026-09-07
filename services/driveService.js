@@ -1,10 +1,8 @@
-// ספריות Google Drive והגדרות נתיבי הקבצים.
 const { google } = require('googleapis');
 const path = require('path');
 require('dotenv').config();
 
 // הגדרת אימות OAuth2 באמצעות פרטי הגישה שלך
-// לקוח OAuth2 שמאפשר העלאה לחשבון Google Drive.
 const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET,
@@ -16,7 +14,6 @@ oauth2Client.setCredentials({
   refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
 });
 
-// לקוח API לביצוע פעולות מול Google Drive.
 const drive = google.drive({ version: 'v3', auth: oauth2Client });
 
 /**
@@ -24,7 +21,6 @@ const drive = google.drive({ version: 'v3', auth: oauth2Client });
  * @param {Object} file - קובץ מתוך Multer
  * @returns {Object} - מזהה הקובץ וקישור לצפייה בו
  */
-// מעלה קובץ ל-Drive ומחזיר את המזהה וקישור הצפייה שלו.
 async function uploadFileToDrive(file) {
   try {
     console.log(`מנסה להעלות קובץ ל-Google Drive האישי: ${file.originalname}`);

@@ -1,13 +1,10 @@
-// טוען את כתובת השולחת ומפתח Brevo ממשתני הסביבה.
 require('dotenv').config();
 
 // פונקציית עזר כללית לשליחת מייל דרך Brevo
-// מפעיל את פעולת השליחה הבסיסית עבור שירותי המייל האחרים.
 async function sendBrevoEmail(toEmail, subject, htmlContent) {
   await sendEmail(toEmail, subject, htmlContent);
 }
 
-// בונה את מבנה הבקשה ש-Brevo מצפה לקבל.
 function createBrevoEmail({ toEmail, subject, htmlContent }) {
   const recipients = Array.isArray(toEmail) ? toEmail : [toEmail];
   return {
@@ -18,7 +15,6 @@ function createBrevoEmail({ toEmail, subject, htmlContent }) {
   };
 }
 
-// שולח בקשת HTTP לשירות המייל ומחזיר את תשובתו.
 async function sendEmail(toEmail, subject, htmlContent) {
   const response = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
@@ -39,7 +35,6 @@ async function sendEmail(toEmail, subject, htmlContent) {
 }
 
 // תבנית מעטפת כללית אחידה לכל מיילי המערכת לפי עיצוב הלוגו והכרטיס המדויק
-// עוטף תוכן מייל בתבנית העיצוב האחידה של המערכת.
 function getBaseEmailTemplate(subtitleText, contentHtml) {
   return `
     <div dir="rtl" style="background-color: #050508; color: #ffffff; font-family: 'Heebo', Arial, sans-serif; padding: 40px 15px; text-align: center;">
@@ -68,13 +63,11 @@ function getBaseEmailTemplate(subtitleText, contentHtml) {
   `;
 }
 
-// שולח מייל שמשתמש בתבנית הממותגת.
 async function sendBrandedEmail(toEmail, subject, subtitleText, contentHtml) {
   await sendEmail(toEmail, subject, getBaseEmailTemplate(subtitleText, contentHtml));
 }
 
 // 1. מייל שחזור סיסמה מעוצב בדיוק לפי הדרישה והתמונה
-// שולח מייל עם פרטי שחזור הסיסמה.
 async function sendPasswordResetEmail(toEmail, userName, password) {
   const content = `
     <div style="font-size: 20px; font-weight: bold; color: #22d3ee; margin-bottom: 20px;">
@@ -102,7 +95,6 @@ async function sendPasswordResetEmail(toEmail, userName, password) {
 }
 
 // 2. מייל עדכון שיעורי בית מעוצב במרכז
-// שולח ריכוז של מטלות קרובות למשתמשת.
 async function sendHomeworkDigest(toEmail, userName, assignments) {
   if (!assignments || assignments.length === 0) return;
 
@@ -133,7 +125,6 @@ async function sendHomeworkDigest(toEmail, userName, assignments) {
 }
 
 // 3. מייל תורנות חלב מעוצב במרכז
-// שולח הודעה למשתמשת שהגיע תורה בתורנות החלב.
 async function sendMilkDutyEmail(toEmail, userName) {
   const content = `
     <div style="font-size: 20px; font-weight: bold; color: #22d3ee; margin-bottom: 15px;">
@@ -151,5 +142,4 @@ async function sendMilkDutyEmail(toEmail, userName) {
   );
 }
 
-// מייצא את שירותי המייל לשימוש בבקרים ובמתזמן.
 module.exports = { sendPasswordResetEmail, sendHomeworkDigest, sendMilkDutyEmail, sendEmail, sendBrandedEmail };

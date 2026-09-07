@@ -1,7 +1,5 @@
-// חיבור למסד הנתונים עבור סקריפט האתחול הישן.
 const pool = require('./db');
 
-// סכמת הטבלאות של המערכת.
 const schemaSql = `
 CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY,
@@ -68,7 +66,6 @@ CREATE TABLE IF NOT EXISTS summaries (
 );
 `;
 
-// יוצר את טבלאות המערכת ומסיים את החיבור למסד.
 async function setup() {
   try {
     await pool.query(schemaSql);
@@ -80,5 +77,4 @@ async function setup() {
   }
 }
 
-// מפעיל את אתחול מסד הנתונים בעת הרצת הקובץ.
 setup();
