@@ -394,6 +394,7 @@ async function loadAssignmentStats() {
       const pct = Math.round((comp / total) * 100);
       statsList.innerHTML += `
         <div class="assignment-card">
+          <div class="assignment-subject">${s.subject || 'כללי'}</div>
           <div class="assignment-title" style="font-size:0.9rem;">${s.title}</div>
           <div style="font-size:0.85rem; color:var(--text-muted); margin-top:4px;">השלימו: ${comp}/${total} (${pct}%)</div>
           <div style="background:rgba(255,255,255,0.1); height:6px; border-radius:3px; margin-top:6px; overflow:hidden;">

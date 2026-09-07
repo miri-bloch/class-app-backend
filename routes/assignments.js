@@ -98,12 +98,12 @@ router.post('/:id/note', async (req, res) => {
 router.get('/stats/completion', async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT a.id, a.title,
+      `SELECT a.id, a.subject, a.title,
               COUNT(pn.id) FILTER (WHERE pn.is_completed = TRUE) as completed_count,
               (SELECT COUNT(*) FROM users) as total_users
        FROM assignments a
        LEFT JOIN private_notes pn ON a.id = pn.assignment_id
-       GROUP BY a.id, a.title`
+      GROUP BY a.id, a.subject, a.title`
     );
 
     res.json(result.rows);
