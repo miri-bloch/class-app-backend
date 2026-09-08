@@ -113,6 +113,16 @@ function getDateKey(dateValue) {
   return `${year}-${month}-${day}`;
 }
 
+function normalizeSubjectName(subject) {
+  return String(subject || '')
+    .normalize('NFKC')
+    .replace(/[׳’`]/g, "'")
+    .replace(/[–—−]/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
 document.getElementById('register-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const full_name = document.getElementById('reg-name').value;
@@ -534,6 +544,7 @@ async function loadShvabimSchedule() {
         </div>
       </div>`;
   });
+
 }
 
 async function showSubjectAssignments(subjectName) {
@@ -546,7 +557,7 @@ async function showSubjectAssignments(subjectName) {
 
     const activeAssignments = assignments.filter(a => {
       if (!a.subject || !a.due_date) return false;
-      if (a.subject.trim().toLowerCase() !== subjectName.trim().toLowerCase()) return false;
+      if (normalizeSubjectName(a.subject) !== normalizeSubjectName(subjectName)) return false;
       const aDateStr = getDateKey(parseLocalDate(a.due_date));
       return aDateStr >= todayStr;
     });
@@ -568,7 +579,7 @@ async function showSubjectAssignments(subjectName) {
     } else {
       let html = `<div style="display: flex; flex-direction: column; gap: 10px; text-align: right;">`;
       activeAssignments.forEach(a => {
-        const gregorianDate = new Date(a.due_date).toLocaleDateString('he-IL');
+        const gregorianDate = parseLocalDate(a.due_date).toLocaleDateString('he-IL');
         html += `
           <div style="background: rgba(0,0,0,0.4); border-right: 4px solid var(--neon-cyan); padding: 10px; border-radius: 6px;">
             <div style="font-weight: bold; color: white; font-size: 0.95rem;">${a.title}</div>

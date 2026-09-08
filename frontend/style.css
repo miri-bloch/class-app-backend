@@ -13,7 +13,7 @@
 
 body {
   background-color: var(--bg-dark);
-  font-family: 'Heebo', sans-serif;
+  font-family: 'Rubik', sans-serif;
   margin: 0;
   min-height: 100vh;
   color: var(--text-main);
@@ -200,7 +200,7 @@ input, textarea, select {
   border: 1px solid rgba(168, 85, 247, 0.3);
   border-radius: 8px;
   color: white;
-  font-family: 'Heebo', sans-serif;
+  font-family: 'Rubik', sans-serif;
   font-size: 0.95rem;
   box-sizing: border-box;
   transition: all 0.3s ease;
@@ -637,4 +637,22 @@ footer span {
 #toast-notification.error {
   border-color: #f43f5e;
   box-shadow: 0 0 20px rgba(244, 63, 94, 0.3);
+}
+
+.stats-list {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.55) transparent;
+}
+
+.stats-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.stats-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.stats-list::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.55);
+  border-radius: 8px;
 }
