@@ -96,23 +96,8 @@
 
       <div class="dashboard-grid">
         
-        <!-- אזור 1: לוח מודעות והודעות כיתתיות -->
-        <section class="glass-card">
-          <h2>📢 לוח מודעות והודעות</h2>
-          <form id="notice-form" style="margin-bottom: 15px;">
-            <div class="input-group">
-              <input type="text" id="notice-title" placeholder="כותרת ההודעה" required>
-            </div>
-            <div class="input-group">
-              <textarea id="notice-content" placeholder="תוכן ההודעה (שולח מייל לכולן)..." rows="2" required></textarea>
-            </div>
-            <button type="submit" class="neon-btn outline" style="font-size: 0.9rem; padding: 8px;">פרסמי מודעה ושלחי מייל</button>
-          </form>
-          <div id="notices-list" class="assignments-grid"></div>
-        </section>
-
-        <!-- אזור 2: מטלות ושיעורי בית עם רשימת בחירה למקצועות -->
-        <section class="glass-card">
+        <!-- אזור 1: מטלות ושיעורי בית עם רשימת בחירה למקצועות -->
+        <section class="glass-card assignments-focus">
           <h2>📚 מטלות ושיעורי בית</h2>
           <form id="add-assignment-form" style="margin-bottom: 15px;">
             <div class="input-group">
@@ -140,11 +125,30 @@
             <div class="input-group"><input type="file" id="new-assignment-attachment" aria-label="קובץ מצורף למטלה"></div>
             <button type="submit" class="neon-btn outline" style="font-size: 0.9rem; padding: 8px;">הוסיפי מטלה</button>
           </form>
+          <div class="assignments-toolbar">
+            <span id="assignments-summary" class="assignments-summary"></span>
+            <button id="show-hidden-assignments" class="text-action" type="button" style="display: none;">הציגי מטלות שהוסתרו</button>
+          </div>
           <div id="assignments-list" class="assignments-grid assignment-list"></div>
         </section>
 
+        <!-- אזור 2: לוח מודעות והודעות כיתתיות -->
+        <section class="glass-card dashboard-secondary">
+          <h2>📢 לוח מודעות והודעות</h2>
+          <form id="notice-form" style="margin-bottom: 15px;">
+            <div class="input-group">
+              <input type="text" id="notice-title" placeholder="כותרת ההודעה" required>
+            </div>
+            <div class="input-group">
+              <textarea id="notice-content" placeholder="תוכן ההודעה (שולח מייל לכולן)..." rows="2" required></textarea>
+            </div>
+            <button type="submit" class="neon-btn outline" style="font-size: 0.9rem; padding: 8px;">פרסמי מודעה ושלחי מייל</button>
+          </form>
+          <div id="notices-list" class="assignments-grid"></div>
+        </section>
+
         <!-- אזור 3: תורנות חלב -->
-        <section class="glass-card">
+        <section class="glass-card dashboard-secondary">
           <h2>🥛 תורנות חלב (סבב אוטומטי)</h2>
           <div style="background: rgba(0,0,0,0.4); padding: 15px; border-radius: 8px; border-right: 4px solid var(--neon-cyan); margin-bottom: 15px;">
             <div style="font-size: 0.9rem; color: var(--text-muted);">התורנית כרגע בתור:</div>

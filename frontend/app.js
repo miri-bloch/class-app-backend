@@ -298,32 +298,52 @@ async function deleteNotice(noticeId) {
 
 async function loadAssignments() {
   const list = document.getElementById('assignments-list');
-  try {
-    const res = await fetch(`${API_URL}/assignments?userId=${currentUserId}`);
-    const assignments = await res.json();
-    list.innerHTML = assignments.length ? '' : '<div style="color:var(--text-muted)">אין מטלות כרגע.</div>';
-    
-    assignments.forEach(a => {
+  const summary = document.getElementById('assignments-summary');
+  const showHiddenButton = document.getElementById('show-hidden-assignments');
+  const hiddenStorageKey = `hidden_assignments_${currentUserId}`;
+  const hiddenAssignments = new Set(JSON.parse(localStorage.getItem(hiddenStorageKey) || '[]'));
+  let showHidden = false;
+
+  const renderAssignments = (assignments) => {
+    const today = parseLocalDate(getDateKey(new Date()));
+    const cutoff = new Date(today);
+    cutoff.setDate(cutoff.getDate() - 2);
+    const oldAssignments = assignments.filter(a => parseLocalDate(a.due_date) < cutoff);
+    const visibleAssignments = assignments.filter(a => showHidden || !hiddenAssignments.has(String(a.id)));
+
+    if (summary) summary.textContent = `${visibleAssignments.length} מטלות מוצגות`;
+    if (showHiddenButton) {
+      const hiddenCount = oldAssignments.filter(a => hiddenAssignments.has(String(a.id))).length;
+      showHiddenButton.style.display = hiddenCount > 0 ? 'inline-flex' : 'none';
+      showHiddenButton.textContent = showHidden ? 'הסתירי מטלות שהוסתרו' : `הציגי ${hiddenCount} מטלות שהוסתרו`;
+    }
+    list.innerHTML = visibleAssignments.length ? '' : '<div class="empty-state">אין מטלות להצגה.</div>';
+
+    visibleAssignments.forEach(a => {
       const isChecked = a.is_completed ? 'checked' : '';
       const dateObj = parseLocalDate(a.due_date);
       const gregorianDate = dateObj.toLocaleDateString('he-IL');
-      
+      const isOld = dateObj < cutoff;
       let hebrewDate = '';
+
       try {
         const formatter = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', { day: 'numeric', month: 'long' });
         hebrewDate = formatter.format(dateObj);
       } catch (e) {
         hebrewDate = '';
       }
-      
+
       list.innerHTML += `
-        <div class="assignment-card assignment-item" id="assignment-${a.id}">
+        <div class="assignment-card assignment-item ${isOld ? 'assignment-old' : ''}" id="assignment-${a.id}">
           <div class="assignment-card-header">
             <div>
               <div class="assignment-subject">${a.subject}</div>
               <div class="assignment-title">${a.title}</div>
             </div>
-            <button onclick="deleteAssignment(${a.id})" class="assignment-delete" title="מחק מטלה">✕</button>
+            <div class="assignment-actions">
+              ${isOld ? `<button onclick="hideAssignment(${a.id})" class="assignment-hide" title="הסתר מטלה ישנה" aria-label="הסתר מטלה ישנה">👁</button>` : ''}
+              <button onclick="deleteAssignment(${a.id})" class="assignment-delete" title="מחק מטלה">✕</button>
+            </div>
           </div>
           <div class="assignment-date">הגשה: ${gregorianDate} ${hebrewDate ? '(' + hebrewDate + ')' : ''}</div>
           ${a.drive_file_id ? `<div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
@@ -335,7 +355,27 @@ async function loadAssignments() {
           </label>
         </div>`;
     });
-  } catch (err) { list.innerHTML = 'שגיאה בטעינת מטלות'; }
+  };
+
+  try {
+    const res = await fetch(`${API_URL}/assignments?userId=${currentUserId}`);
+    const assignments = await res.json();
+    renderAssignments(assignments);
+    if (showHiddenButton) {
+      showHiddenButton.onclick = () => {
+        showHidden = !showHidden;
+        renderAssignments(assignments);
+      };
+    }
+  } catch (err) { list.innerHTML = '<div class="empty-state">שגיאה בטעינת מטלות</div>'; }
+}
+
+function hideAssignment(assignmentId) {
+  const hiddenStorageKey = `hidden_assignments_${currentUserId}`;
+  const hiddenAssignments = new Set(JSON.parse(localStorage.getItem(hiddenStorageKey) || '[]'));
+  hiddenAssignments.add(String(assignmentId));
+  localStorage.setItem(hiddenStorageKey, JSON.stringify([...hiddenAssignments]));
+  loadAssignments();
 }
 
 async function deleteAssignment(assignmentId) {
