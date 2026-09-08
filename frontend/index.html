@@ -99,37 +99,43 @@
         <!-- אזור 1: מטלות ושיעורי בית עם רשימת בחירה למקצועות -->
         <section class="glass-card assignments-focus">
           <h2>📚 מטלות ושיעורי בית</h2>
-          <form id="add-assignment-form" style="margin-bottom: 15px;">
-            <div class="input-group">
-              <select id="new-assignment-subject" required>
-                <option value="" disabled selected>בחרי מקצוע מהרשימה...</option>
-                <option value="מבני נתונים">מבני נתונים</option>
-                <option value="פרויקט C#">פרויקט C#</option>
-                <option value="core">core</option>
-                <option value="full stack - angular">full stack - angular</option>
-                <option value="תכנות מתקדם עם C#">תכנות מתקדם עם C#</option>
-                <option value="תכנות מתקדם עם ג׳אווה">תכנות מתקדם עם ג׳אווה</option>
-                <option value="תקשורת נתונים ואבטחת מידע">תקשורת נתונים ואבטחת מידע</option>
-                <option value="ארגון המחשב">ארגון המחשב</option>
-                <option value="מערכות הפעלה">מערכות הפעלה</option>
-                <option value="פייתון">פייתון</option>
-                <option value="unit test & qa">unit test & qa</option>
-                <option value="לינוקס">לינוקס</option>
-                <option value="full stack - react">full stack - react</option>
-                <option value="node.js">node.js</option>
-                <option value="עקרונות פיתוח עם AI וחדשנות">עקרונות פיתוח עם AI וחדשנות</option>
-              </select>
-            </div>
-            <div class="input-group"><input type="text" id="new-assignment-title" placeholder="כותרת המטלה" required></div>
-            <div class="input-group"><input type="date" id="new-assignment-date" required></div>
-            <div class="input-group"><input type="file" id="new-assignment-attachment" aria-label="קובץ מצורף למטלה"></div>
-            <button type="submit" class="neon-btn outline" style="font-size: 0.9rem; padding: 8px;">הוסיפי מטלה</button>
-          </form>
           <div class="assignments-toolbar">
             <span id="assignments-summary" class="assignments-summary"></span>
             <button id="show-hidden-assignments" class="text-action" type="button" style="display: none;">הציגי מטלות שהוסתרו</button>
           </div>
           <div id="assignments-list" class="assignments-grid assignment-list"></div>
+
+          <details class="add-assignment-panel">
+            <summary>הוסיפי מטלה חדשה</summary>
+            <form id="add-assignment-form">
+              <div class="add-assignment-fields">
+                <div class="input-group">
+                  <select id="new-assignment-subject" required>
+                    <option value="" disabled selected>בחרי מקצוע מהרשימה...</option>
+                    <option value="מבני נתונים">מבני נתונים</option>
+                    <option value="פרויקט C#">פרויקט C#</option>
+                    <option value="core">core</option>
+                    <option value="full stack - angular">full stack - angular</option>
+                    <option value="תכנות מתקדם עם C#">תכנות מתקדם עם C#</option>
+                    <option value="תכנות מתקדם עם ג׳אווה">תכנות מתקדם עם ג׳אווה</option>
+                    <option value="תקשורת נתונים ואבטחת מידע">תקשורת נתונים ואבטחת מידע</option>
+                    <option value="ארגון המחשב">ארגון המחשב</option>
+                    <option value="מערכות הפעלה">מערכות הפעלה</option>
+                    <option value="פייתון">פייתון</option>
+                    <option value="unit test & qa">unit test & qa</option>
+                    <option value="לינוקס">לינוקס</option>
+                    <option value="full stack - react">full stack - react</option>
+                    <option value="node.js">node.js</option>
+                    <option value="עקרונות פיתוח עם AI וחדשנות">עקרונות פיתוח עם AI וחדשנות</option>
+                  </select>
+                </div>
+                <div class="input-group"><input type="text" id="new-assignment-title" placeholder="כותרת המטלה" required></div>
+                <div class="input-group"><input type="date" id="new-assignment-date" required></div>
+                <div class="input-group"><input type="file" id="new-assignment-attachment" aria-label="קובץ מצורף למטלה"></div>
+              </div>
+              <button type="submit" class="neon-btn outline">הוסיפי מטלה</button>
+            </form>
+          </details>
         </section>
 
         <!-- אזור 2: לוח מודעות והודעות כיתתיות -->
