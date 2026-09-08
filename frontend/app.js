@@ -318,12 +318,14 @@ async function loadAssignments() {
     const today = parseLocalDate(getDateKey(new Date()));
     const cutoff = new Date(today);
     cutoff.setDate(cutoff.getDate() - 2);
-    const oldAssignments = assignments.filter(a => parseLocalDate(a.due_date) < cutoff);
-    const visibleAssignments = assignments.filter(a => showHidden || !hiddenAssignments.has(String(a.id)));
+    const visibleAssignments = assignments.filter(a => {
+      if (showHidden) return true;
+      return !hiddenAssignments.has(String(a.id));
+    });
 
     if (summary) summary.textContent = `${visibleAssignments.length} מטלות מוצגות`;
     if (showHiddenButton) {
-      const hiddenCount = oldAssignments.filter(a => hiddenAssignments.has(String(a.id))).length;
+      const hiddenCount = assignments.filter(a => hiddenAssignments.has(String(a.id))).length;
       showHiddenButton.style.display = hiddenCount > 0 ? 'inline-flex' : 'none';
       showHiddenButton.textContent = showHidden ? 'הסתירי מטלות שהוסתרו' : `הציגי ${hiddenCount} מטלות שהוסתרו`;
     }
@@ -333,7 +335,7 @@ async function loadAssignments() {
       const isChecked = a.is_completed ? 'checked' : '';
       const dateObj = parseLocalDate(a.due_date);
       const gregorianDate = dateObj.toLocaleDateString('he-IL');
-      const isOld = dateObj < cutoff;
+      const isOverdue = dateObj < today;
       let hebrewDate = '';
 
       try {
@@ -344,14 +346,14 @@ async function loadAssignments() {
       }
 
       list.innerHTML += `
-        <div class="assignment-card assignment-item ${isOld ? 'assignment-old' : ''}" id="assignment-${a.id}">
+        <div class="assignment-card assignment-item ${isOverdue ? 'assignment-old' : ''}" id="assignment-${a.id}">
           <div class="assignment-card-header">
             <div>
               <div class="assignment-subject">${a.subject}</div>
               <div class="assignment-title">${a.title}</div>
             </div>
             <div class="assignment-actions">
-              ${isOld ? `<button onclick="hideAssignment(${a.id})" class="assignment-hide" title="הסתר מטלה ישנה" aria-label="הסתר מטלה ישנה">👁</button>` : ''}
+              ${isOverdue ? `<button onclick="hideAssignment(${a.id})" class="assignment-hide" title="הסתר מטלה שעברה" aria-label="הסתר מטלה שעברה">👁</button>` : ''}
               <button onclick="deleteAssignment(${a.id})" class="assignment-delete" title="מחק מטלה">✕</button>
             </div>
           </div>
@@ -553,13 +555,15 @@ async function showSubjectAssignments(subjectName) {
     if (!res.ok) return;
     const assignments = await res.json();
 
-    const todayStr = getDateKey(new Date());
+    const today = parseLocalDate(getDateKey(new Date()));
+    const hiddenStorageKey = `hidden_assignments_${currentUserId}`;
+    const hiddenAssignments = new Set(JSON.parse(localStorage.getItem(hiddenStorageKey) || '[]'));
 
-    const activeAssignments = assignments.filter(a => {
+    const subjectAssignments = assignments.filter(a => {
       if (!a.subject || !a.due_date) return false;
       if (normalizeSubjectName(a.subject) !== normalizeSubjectName(subjectName)) return false;
-      const aDateStr = getDateKey(parseLocalDate(a.due_date));
-      return aDateStr >= todayStr;
+      if (hiddenAssignments.has(String(a.id))) return false;
+      return true;
     });
 
     const modal = document.getElementById('custom-modal');
@@ -569,21 +573,22 @@ async function showSubjectAssignments(subjectName) {
     const submitBtn = document.getElementById('modal-submit-btn');
     const cancelBtn = document.getElementById('modal-cancel-btn');
 
-    titleEl.textContent = `שיעורי בית פעילים: ${subjectName}`;
+    titleEl.textContent = `מטלות במקצוע: ${subjectName}`;
     inputContainer.style.display = 'none';
     submitBtn.style.display = 'none';
     cancelBtn.textContent = 'סגור';
 
-    if (activeAssignments.length === 0) {
-      descEl.innerHTML = `<p style="color: var(--text-muted); text-align: center; padding: 20px;">אין מטלות עתידיות פעילות למקצוע ${subjectName} כרגע. כל הכבוד! 🎉</p>`;
+    if (subjectAssignments.length === 0) {
+      descEl.innerHTML = `<p style="color: var(--text-muted); text-align: center; padding: 20px;">אין מטלות במקצוע ${subjectName}.</p>`;
     } else {
       let html = `<div style="display: flex; flex-direction: column; gap: 10px; text-align: right;">`;
-      activeAssignments.forEach(a => {
+      subjectAssignments.forEach(a => {
         const gregorianDate = parseLocalDate(a.due_date).toLocaleDateString('he-IL');
+        const completedLabel = a.is_completed ? 'בוצע ✓' : 'טרם בוצע';
         html += `
           <div style="background: rgba(0,0,0,0.4); border-right: 4px solid var(--neon-cyan); padding: 10px; border-radius: 6px;">
             <div style="font-weight: bold; color: white; font-size: 0.95rem;">${a.title}</div>
-            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">תאריך הגשה: ${gregorianDate}</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">תאריך הגשה: ${gregorianDate} · ${completedLabel}</div>
           </div>`;
       });
       html += `</div>`;

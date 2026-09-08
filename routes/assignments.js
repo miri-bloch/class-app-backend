@@ -14,11 +14,19 @@ function normalizeFilename(filename) {
   return /[\u0590-\u05FF]/.test(decoded) ? decoded : filename;
 }
 
+async function removeExpiredAssignments() {
+  await pool.query(`
+    DELETE FROM assignments
+    WHERE due_date < CURRENT_DATE - 2
+  `);
+}
+
 // 1. קבלת כל המטלות (כולל הערות אישיות וסימון V למשתמשת מסוימת)
 router.get('/', async (req, res) => {
   const { userId } = req.query;
 
   try {
+    await removeExpiredAssignments();
     const result = await pool.query(
       `SELECT a.*, 
               pn.is_completed, 

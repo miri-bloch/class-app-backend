@@ -3,6 +3,18 @@ const pool = require('../db');
 const { sendHomeworkDigest } = require('./emailService');
 
 function initScheduler() {
+  cron.schedule('5 0 * * *', async () => {
+    try {
+      await pool.query(`
+        DELETE FROM assignments
+        WHERE due_date < CURRENT_DATE - 2
+      `);
+      console.log('מטלות שעברו יומיים נמחקו בהצלחה');
+    } catch (err) {
+      console.error('שגיאה במחיקת מטלות שפג תוקפן:', err);
+    }
+  }, { timezone: 'Asia/Jerusalem' });
+
   cron.schedule('0 20 * * *', async () => {
     try {
       const usersResult = await pool.query(
