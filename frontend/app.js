@@ -335,7 +335,7 @@ async function loadAssignments() {
       const isChecked = a.is_completed ? 'checked' : '';
       const dateObj = parseLocalDate(a.due_date);
       const gregorianDate = dateObj.toLocaleDateString('he-IL');
-      const isOverdue = dateObj < today;
+      const canHide = dateObj < today && Boolean(a.is_completed);
       let hebrewDate = '';
 
       try {
@@ -346,14 +346,14 @@ async function loadAssignments() {
       }
 
       list.innerHTML += `
-        <div class="assignment-card assignment-item ${isOverdue ? 'assignment-old' : ''}" id="assignment-${a.id}">
+        <div class="assignment-card assignment-item ${canHide ? 'assignment-old' : ''}" id="assignment-${a.id}">
           <div class="assignment-card-header">
             <div>
               <div class="assignment-subject">${a.subject}</div>
               <div class="assignment-title">${a.title}</div>
             </div>
             <div class="assignment-actions">
-              ${isOverdue ? `<button onclick="hideAssignment(${a.id})" class="assignment-hide" title="הסתר מטלה שעברה" aria-label="הסתר מטלה שעברה">👁</button>` : ''}
+              ${canHide ? `<button onclick="hideAssignment(${a.id})" class="assignment-hide" title="הסתרי מטלה שבוצעה" aria-label="הסתרי מטלה שבוצעה">👁</button>` : ''}
               <button onclick="deleteAssignment(${a.id})" class="assignment-delete" title="מחק מטלה">✕</button>
             </div>
           </div>
@@ -443,11 +443,16 @@ document.getElementById('add-assignment-form').addEventListener('submit', async 
 });
 
 async function toggleAssignment(id, isCompleted) {
-  await fetch(`${API_URL}/assignments/${id}/note`, {
+  const response = await fetch(`${API_URL}/assignments/${id}/note`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userId: currentUserId, is_completed: isCompleted, note_text: '' })
   });
+  if (!response.ok) {
+    showToast('שגיאה בעדכון ביצוע המטלה', true);
+    return;
+  }
+  loadAssignments();
   loadAssignmentStats();
 }
 
