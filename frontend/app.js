@@ -775,41 +775,85 @@ async function advanceMilkDutyForAdmin() {
 
 // מצב הסדר הנוכחי (רשימת user_id לפי הסדר) באזור הניהול.
 let currentMilkRotationUserIds = [];
+const milkNameMap = {}; // id -> full_name לצורך תצוגה נוחה.
 
 async function loadMilkRotationAdmin() {
   const listEl = document.getElementById('milk-rotation-admin-list');
-  const selectEl = document.getElementById('milk-rotation-add-select');
   if (!listEl) return;
 
   try {
     const res = await authFetch(`${API_URL}/milk`);
     const data = await res.json();
     currentMilkRotationUserIds = (data.rotation || []).map(r => r.user_id);
+    (data.rotation || []).forEach(r => { milkNameMap[r.user_id] = r.full_name; });
 
-    // הצגת הסדר הנוכחי עם הדגשה לתורנית הנוכחית.
-    listEl.innerHTML = currentMilkRotationUserIds.length === 0
-      ? '<div style="color:var(--text-muted);">עדיין אין סדר מוגדר.</div>'
-      : data.rotation.map((r, i) => `
-          <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; padding:4px 0; border-bottom: 1px dashed rgba(255,255,255,0.08); ${r.is_current ? 'color: var(--neon-cyan); font-weight: bold;' : ''}">
-            <span>${i + 1}. ${r.full_name}${r.is_current ? ' 👑' : ''}</span>
-          </div>`).join('');
-
-    // אכלוס ה-select בכל המשתמשות.
-    if (selectEl) {
-      selectEl.innerHTML = '<option value="">בחרי משתמשת...</option>';
-      const usersRes = await authFetch(`${API_URL}/auth/users`);
-      if (usersRes.ok) {
-        const users = await usersRes.json();
-        users.forEach(u => {
-          if (!currentMilkRotationUserIds.includes(u.id)) {
-            selectEl.innerHTML += `<option value="${u.id}">${u.full_name}</option>`;
-          }
-        });
-      }
-    }
+    renderMilkRotationAdminList();
+    refreshMilkSelect();
   } catch (err) {
     listEl.innerHTML = '<div style="color:#f43f5e;">שגיאה בטעינת סדר התור</div>';
   }
+}
+
+// מציגה את הסדר הנוכחי עם חצים להזזה וכפתור מחיקה לכל שורה.
+function renderMilkRotationAdminList() {
+  const listEl = document.getElementById('milk-rotation-admin-list');
+  if (!listEl) return;
+
+  if (currentMilkRotationUserIds.length === 0) {
+    listEl.innerHTML = '<div style="color:var(--text-muted);">עדיין אין סדר מוגדר.</div>';
+    return;
+  }
+
+  listEl.innerHTML = currentMilkRotationUserIds.map((uid, i) => `
+    <div style="display:flex; align-items:center; gap:6px; padding:4px 0; border-bottom: 1px dashed rgba(255,255,255,0.08);">
+      <span style="flex:1; ${i === 0 ? 'color: var(--neon-cyan); font-weight: bold;' : ''}">${i + 1}. ${milkNameMap[uid] || ('#' + uid)}${i === 0 ? ' 👑' : ''}</span>
+      <button onclick="moveMilkRotation(${i}, -1)" title="העליי למעלה" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.15); color:#cbd5e1; border-radius:4px; padding:2px 7px; font-size:0.75rem; cursor:pointer;">↑</button>
+      <button onclick="moveMilkRotation(${i}, 1)" title="הורידי למטה" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.15); color:#cbd5e1; border-radius:4px; padding:2px 7px; font-size:0.75rem; cursor:pointer;">↓</button>
+      <button onclick="removeFromMilkRotation(${i})" title="הסירי מהתור" style="background:rgba(244,63,94,0.1); border:1px solid rgba(244,63,94,0.3); color:#f43f5e; border-radius:4px; padding:2px 7px; font-size:0.75rem; cursor:pointer;">✕</button>
+    </div>`).join('');
+}
+
+// מעדכנת את רשימת המשתמשות ב-select כך שהנוכחיות לא יופיעו פעמיים.
+function refreshMilkSelect() {
+  const selectEl = document.getElementById('milk-rotation-add-select');
+  if (!selectEl) return;
+  authFetch(`${API_URL}/auth/users`)
+    .then(r => (r.ok ? r.json() : []))
+    .then(users => {
+      selectEl.innerHTML = '<option value="">בחרי משתמשת...</option>';
+      users.forEach(u => {
+        if (!currentMilkRotationUserIds.includes(u.id)) {
+          selectEl.innerHTML += `<option value="${u.id}">${u.full_name}</option>`;
+        }
+      });
+    })
+    .catch(() => {});
+}
+
+// הזזת משתמשת למעלה (dir=-1) או למטה (dir=1) בסדר התור.
+function moveMilkRotation(index, dir) {
+  const target = index + dir;
+  if (target < 0 || target >= currentMilkRotationUserIds.length) return;
+  const tmp = currentMilkRotationUserIds[index];
+  currentMilkRotationUserIds[index] = currentMilkRotationUserIds[target];
+  currentMilkRotationUserIds[target] = tmp;
+  renderMilkRotationAdminList();
+}
+
+// מחיקת משתמשת מהתור.
+function removeFromMilkRotation(index) {
+  if (index < 0 || index >= currentMilkRotationUserIds.length) return;
+  currentMilkRotationUserIds.splice(index, 1);
+  renderMilkRotationAdminList();
+  refreshMilkSelect();
+}
+
+// טעינת תור ברירת מחדל: חני, שבי מאיר, טובי קלרמן, ריקי פקמן, מירי בלוך.
+function loadDefaultMilkRotation() {
+  currentMilkRotationUserIds = [9, 15, 11, 10, 13]; // חני, שבי מאיר, טובי קלרמן, ריקי פקמן, מירי בלוך
+  renderMilkRotationAdminList();
+  refreshMilkSelect();
+  showToast('תור ברירת המחדל נטען — לחצי על "שמרי" שייכנס לתוקף');
 }
 
 function addToMilkRotation() {
@@ -821,7 +865,8 @@ function addToMilkRotation() {
   const uid = Number(selectEl.value);
   if (currentMilkRotationUserIds.includes(uid)) return;
   currentMilkRotationUserIds.push(uid);
-  loadMilkRotationAdmin();
+  renderMilkRotationAdminList();
+  refreshMilkSelect();
 }
 
 async function saveMilkRotation() {
