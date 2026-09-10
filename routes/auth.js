@@ -2,14 +2,16 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 const { sendPasswordResetEmail, sendBrandedEmail } = require('../services/emailService');
+const { signToken } = require('../services/tokenService');
+const { optionalAuth } = require('../middleware/auth');
 
 // ניהול משתמשות מחוברות בזמן אמת (Heartbeat)
 const activeUsers = new Map();
 
 const ADMIN_PASSWORD = '123';
 
-router.post('/heartbeat', (req, res) => {
-  const { userId } = req.body;
+router.post('/heartbeat', optionalAuth, (req, res) => {
+  const userId = req.user?.id ?? req.body.userId;
   if (userId) {
     activeUsers.set(userId, Date.now());
   }
@@ -20,11 +22,13 @@ router.post('/heartbeat', (req, res) => {
   res.json({ onlineCount: activeUsers.size });
 });
 
-router.get('/notification-settings/:userId', async (req, res) => {
+router.get('/notification-settings/:userId', optionalAuth, async (req, res) => {
   try {
+    // זהות סמכותית מהטוקן אם קיים, אחרת (לגאסי) מהנתיב
+    const targetId = req.user?.id ?? req.params.userId;
     const result = await pool.query(
       'SELECT email_notifications FROM users WHERE id = $1',
-      [req.params.userId]
+      [targetId]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'המשתמשת לא נמצאה' });
     res.json(result.rows[0]);
@@ -34,12 +38,14 @@ router.get('/notification-settings/:userId', async (req, res) => {
   }
 });
 
-router.patch('/notification-settings/:userId', async (req, res) => {
+router.patch('/notification-settings/:userId', optionalAuth, async (req, res) => {
   const { email_notifications } = req.body;
   try {
+    // זהות סמכותית מהטוקן אם קיים, אחרת (לגאסי) מהנתיב
+    const targetId = req.user?.id ?? req.params.userId;
     const result = await pool.query(
       'UPDATE users SET email_notifications = $1 WHERE id = $2 RETURNING email_notifications',
-      [Boolean(email_notifications), req.params.userId]
+      [Boolean(email_notifications), targetId]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'המשתמשת לא נמצאה' });
     res.json(result.rows[0]);
@@ -63,7 +69,9 @@ router.post('/register', async (req, res) => {
       [full_name, email, password]
     );
 
-    res.status(201).json({ message: 'ההרשמה בוצעה בהצלחה', user: newUser.rows[0] });
+    const savedUser = newUser.rows[0];
+    const token = signToken(savedUser);
+    res.status(201).json({ message: 'ההרשמה בוצעה בהצלחה', token, user: savedUser });
   } catch (err) {
     console.error('שגיאה בהרשמה:', err);
     res.status(500).json({ error: 'שגיאת שרת בהרשמה' });
@@ -84,7 +92,9 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'שם משתמש או סיסמה שגויים' });
     }
 
-    res.json({ message: 'התחברת בהצלחה', user: { id: user.id, full_name: user.full_name, email: user.email } });
+    const safeUser = { id: user.id, full_name: user.full_name, email: user.email };
+    const token = signToken(safeUser);
+    res.json({ message: 'התחברת בהצלחה', token, user: safeUser });
   } catch (err) {
     console.error('שגיאה בהתחברות:', err);
     res.status(500).json({ error: 'שגיאת שרת בהתחברות' });

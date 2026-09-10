@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 const { sendBrandedEmail } = require('../services/emailService');
+const { auth, optionalAuth } = require('../middleware/auth');
 
 // שליפת כל המודעות
 router.get('/', async (req, res) => {
@@ -20,8 +21,14 @@ router.get('/', async (req, res) => {
 });
 
 // הוספת מודעה חדשה ושליחת מייל מעוצב לכל המשתמשות דרך Brevo
-router.post('/', async (req, res) => {
-  const { author_id, title, content, is_important } = req.body;
+router.post('/', optionalAuth, async (req, res) => {
+  const { title, content, is_important } = req.body;
+  // זהות סמכותית מהטוקן אם קיים (במוד תאימות — מה-body)
+  const author_id = req.user?.id ?? req.body.author_id;
+
+  if (!author_id) {
+    return res.status(401).json({ error: 'נדרשת התחברות לפרסום מודעה' });
+  }
 
   try {
     const newNotice = await pool.query(
@@ -52,7 +59,7 @@ router.post('/', async (req, res) => {
 });
 
 // מחיקת הודעה מלוח המודעות
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', auth, async (req, res) => {
   const { id } = req.params;
   try {
     await pool.query('DELETE FROM notice_board WHERE id = $1', [id]);

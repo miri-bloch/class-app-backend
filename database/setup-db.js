@@ -48,6 +48,16 @@ CREATE TABLE IF NOT EXISTS milk_duty (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- סדר תורנות החלב שנקבע ע"י המנהלת (סיבוב אוטומטי)
+CREATE TABLE IF NOT EXISTS milk_rotation (
+  id SERIAL PRIMARY KEY,
+  user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  position INT NOT NULL,
+  is_current BOOLEAN DEFAULT FALSE,
+  UNIQUE(user_id),
+  UNIQUE(position)
+);
+
 CREATE TABLE IF NOT EXISTS notice_board (
   id SERIAL PRIMARY KEY,
   author_id INT REFERENCES users(id) ON DELETE SET NULL,
@@ -65,6 +75,28 @@ CREATE TABLE IF NOT EXISTS summaries (
   drive_web_view_link TEXT NOT NULL,
   uploaded_by INT REFERENCES users(id) ON DELETE SET NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- אירועים משותפים בלוח השנה — מופיעים לכולם, לא אישיים
+CREATE TABLE IF NOT EXISTS shared_events (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(200) NOT NULL,
+  event_date DATE NOT NULL,
+  user_id INT REFERENCES users(id) ON DELETE CASCADE,
+  created_by_name VARCHAR(100) DEFAULT 'משתמשת',
+  confirm_count INT DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE shared_events ADD COLUMN IF NOT EXISTS confirm_count INT DEFAULT 1;
+
+CREATE INDEX IF NOT EXISTS idx_shared_events_date ON shared_events(event_date);
+
+-- הצטרפויות ייחודיות לאירוע — מונעות ספירה כפולה של אותה בנות
+CREATE TABLE IF NOT EXISTS event_confirmations (
+  event_id INT REFERENCES shared_events(id) ON DELETE CASCADE,
+  user_id INT REFERENCES users(id) ON DELETE CASCADE,
+  PRIMARY KEY (event_id, user_id)
 );
 `;
 

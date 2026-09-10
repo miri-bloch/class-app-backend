@@ -58,6 +58,25 @@ async function uploadFileToDrive(file) {
   }
 }
 
+/**
+ * הורדת קובץ מ-Google Drive לפי המזהה שלו, כ-buffer.
+ * @param {String} fileId - מזהה הקובץ ב-Drive
+ * @returns {Promise<Buffer>}
+ */
+async function downloadFileFromDrive(fileId) {
+  try {
+    const response = await drive.files.get(
+      { fileId, alt: 'media' },
+      { responseType: 'arraybuffer' }
+    );
+    return Buffer.from(response.data);
+  } catch (error) {
+    console.error('שגיאה בהורדת הקובץ מהדרייב:', error.message);
+    throw error;
+  }
+}
+
 module.exports = {
   uploadFileToDrive,
+  downloadFileFromDrive,
 };

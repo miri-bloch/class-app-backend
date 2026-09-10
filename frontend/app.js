@@ -1,6 +1,15 @@
 // קובץ frontend/app.js המעודכן (עם כתובת API יחסית לפריסה ב-Render):
 const API_URL = '/api';
 let currentUserId = null;
+let currentUserName = null;
+let currentToken = localStorage.getItem('class_app_token') || null;
+
+// שליחת בקשות עם הטוקן בכותרת Authorization כדי שהשרת יזהה מי באמת מחוברת
+async function authFetch(url, options = {}) {
+  const headers = new Headers(options.headers || {});
+  if (currentToken) headers.set('Authorization', `Bearer ${currentToken}`);
+  return fetch(url, { ...options, headers });
+}
 
 const loginSection = document.getElementById('login-section');
 const registerSection = document.getElementById('register-section');
@@ -16,6 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (Date.now() - parseInt(savedTime) < twoWeeks) {
       const userObj = JSON.parse(savedUser);
       currentUserId = userObj.id;
+      currentUserName = userObj.full_name;
       initDashboard(userObj.full_name, userObj.email);
     } else {
       localStorage.removeItem('class_app_user');
@@ -26,6 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function saveSession(user) {
   currentUserId = user.id;
+  currentUserName = user.full_name;
   localStorage.setItem('class_app_user', JSON.stringify(user));
   localStorage.setItem('class_app_time', Date.now().toString());
   initDashboard(user.full_name, user.email);
@@ -327,12 +338,15 @@ async function loadAssignments() {
     if (showHiddenButton) {
       const hiddenCount = assignments.filter(a => hiddenAssignments.has(String(a.id))).length;
       showHiddenButton.style.display = hiddenCount > 0 ? 'inline-flex' : 'none';
-      showHiddenButton.textContent = showHidden ? 'הסתירי מטלות שהוסתרו' : `הציגי ${hiddenCount} מטלות שהוסתרו`;
+      showHiddenButton.textContent = showHidden ? 'הסתירי את המוסתרות' : `הציגי ${hiddenCount} מטלות שהוסתרו`;
     }
     list.innerHTML = visibleAssignments.length ? '' : '<div class="empty-state">אין מטלות להצגה.</div>';
 
     visibleAssignments.forEach(a => {
       const isChecked = a.is_completed ? 'checked' : '';
+      const compCount = parseInt(a.completed_count) || 0;
+      const totUsers = parseInt(a.total_users) || 1;
+      const classPct = Math.round((compCount / totUsers) * 100);
       const dateObj = parseLocalDate(a.due_date);
       const gregorianDate = dateObj.toLocaleDateString('he-IL');
       const canHide = dateObj < today && Boolean(a.is_completed);
@@ -353,14 +367,23 @@ async function loadAssignments() {
               <div class="assignment-title">${a.title}</div>
             </div>
             <div class="assignment-actions">
-              ${canHide ? `<button onclick="hideAssignment(${a.id})" class="assignment-hide" title="הסתרי מטלה שבוצעה" aria-label="הסתרי מטלה שבוצעה">👁</button>` : ''}
+              ${hiddenAssignments.has(String(a.id))
+                ? `<button onclick="unhideAssignment(${a.id})" class="assignment-hide" title="בטלי את ההסתרה של המטלה" aria-label="בטלי הסתרה">🙈</button>`
+                : (canHide ? `<button onclick="hideAssignment(${a.id})" class="assignment-hide" title="הסתרי מטלה שבוצעה" aria-label="הסתרי מטלה שבוצעה">👁</button>` : '')}
               <button onclick="deleteAssignment(${a.id})" class="assignment-delete" title="מחק מטלה">✕</button>
             </div>
           </div>
           <div class="assignment-date">הגשה: ${gregorianDate} ${hebrewDate ? '(' + hebrewDate + ')' : ''}</div>
+          <div class="assignment-class-stats">
+            <span class="assignment-stats-label">ביצוע בכיתה: ${compCount}/${totUsers} (${classPct}%)</span>
+            <div class="assignment-stats-bar">
+              <div class="assignment-stats-fill" style="width:${classPct}%"></div>
+            </div>
+          </div>
           ${a.drive_file_id ? `<div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
             <a href="${a.drive_web_view_link || `https://drive.google.com/file/d/${a.drive_file_id}/view`}" target="_blank" rel="noopener" class="neon-btn outline" style="width:auto; padding:5px 9px; font-size:0.78rem; text-decoration:none;">📎 ${normalizeAttachmentName(a.attachment_name)}</a>
             <a href="https://drive.google.com/uc?export=download&id=${a.drive_file_id}" target="_blank" rel="noopener" class="neon-btn outline" style="width:auto; padding:5px 9px; font-size:0.78rem; text-decoration:none;">הורדה</a>
+            <button onclick="sendAssignmentToEmail(${a.id})" class="neon-btn outline" style="width:auto; padding:5px 9px; font-size:0.78rem;">שלחי לי למייל 📧</button>
           </div>` : ''}
           <label class="assignment-complete">
             <input type="checkbox" class="complete-checkbox custom-checkbox" ${isChecked} onchange="toggleAssignment(${a.id}, this.checked)"> בוצע ✓
@@ -386,6 +409,14 @@ function hideAssignment(assignmentId) {
   const hiddenStorageKey = `hidden_assignments_${currentUserId}`;
   const hiddenAssignments = new Set(JSON.parse(localStorage.getItem(hiddenStorageKey) || '[]'));
   hiddenAssignments.add(String(assignmentId));
+  localStorage.setItem(hiddenStorageKey, JSON.stringify([...hiddenAssignments]));
+  loadAssignments();
+}
+
+function unhideAssignment(assignmentId) {
+  const hiddenStorageKey = `hidden_assignments_${currentUserId}`;
+  const hiddenAssignments = new Set(JSON.parse(localStorage.getItem(hiddenStorageKey) || '[]'));
+  hiddenAssignments.delete(String(assignmentId));
   localStorage.setItem(hiddenStorageKey, JSON.stringify([...hiddenAssignments]));
   loadAssignments();
 }
@@ -454,6 +485,23 @@ async function toggleAssignment(id, isCompleted) {
   }
   loadAssignments();
   loadAssignmentStats();
+}
+
+async function sendAssignmentToEmail(assignmentId) {
+  try {
+    const res = await fetch(`${API_URL}/assignments/${assignmentId}/send-to-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      showToast(data.error || 'שגיאה בשליחת הקובץ', true);
+      return;
+    }
+    showToast(data.message || 'הקובץ נשלח בהצלחה למייל שלך!');
+  } catch (err) {
+    showToast('תקלת תקשורת מול השרת', true);
+  }
 }
 
 async function loadAssignmentStats() {
@@ -616,79 +664,53 @@ async function showSubjectAssignments(subjectName) {
 async function loadMilkRotation() {
   try {
     const res = await fetch(`${API_URL}/milk`);
-    const duties = await res.json();
-    
-    const activeDuties = duties.filter(d => !d.is_completed);
-    const active = activeDuties[0]; 
-    const upcoming = activeDuties.slice(1, 4); 
-    
-    if (active) {
-      document.getElementById('current-milk-person').textContent = active.full_name;
-      const fulfillContainer = document.getElementById('fulfill-milk-container');
-      const notYourTurnMsg = document.getElementById('not-your-turn-msg');
-      
-      if (active.user_id === currentUserId) {
-        fulfillContainer.style.display = 'block';
-        notYourTurnMsg.style.display = 'none';
-      } else {
-        fulfillContainer.style.display = 'none';
-        notYourTurnMsg.style.display = 'block';
-      }
+    const data = await res.json();
 
-      let upcomingContainer = document.getElementById('upcoming-milk-queue');
-      if (!upcomingContainer) {
-        upcomingContainer = document.createElement('div');
-        upcomingContainer.id = 'upcoming-milk-queue';
-        document.getElementById('current-milk-person').parentNode.appendChild(upcomingContainer);
-      }
+    const current = data.current;
+    const upcoming = data.upcoming || [];
 
-      if (upcoming.length > 0) {
-        upcomingContainer.innerHTML = `
-          <div style="margin-top: 12px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 8px; font-size: 0.8rem; color: var(--text-muted);">
-            <span style="font-weight: 500;">הבאות בתור:</span> ${upcoming.map(u => u.full_name).join(' ➔ ')}
-          </div>
-        `;
-      } else {
-        upcomingContainer.innerHTML = '';
-      }
+    const currentPersonEl = document.getElementById('current-milk-person');
+    const fulfillContainer = document.getElementById('fulfill-milk-container');
+    const notYourTurnMsg = document.getElementById('not-your-turn-msg');
 
-    } else {
-      document.getElementById('current-milk-person').textContent = 'אין תורניות רשומות בתור כרגע';
-      document.getElementById('fulfill-milk-container').style.display = 'none';
-      document.getElementById('not-your-turn-msg').style.display = 'none';
+    if (!current) {
+      if (currentPersonEl) currentPersonEl.textContent = 'אין סדר תור מוגדר עדיין';
+      if (fulfillContainer) fulfillContainer.style.display = 'none';
+      if (notYourTurnMsg) notYourTurnMsg.style.display = 'none';
       const upcomingContainer = document.getElementById('upcoming-milk-queue');
       if (upcomingContainer) upcomingContainer.innerHTML = '';
+      return;
     }
-  } catch (err) {
-    document.getElementById('current-milk-person').textContent = 'שגיאה בטעינת נתוני תורנות';
-  }
-}
 
-async function joinMilkQueue() {
-  if (!currentUserId) {
-    showToast('יש להתחבר קודם', true);
-    return;
-  }
+    if (currentPersonEl) currentPersonEl.textContent = current.full_name;
 
-  const button = document.querySelector('button[onclick="joinMilkQueue()"]');
-  const restoreButton = setButtonLoading(button, 'נרשמת...');
-  try {
-    const res = await fetch(`${API_URL}/milk/join`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: currentUserId })
-    });
-    const data = await res.json();
-    if (res.ok) {
-      showToast('נרשמת בהצלחה לתורנות החלב!');
-      loadMilkRotation();
+    if (data.is_mine) {
+      if (fulfillContainer) fulfillContainer.style.display = 'block';
+      if (notYourTurnMsg) notYourTurnMsg.style.display = 'none';
     } else {
-      showToast(data.error || 'שגיאה בהרשמה לתור', true);
+      if (fulfillContainer) fulfillContainer.style.display = 'none';
+      if (notYourTurnMsg) notYourTurnMsg.style.display = 'block';
+    }
+
+    let upcomingContainer = document.getElementById('upcoming-milk-queue');
+    if (!upcomingContainer) {
+      upcomingContainer = document.createElement('div');
+      upcomingContainer.id = 'upcoming-milk-queue';
+      document.getElementById('current-milk-person').parentNode.appendChild(upcomingContainer);
+    }
+
+    if (upcoming.length > 0) {
+      upcomingContainer.innerHTML = `
+        <div style="margin-top: 12px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 8px; font-size: 0.8rem; color: var(--text-muted);">
+          <span style="font-weight: 500;">הבאות בתור:</span> ${upcoming.map(u => u.full_name).join(' ➔ ')}
+        </div>
+      `;
+    } else {
+      upcomingContainer.innerHTML = '';
     }
   } catch (err) {
-    showToast('תקלת תקשורת מול השרת', true);
-  } finally {
-    restoreButton();
+    const el = document.getElementById('current-milk-person');
+    if (el) el.textContent = 'שגיאה בטעינת נתוני תורנות';
   }
 }
 
@@ -696,24 +718,19 @@ async function fulfillMilkDuty() {
   const button = document.querySelector('button[onclick="fulfillMilkDuty()"]');
   const restoreButton = setButtonLoading(button, 'שולחת מייל...');
   try {
-    const res = await fetch(`${API_URL}/milk`);
-    const duties = await res.json();
-    const active = duties.find(d => !d.is_completed);
-    
-    if (active) {
-      if (active.user_id !== currentUserId) {
-        showToast('רק התורנית הנוכחית יכולה לסמן שקנתה את החלב!', true);
-        return;
-      }
+    const res = await fetch(`${API_URL}/milk/advance`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' }
+    });
 
-      await fetch(`${API_URL}/milk/${active.id}/toggle`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ is_completed: true })
-      });
-      showToast('התורנות סומנה כבוצעה! התור עבר אוטומטית לבת הבאה.');
-      loadMilkRotation();
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      showToast(errData.error || 'שגיאה בקידום התור', true);
+      return;
     }
+
+    showToast('התורנות הסתיימה! התור עבר אוטומטית לבת הבאה.');
+    loadMilkRotation();
   } catch (err) {
     showToast('שגיאה בעדכון התורנות', true);
   } finally {
@@ -729,23 +746,16 @@ async function advanceMilkDutyForAdmin() {
   const restoreButton = setButtonLoading(button, 'מקדמת תור...');
 
   try {
-    const dutiesResponse = await fetch(`${API_URL}/milk`);
-    if (!dutiesResponse.ok) throw new Error('Failed to load milk duty');
-
-    const duties = await dutiesResponse.json();
-    const activeDuty = duties.find(duty => !duty.is_completed);
-    if (!activeDuty) {
-      showToast('אין כרגע תורנית פעילה לקידום', true);
-      return;
-    }
-
-    const advanceResponse = await fetch(`${API_URL}/milk/${activeDuty.id}/toggle`, {
+    const advanceResponse = await fetch(`${API_URL}/milk/advance`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ is_completed: true })
+      headers: { 'Content-Type': 'application/json' }
     });
 
-    if (!advanceResponse.ok) throw new Error('Failed to advance milk duty');
+    if (!advanceResponse.ok) {
+      const errData = await advanceResponse.json().catch(() => ({}));
+      showToast(errData.error || 'שגיאה בקידום התור', true);
+      return;
+    }
 
     showToast('התור קודם בהצלחה ונשלחה הודעה לבאה בתור!');
     loadMilkRotation();
@@ -753,6 +763,78 @@ async function advanceMilkDutyForAdmin() {
     showToast('שגיאה בקידום תור החלב', true);
   } finally {
     restoreButton();
+  }
+}
+
+// מצב הסדר הנוכחי (רשימת user_id לפי הסדר) באזור הניהול.
+let currentMilkRotationUserIds = [];
+
+async function loadMilkRotationAdmin() {
+  const listEl = document.getElementById('milk-rotation-admin-list');
+  const selectEl = document.getElementById('milk-rotation-add-select');
+  if (!listEl) return;
+
+  try {
+    const res = await fetch(`${API_URL}/milk`);
+    const data = await res.json();
+    currentMilkRotationUserIds = (data.rotation || []).map(r => r.user_id);
+
+    // הצגת הסדר הנוכחי עם הדגשה לתורנית הנוכחית.
+    listEl.innerHTML = currentMilkRotationUserIds.length === 0
+      ? '<div style="color:var(--text-muted);">עדיין אין סדר מוגדר.</div>'
+      : data.rotation.map((r, i) => `
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; padding:4px 0; border-bottom: 1px dashed rgba(255,255,255,0.08); ${r.is_current ? 'color: var(--neon-cyan); font-weight: bold;' : ''}">
+            <span>${i + 1}. ${r.full_name}${r.is_current ? ' 👑' : ''}</span>
+          </div>`).join('');
+
+    // אכלוס ה-select בכל המשתמשות.
+    if (selectEl) {
+      selectEl.innerHTML = '<option value="">בחרי משתמשת...</option>';
+      const usersRes = await fetch(`${API_URL}/auth/users`);
+      if (usersRes.ok) {
+        const users = await usersRes.json();
+        users.forEach(u => {
+          if (!currentMilkRotationUserIds.includes(u.id)) {
+            selectEl.innerHTML += `<option value="${u.id}">${u.full_name}</option>`;
+          }
+        });
+      }
+    }
+  } catch (err) {
+    listEl.innerHTML = '<div style="color:#f43f5e;">שגיאה בטעינת סדר התור</div>';
+  }
+}
+
+function addToMilkRotation() {
+  const selectEl = document.getElementById('milk-rotation-add-select');
+  if (!selectEl || !selectEl.value) {
+    showToast('יש לבחור משתמשת להוספה', true);
+    return;
+  }
+  const uid = Number(selectEl.value);
+  if (currentMilkRotationUserIds.includes(uid)) return;
+  currentMilkRotationUserIds.push(uid);
+  loadMilkRotationAdmin();
+}
+
+async function saveMilkRotation() {
+  if (currentMilkRotationUserIds.length === 0) {
+    showToast('התור ריק — אין מה לשמור', true);
+    return;
+  }
+  try {
+    const res = await fetch(`${API_URL}/milk/rotation`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userIds: currentMilkRotationUserIds })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'שגיאה בשמירת הסדר');
+    showToast('סדר התור נשמר בהצלחה!');
+    loadMilkRotationAdmin();
+    loadMilkRotation();
+  } catch (err) {
+    showToast(err.message || 'שגיאה בשמירת הסדר', true);
   }
 }
 
@@ -790,7 +872,19 @@ async function loadWeeklyCalendar() {
   if (label) label.textContent = `שבוע: ${startStr} - ${endStr}`;
 
   let events = JSON.parse(localStorage.getItem('class_events')) || [];
-  
+
+  // טעינת האירועים המשותפים מהשרת (מופיעים לכולם, לא אישיים)
+  try {
+    const eventsRes = await fetch(`${API_URL}/events`);
+    if (eventsRes.ok) {
+      const sharedEvents = await eventsRes.json();
+      // ממירים event_date לפורמט date אחיד אצל ה-frontend
+      events = sharedEvents.map(ev => ({ id: ev.id, title: ev.title, date: ev.event_date, created_by_name: ev.created_by_name, confirm_count: ev.confirm_count }));
+    }
+  } catch (err) {
+    console.error('שגיאה בטעינת אירועים משותפים:', err);
+  }
+
   let assignments = [];
   try {
     if (currentUserId) {
@@ -841,9 +935,9 @@ const todayStr = getDateKey(new Date());
               <span style="color: var(--neon-cyan); font-weight: bold;">📚 ${a.subject}:</span> <span>${a.title}</span>
             </div>`).join('')}
           ${dayEvents.map(e => `
-            <div style="background: rgba(168,85,247,0.15); border-right: 3px solid var(--neon-purple); padding: 5px 8px; border-radius: 4px; font-size: 0.8rem; display:flex; justify-content:space-between; align-items:center;">
-              <span>📌 ${e.title}</span>
-              <button onclick="deleteEvent(${e.id})" style="background:none; border:none; color:#f43f5e; cursor:pointer; font-size:0.75rem; padding:0;">✕</button>
+            <div style="background: rgba(168,85,247,0.15); border-right: 3px solid var(--neon-purple); padding: 5px 8px; border-radius: 4px; font-size: 0.8rem; display:flex; justify-content:space-between; align-items:center; gap:6px;">
+              <span style="flex:1;">📌 ${e.title}${e.created_by_name || e.confirm_count ? ` <span style="color:var(--text-muted); font-size:0.7rem;">${e.created_by_name ? 'הוסיפה: ' + e.created_by_name : ''}${e.confirm_count ? (e.created_by_name ? ' • ' : '') + e.confirm_count + ' בנות' : ''}</span>` : ''}</span>
+              <button onclick="deleteEvent(${e.id})" title="מחיקה לכולם" style="background:none; border:none; color:#f43f5e; cursor:pointer; font-size:0.75rem; padding:0; flex-shrink:0;">✕</button>
             </div>`).join('')}
           ${!dayAssignments.length && !dayEvents.length ? '<span style="color: var(--text-muted); font-size: 0.75rem; text-align: center; margin-top: auto; margin-bottom: auto;">אין אירועים או מטלות</span>' : ''}
         </div>
@@ -853,26 +947,98 @@ const todayStr = getDateKey(new Date());
 
 const calendarForm = document.getElementById('calendar-event-form');
 if (calendarForm) {
-  calendarForm.addEventListener('submit', (e) => {
+  calendarForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const title = document.getElementById('event-title').value;
     const date = document.getElementById('event-date').value;
 
-    let localCalendarEvents = JSON.parse(localStorage.getItem('class_events')) || [];
-    localCalendarEvents.push({ id: Date.now(), title, date });
-    localStorage.setItem('class_events', JSON.stringify(localCalendarEvents));
-    calendarForm.reset();
-    loadWeeklyCalendar();
-    showToast('האירוע נוסף ללוח השנה!');
+    try {
+      const res = await fetch(`${API_URL}/events`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          event_date: date,
+          userId: currentUserId || null,
+          userName: currentUserName || 'משתמשת'
+        })
+      });
+
+      if (res.status === 409) {
+        // אירוע דומה כבר קיים — מניעת כפילויות חכמה: מציעים להצטרף במקום להוסיף כפילות
+        const dupData = await res.json().catch(() => ({}));
+        const existing = dupData.existingEvent;
+        if (existing) {
+          const ok = await showCustomConfirm(
+            'האירוע כבר קיים!',
+            `לאירוע "${existing.title}" כבר יש ${existing.confirm_count} בנות. כדי לא ליצור כפילות, את רוצה להצטרף אליו במקום?`,
+            'מצטרפת',
+            'ביטול'
+          );
+          if (ok) {
+            const confirmRes = await fetch(`${API_URL}/events/${existing.id}/confirm`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userId: currentUserId || null })
+            });
+            if (confirmRes.ok) {
+              calendarForm.reset();
+              await loadWeeklyCalendar();
+              showToast('נצטרפת לאירוע! עכשיו גם את חלק מזה.');
+            }
+          } else {
+            calendarForm.reset();
+          }
+        }
+        return;
+      }
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'שגיאה בהוספת האירוע');
+      }
+
+      // מנקים אירוע מקומי ישן בעל אותו שם ותאריך אם נשאר מה-localStorage
+      let localCalendarEvents = JSON.parse(localStorage.getItem('class_events')) || [];
+      localCalendarEvents = localCalendarEvents.filter(ev => !(ev.title === title && ev.date === date));
+      localStorage.setItem('class_events', JSON.stringify(localCalendarEvents));
+
+      calendarForm.reset();
+      await loadWeeklyCalendar();
+      showToast('האירוע נוסף לכולם בלוח השנה!');
+    } catch (err) {
+      console.error(err);
+      showToast(err.message || 'שגיאה בהוספת האירוע');
+    }
   });
 }
 
-function deleteEvent(id) {
-  let localCalendarEvents = JSON.parse(localStorage.getItem('class_events')) || [];
-  localCalendarEvents = localCalendarEvents.filter(ev => ev.id !== id);
-  localStorage.setItem('class_events', JSON.stringify(localCalendarEvents));
-  loadWeeklyCalendar();
-  showToast('האירוע נמחק בהצלחה');
+async function deleteEvent(id) {
+  // מאחר והמחיקה משפיעה על כל הבנות — מבקשים אישור לפני שממשיכים
+  const ok = await showCustomConfirm(
+    'מחיקת אירוע לכולם',
+    'האירוע הזה מופיע אצל כל הבנות בכיתה. למחוק אותו לכולם?',
+    'כן, מחקי לכולם',
+    'ביטול'
+  );
+  if (!ok) return;
+
+  try {
+    const res = await fetch(`${API_URL}/events/${id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || 'שגיאה במחיקת האירוע');
+    }
+    // ניקוי מ-localStorage אם האירוע היה שם מפעם
+    let localCalendarEvents = JSON.parse(localStorage.getItem('class_events')) || [];
+    localCalendarEvents = localCalendarEvents.filter(ev => ev.id !== id);
+    localStorage.setItem('class_events', JSON.stringify(localCalendarEvents));
+    await loadWeeklyCalendar();
+    showToast('האירוע נמחק מכולם בהצלחה');
+  } catch (err) {
+    console.error(err);
+    showToast(err.message || 'שגיאה במחיקת האירוע');
+  }
 }
 
 function toggleAccessibilityMenu() {
@@ -920,6 +1086,7 @@ function verifyAdminPassword() {
     document.getElementById('admin-panel-content').style.display = 'block';
     showToast('התחברת בהצלחה לממשק הניהול!');
     loadUsersList();
+    loadMilkRotationAdmin();
   } else {
     showToast('סיסמה שגויה!', true);
   }
@@ -995,7 +1162,7 @@ async function deleteUser(userId) {
   }
 }
 
-function showCustomConfirm(title, description) {
+function showCustomConfirm(title, description, confirmLabel = 'כן, מחקי', cancelLabel = 'ביטול') {
   return new Promise(resolve => {
     const modal = document.getElementById('custom-modal');
     const titleEl = document.getElementById('modal-title');
@@ -1009,8 +1176,8 @@ function showCustomConfirm(title, description) {
     descEl.style.display = 'block';
     inputContainer.style.display = 'none';
     submitBtn.style.display = 'block';
-    submitBtn.textContent = 'כן, מחקי';
-    cancelBtn.textContent = 'ביטול';
+    submitBtn.textContent = confirmLabel;
+    cancelBtn.textContent = cancelLabel;
     modal.style.display = 'flex';
 
     const newSubmitBtn = submitBtn.cloneNode(true);

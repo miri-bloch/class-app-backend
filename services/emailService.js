@@ -5,17 +5,18 @@ async function sendBrevoEmail(toEmail, subject, htmlContent) {
   await sendEmail(toEmail, subject, htmlContent);
 }
 
-function createBrevoEmail({ toEmail, subject, htmlContent }) {
+function createBrevoEmail({ toEmail, subject, htmlContent, attachments }) {
   const recipients = Array.isArray(toEmail) ? toEmail : [toEmail];
   return {
     sender: { name: 'HighCode System', email: process.env.SENDER_EMAIL || process.env.EMAIL_USER },
     to: recipients.map(email => ({ email })),
     subject,
     htmlContent,
+    ...(attachments && attachments.length ? { attachment: attachments } : {}),
   };
 }
 
-async function sendEmail(toEmail, subject, htmlContent) {
+async function sendEmail(toEmail, subject, htmlContent, attachments) {
   const response = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
     headers: {
@@ -23,7 +24,7 @@ async function sendEmail(toEmail, subject, htmlContent) {
       'api-key': process.env.BREVO_API_KEY,
       'content-type': 'application/json',
     },
-    body: JSON.stringify(createBrevoEmail({ toEmail, subject, htmlContent })),
+    body: JSON.stringify(createBrevoEmail({ toEmail, subject, htmlContent, attachments })),
   });
 
   if (!response.ok) {
@@ -65,6 +66,17 @@ function getBaseEmailTemplate(subtitleText, contentHtml) {
 
 async function sendBrandedEmail(toEmail, subject, subtitleText, contentHtml) {
   await sendEmail(toEmail, subject, getBaseEmailTemplate(subtitleText, contentHtml));
+}
+
+// שליחת מייל מעוצב עם קובץ מצורף (למשל קובץ שיעור שנשלח למשתמשת).
+async function sendBrandedEmailWithAttachment(toEmail, subject, subtitleText, contentHtml, { buffer, name, mimeType }) {
+  if (!buffer || !name) throw new Error('חסר קובץ מצורף לשליחה');
+  const attachments = [{
+    content: buffer.toString('base64'),
+    name,
+    ...(mimeType ? { type: mimeType } : {}),
+  }];
+  await sendEmail(toEmail, subject, getBaseEmailTemplate(subtitleText, contentHtml), attachments);
 }
 
 // 1. מייל שחזור סיסמה מעוצב בדיוק לפי הדרישה והתמונה

@@ -585,6 +585,31 @@ body.light-theme .assignment-complete {
   color: var(--text-muted);
 }
 
+.assignment-class-stats {
+  margin-top: 8px;
+}
+
+.assignment-stats-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.assignment-stats-bar {
+  background: rgba(255, 255, 255, 0.1);
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.assignment-stats-fill {
+  background: linear-gradient(90deg, var(--neon-purple), var(--neon-cyan));
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
 .message-text {
   text-align: center;
   margin-top: 10px;

@@ -66,6 +66,7 @@ const assignmentRoutes = require('./routes/assignments');
 const milkRoutes = require('./routes/milk');
 const noticeRoutes = require('./routes/noticeBoard');
 const summaryRoutes = require('./routes/summaries');
+const eventRoutes = require('./routes/events');
 
 // חיבור כל הנתיבים (Routes) לקידומת ה-API שלהם
 app.use('/api/auth', authRoutes);
@@ -73,6 +74,7 @@ app.use('/api/assignments', assignmentRoutes);
 app.use('/api/milk', milkRoutes);
 app.use('/api/notices', noticeRoutes);
 app.use('/api/summaries', summaryRoutes);
+app.use('/api/events', eventRoutes);
 
 // בדיקת בריאות השרת
 app.get('/api/health', (req, res) => {
@@ -87,6 +89,30 @@ pool.query(`
   ALTER TABLE assignments ADD COLUMN IF NOT EXISTS drive_file_id VARCHAR(255);
   ALTER TABLE assignments ADD COLUMN IF NOT EXISTS drive_web_view_link TEXT;
   ALTER TABLE assignments ADD COLUMN IF NOT EXISTS attachment_name VARCHAR(255);
+  CREATE TABLE IF NOT EXISTS shared_events (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(200) NOT NULL,
+    event_date DATE NOT NULL,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
+    created_by_name VARCHAR(100) DEFAULT 'משתמשת',
+    confirm_count INT DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  );
+  ALTER TABLE shared_events ADD COLUMN IF NOT EXISTS confirm_count INT DEFAULT 1;
+  CREATE INDEX IF NOT EXISTS idx_shared_events_date ON shared_events(event_date);
+  CREATE TABLE IF NOT EXISTS event_confirmations (
+    event_id INT REFERENCES shared_events(id) ON DELETE CASCADE,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
+    PRIMARY KEY (event_id, user_id)
+  );
+  CREATE TABLE IF NOT EXISTS milk_rotation (
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    position INT NOT NULL,
+    is_current BOOLEAN DEFAULT FALSE,
+    UNIQUE(user_id),
+    UNIQUE(position)
+  );
 `).catch(err => console.error('שגיאה בעדכון עמודות קבצי המטלות:', err));
 
 app.listen(PORT, () => {
