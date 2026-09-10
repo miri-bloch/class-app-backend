@@ -34,17 +34,24 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-function saveSession(user) {
+function saveSession(user, token) {
   currentUserId = user.id;
   currentUserName = user.full_name;
   localStorage.setItem('class_app_user', JSON.stringify(user));
   localStorage.setItem('class_app_time', Date.now().toString());
+  // שמירת הטוקן כדי שפעולות מאובטחות (שליחת קבצים למייל, ניהול תור החלב) יצליחו.
+  if (token) {
+    currentToken = token;
+    localStorage.setItem('class_app_token', token);
+  }
   initDashboard(user.full_name, user.email);
 }
 
 function logoutSession() {
   localStorage.removeItem('class_app_user');
   localStorage.removeItem('class_app_time');
+  localStorage.removeItem('class_app_token');
+  currentToken = null;
   currentUserId = null;
   dashboardApp.style.display = 'none';
   document.getElementById('user-profile-header').style.display = 'none';
@@ -142,7 +149,7 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
   const msg = document.getElementById('register-message');
 
   try {
-    const res = await fetch(`${API_URL}/auth/register`, {
+    const res = await authFetch(`${API_URL}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ full_name, email, password })
@@ -151,7 +158,7 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
     if (res.ok) {
       msg.textContent = 'ההרשמה הצליחה!';
       msg.style.color = 'var(--neon-cyan)';
-      setTimeout(() => saveSession(data.user), 1000);
+      setTimeout(() => saveSession(data.user, data.token), 1000);
     } else {
       msg.textContent = data.error || 'שגיאה בהרשמה';
       msg.style.color = '#f43f5e';
@@ -169,7 +176,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
   const msg = document.getElementById('login-message');
 
   try {
-    const res = await fetch(`${API_URL}/auth/login`, {
+    const res = await authFetch(`${API_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
@@ -178,7 +185,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     if (res.ok) {
       msg.textContent = 'התחברת בהצלחה!';
       msg.style.color = 'var(--neon-cyan)';
-      setTimeout(() => saveSession(data.user), 1000);
+      setTimeout(() => saveSession(data.user, data.token), 1000);
     } else {
       msg.textContent = data.error || 'שגיאה בהתחברות';
       msg.style.color = '#f43f5e';
@@ -212,7 +219,7 @@ async function loadEmailPreference() {
   if (!toggle || !currentUserId) return;
 
   try {
-    const response = await fetch(`${API_URL}/auth/notification-settings/${currentUserId}`);
+    const response = await authFetch(`${API_URL}/auth/notification-settings/${currentUserId}`);
     if (response.ok) {
       const settings = await response.json();
       toggle.checked = settings.email_notifications;
@@ -227,7 +234,7 @@ async function updateEmailPreference(enabled) {
   const toggle = document.getElementById('daily-email-toggle');
 
   try {
-    const response = await fetch(`${API_URL}/auth/notification-settings/${currentUserId}`, {
+    const response = await authFetch(`${API_URL}/auth/notification-settings/${currentUserId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email_notifications: enabled })
@@ -244,7 +251,7 @@ async function updateEmailPreference(enabled) {
 setInterval(async () => {
   if (!currentUserId) return;
   try {
-    const res = await fetch(`${API_URL}/auth/heartbeat`, {
+    const res = await authFetch(`${API_URL}/auth/heartbeat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: currentUserId })
@@ -265,7 +272,7 @@ document.getElementById('notice-form').addEventListener('submit', async (e) => {
   showToast('המודעה נשמרת והמייל נשלח, נא להמתין...');
 
   try {
-    const res = await fetch(`${API_URL}/notices`, {
+    const res = await authFetch(`${API_URL}/notices`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ author_id: currentUserId, title, content, is_important: true })
@@ -285,7 +292,7 @@ document.getElementById('notice-form').addEventListener('submit', async (e) => {
 async function loadNotices() {
   const list = document.getElementById('notices-list');
   try {
-    const res = await fetch(`${API_URL}/notices`);
+    const res = await authFetch(`${API_URL}/notices`);
     const notices = await res.json();
     list.innerHTML = notices.length ? '' : '<div style="color:var(--text-muted)">אין מודעות.</div>';
     notices.forEach(n => {
@@ -305,7 +312,7 @@ async function loadNotices() {
 async function deleteNotice(noticeId) {
   if (!await showCustomConfirm('מחיקת הודעה', 'האם את בטוחה שברצונך למחוק הודעה זו?')) return;
   try {
-    const res = await fetch(`${API_URL}/notices/${noticeId}`, { method: 'DELETE' });
+    const res = await authFetch(`${API_URL}/notices/${noticeId}`, { method: 'DELETE' });
     if (res.ok) {
       showToast('ההודעה נמחקה בהצלחה');
       loadNotices();
@@ -393,7 +400,7 @@ async function loadAssignments() {
   };
 
   try {
-    const res = await fetch(`${API_URL}/assignments?userId=${currentUserId}`);
+    const res = await authFetch(`${API_URL}/assignments?userId=${currentUserId}`);
     const assignments = await res.json();
     renderAssignments(assignments);
     if (showHiddenButton) {
@@ -425,7 +432,7 @@ async function deleteAssignment(assignmentId) {
   if (!await showCustomConfirm('מחיקת מטלה', 'האם את בטוחה שברצונך למחוק מטלה זו?')) return;
 
   try {
-    const res = await fetch(`${API_URL}/assignments/${assignmentId}`, { method: 'DELETE' });
+    const res = await authFetch(`${API_URL}/assignments/${assignmentId}`, { method: 'DELETE' });
     if (res.ok) {
       showToast('המטלה נמחקה בהצלחה');
       loadAssignments();
@@ -454,7 +461,7 @@ document.getElementById('add-assignment-form').addEventListener('submit', async 
     formData.append('difficulty_level', '3');
     if (attachment) formData.append('attachment', attachment);
 
-    const res = await fetch(`${API_URL}/assignments`, {
+    const res = await authFetch(`${API_URL}/assignments`, {
       method: 'POST',
       body: formData
     });
@@ -474,7 +481,7 @@ document.getElementById('add-assignment-form').addEventListener('submit', async 
 });
 
 async function toggleAssignment(id, isCompleted) {
-  const response = await fetch(`${API_URL}/assignments/${id}/note`, {
+  const response = await authFetch(`${API_URL}/assignments/${id}/note`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userId: currentUserId, is_completed: isCompleted, note_text: '' })
@@ -489,7 +496,7 @@ async function toggleAssignment(id, isCompleted) {
 
 async function sendAssignmentToEmail(assignmentId) {
   try {
-    const res = await fetch(`${API_URL}/assignments/${assignmentId}/send-to-email`, {
+    const res = await authFetch(`${API_URL}/assignments/${assignmentId}/send-to-email`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' }
     });
@@ -507,7 +514,7 @@ async function sendAssignmentToEmail(assignmentId) {
 async function loadAssignmentStats() {
   const statsList = document.getElementById('stats-list');
   try {
-    const res = await fetch(`${API_URL}/assignments/stats/completion`);
+    const res = await authFetch(`${API_URL}/assignments/stats/completion`);
     const stats = await res.json();
     statsList.innerHTML = '';
     stats.forEach(s => {
@@ -604,7 +611,7 @@ async function loadShvabimSchedule() {
 
 async function showSubjectAssignments(subjectName) {
   try {
-    const res = await fetch(`${API_URL}/assignments?userId=${currentUserId}`);
+    const res = await authFetch(`${API_URL}/assignments?userId=${currentUserId}`);
     if (!res.ok) return;
     const assignments = await res.json();
 
@@ -663,7 +670,7 @@ async function showSubjectAssignments(subjectName) {
 
 async function loadMilkRotation() {
   try {
-    const res = await fetch(`${API_URL}/milk`);
+    const res = await authFetch(`${API_URL}/milk`);
     const data = await res.json();
 
     const current = data.current;
@@ -718,7 +725,7 @@ async function fulfillMilkDuty() {
   const button = document.querySelector('button[onclick="fulfillMilkDuty()"]');
   const restoreButton = setButtonLoading(button, 'שולחת מייל...');
   try {
-    const res = await fetch(`${API_URL}/milk/advance`, {
+    const res = await authFetch(`${API_URL}/milk/advance`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' }
     });
@@ -746,7 +753,7 @@ async function advanceMilkDutyForAdmin() {
   const restoreButton = setButtonLoading(button, 'מקדמת תור...');
 
   try {
-    const advanceResponse = await fetch(`${API_URL}/milk/advance`, {
+    const advanceResponse = await authFetch(`${API_URL}/milk/advance`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' }
     });
@@ -775,7 +782,7 @@ async function loadMilkRotationAdmin() {
   if (!listEl) return;
 
   try {
-    const res = await fetch(`${API_URL}/milk`);
+    const res = await authFetch(`${API_URL}/milk`);
     const data = await res.json();
     currentMilkRotationUserIds = (data.rotation || []).map(r => r.user_id);
 
@@ -790,7 +797,7 @@ async function loadMilkRotationAdmin() {
     // אכלוס ה-select בכל המשתמשות.
     if (selectEl) {
       selectEl.innerHTML = '<option value="">בחרי משתמשת...</option>';
-      const usersRes = await fetch(`${API_URL}/auth/users`);
+      const usersRes = await authFetch(`${API_URL}/auth/users`);
       if (usersRes.ok) {
         const users = await usersRes.json();
         users.forEach(u => {
@@ -823,7 +830,7 @@ async function saveMilkRotation() {
     return;
   }
   try {
-    const res = await fetch(`${API_URL}/milk/rotation`, {
+    const res = await authFetch(`${API_URL}/milk/rotation`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userIds: currentMilkRotationUserIds })
@@ -875,7 +882,7 @@ async function loadWeeklyCalendar() {
 
   // טעינת האירועים המשותפים מהשרת (מופיעים לכולם, לא אישיים)
   try {
-    const eventsRes = await fetch(`${API_URL}/events`);
+    const eventsRes = await authFetch(`${API_URL}/events`);
     if (eventsRes.ok) {
       const sharedEvents = await eventsRes.json();
       // ממירים event_date לפורמט date אחיד אצל ה-frontend
@@ -888,7 +895,7 @@ async function loadWeeklyCalendar() {
   let assignments = [];
   try {
     if (currentUserId) {
-      const res = await fetch(`${API_URL}/assignments?userId=${currentUserId}`);
+      const res = await authFetch(`${API_URL}/assignments?userId=${currentUserId}`);
       if (res.ok) assignments = await res.json();
     }
   } catch (err) {}
@@ -953,7 +960,7 @@ if (calendarForm) {
     const date = document.getElementById('event-date').value;
 
     try {
-      const res = await fetch(`${API_URL}/events`, {
+      const res = await authFetch(`${API_URL}/events`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -976,7 +983,7 @@ if (calendarForm) {
             'ביטול'
           );
           if (ok) {
-            const confirmRes = await fetch(`${API_URL}/events/${existing.id}/confirm`, {
+            const confirmRes = await authFetch(`${API_URL}/events/${existing.id}/confirm`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ userId: currentUserId || null })
@@ -1024,7 +1031,7 @@ async function deleteEvent(id) {
   if (!ok) return;
 
   try {
-    const res = await fetch(`${API_URL}/events/${id}`, { method: 'DELETE' });
+    const res = await authFetch(`${API_URL}/events/${id}`, { method: 'DELETE' });
     if (!res.ok) {
       const errData = await res.json().catch(() => ({}));
       throw new Error(errData.error || 'שגיאה במחיקת האירוע');
@@ -1100,7 +1107,7 @@ if (adminEmailForm) {
     const restoreButton = setButtonLoading(submitButton, 'שולחת מייל...');
 
     try {
-      const response = await fetch(`${API_URL}/auth/admin/send-email`, {
+      const response = await authFetch(`${API_URL}/auth/admin/send-email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1125,7 +1132,7 @@ if (adminEmailForm) {
 async function loadUsersList() {
   const container = document.getElementById('users-management-list');
   try {
-    const res = await fetch(`${API_URL}/auth/users`);
+    const res = await authFetch(`${API_URL}/auth/users`);
     const users = await res.json();
     container.innerHTML = users.length ? '' : '<div style="color:var(--text-muted)">אין משתמשות רשומות.</div>';
     
@@ -1148,7 +1155,7 @@ async function deleteUser(userId) {
   if (!await showCustomConfirm('מחיקת משתמשת', 'האם את בטוחה שאת רוצה למחוק משתמשת זו לצמיתות?')) return;
 
   try {
-    const res = await fetch(`${API_URL}/auth/users/${userId}`, {
+    const res = await authFetch(`${API_URL}/auth/users/${userId}`, {
       method: 'DELETE'
     });
     if (res.ok) {
@@ -1253,7 +1260,7 @@ document.addEventListener('click', async (e) => {
 
         showToast('שולחת מייל שחזור, נא להמתין...');
         try {
-          const res = await fetch(`${API_URL}/auth/forgot-password`, {
+          const res = await authFetch(`${API_URL}/auth/forgot-password`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email })
