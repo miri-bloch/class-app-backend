@@ -154,4 +154,4 @@ async function sendMilkDutyEmail(toEmail, userName) {
   );
 }
 
-module.exports = { sendPasswordResetEmail, sendHomeworkDigest, sendMilkDutyEmail, sendEmail, sendBrandedEmail };
+module.exports = { sendPasswordResetEmail, sendHomeworkDigest, sendMilkDutyEmail, sendEmail, sendBrandedEmail, sendBrandedEmailWithAttachment };

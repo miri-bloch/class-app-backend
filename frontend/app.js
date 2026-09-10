@@ -334,8 +334,6 @@ async function loadAssignments() {
 
   const renderAssignments = (assignments) => {
     const today = parseLocalDate(getDateKey(new Date()));
-    const cutoff = new Date(today);
-    cutoff.setDate(cutoff.getDate() - 2);
     const visibleAssignments = assignments.filter(a => {
       if (showHidden) return true;
       return !hiddenAssignments.has(String(a.id));
@@ -356,7 +354,10 @@ async function loadAssignments() {
       const classPct = Math.round((compCount / totUsers) * 100);
       const dateObj = parseLocalDate(a.due_date);
       const gregorianDate = dateObj.toLocaleDateString('he-IL');
-      const canHide = dateObj < today && Boolean(a.is_completed);
+      // הגדרת תנאים נפרדים: ההסתרה זמינה ברגע שבוצעה (סימון V), והצביעה ה"ישנה"
+      // נשארת קשורה לעברת זמן ההגשה כדי לשמר את האפקט של "מטלה שעברה זמנה".
+      const isDue = dateObj < today;
+      const canHide = Boolean(a.is_completed);
       let hebrewDate = '';
 
       try {
@@ -367,7 +368,7 @@ async function loadAssignments() {
       }
 
       list.innerHTML += `
-        <div class="assignment-card assignment-item ${canHide ? 'assignment-old' : ''}" id="assignment-${a.id}">
+        <div class="assignment-card assignment-item ${isDue ? 'assignment-old' : ''}" id="assignment-${a.id}">
           <div class="assignment-card-header">
             <div>
               <div class="assignment-subject">${a.subject}</div>
@@ -930,8 +931,9 @@ async function loadWeeklyCalendar() {
     const eventsRes = await authFetch(`${API_URL}/events`);
     if (eventsRes.ok) {
       const sharedEvents = await eventsRes.json();
-      // ממירים event_date לפורמט date אחיד אצל ה-frontend
-      events = sharedEvents.map(ev => ({ id: ev.id, title: ev.title, date: ev.event_date, created_by_name: ev.created_by_name, confirm_count: ev.confirm_count }));
+      // ממירים event_date לפורמט date אחיד אצל ה-frontend (YYYY-MM-DD) בצורה טהורה,
+      // כדי שיתאים ל-dateString בלוח גם כשהשרת מחזיר ISO עם שעה.
+      events = sharedEvents.map(ev => ({ id: ev.id, title: ev.title, date: String(ev.event_date).slice(0, 10), created_by_name: ev.created_by_name, confirm_count: ev.confirm_count }));
     }
   } catch (err) {
     console.error('שגיאה בטעינת אירועים משותפים:', err);
@@ -963,7 +965,7 @@ const todayStr = getDateKey(new Date());
     const dayEvents = events.filter(e => e.date === dateString);
     const dayAssignments = assignments.filter(a => {
       if (!a.due_date) return false;
-      return getDateKey(parseLocalDate(a.due_date)) === dateString;
+      return String(a.due_date).slice(0, 10) === dateString;
     });
 
     const isToday = (dateString === todayStr);
