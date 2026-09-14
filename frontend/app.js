@@ -228,10 +228,7 @@ function initTabs() {
       document.querySelectorAll('.tab-panel').forEach(panel => {
         panel.classList.toggle('active', panel.id === target);
       });
-      // גלילה עדינה לתחילת התוכן אחרי מעבר
-      if (target !== 'tab-assignments') {
-        document.querySelector('.tab-nav')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
+      // ללא גלילה — המעבר משאיר את התצוגה במקומה הנוכחי
     });
   });
 }
@@ -1135,7 +1132,9 @@ function adjustFontSize(direction) {
   showToast('גודל תצוגה עודכן');
 }
 
-let isHighContrast = localStorage.getItem('class_app_theme') === 'light';
+// ברירת המחדל היא מצב בהיר: רק מי ששמרה 'dark' במפורש תחזור למצב כהה.
+// מי שאין לה העדפה שמורה (או ששמרה 'light') תיפתח במצב בהיר.
+let isHighContrast = localStorage.getItem('class_app_theme') !== 'dark';
 
 function applyTheme() {
   document.body.classList.toggle('light-theme', isHighContrast);
