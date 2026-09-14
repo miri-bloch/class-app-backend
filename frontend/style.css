@@ -677,6 +677,75 @@ footer span {
   background: transparent;
 }
 
+/* ---------- ניווט בכרטיסיות (Tabs) ---------- */
+.tab-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 25px;
+  padding: 8px;
+  background: var(--glass-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  backdrop-filter: blur(10px);
+}
+
+.tab-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-muted);
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  font-family: 'Rubik', sans-serif;
+}
+
+.tab-btn:hover {
+  border-color: var(--neon-cyan);
+  color: var(--text-main);
+  background: rgba(34, 211, 238, 0.06);
+}
+
+.tab-btn.active {
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.18), rgba(192, 132, 252, 0.18));
+  border-color: var(--neon-cyan);
+  color: var(--text-main);
+  box-shadow: 0 0 15px rgba(34, 211, 238, 0.25);
+}
+
+.tab-panel {
+  display: none;
+}
+
+.tab-panel.active {
+  display: block;
+  animation: tabFadeIn 0.3s ease;
+}
+
+@keyframes tabFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* כרטיסיות עם אזור יחיד — מרכז ומהווה רוחב הגיוני */
+.dashboard-single {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+/* התאמה למסכים צרים */
+@media (max-width: 600px) {
+  .tab-btn {
+    flex: 1 1 40%;
+    font-size: 0.85rem;
+    padding: 8px 10px;
+  }
+}
+
 .stats-list::-webkit-scrollbar-thumb {
   background: rgba(148, 163, 184, 0.55);
   border-radius: 8px;

@@ -94,8 +94,19 @@
         <h2 id="greeting-banner" style="margin: 0; border: none; font-size: 1.4rem; color: var(--neon-cyan);">שלום וברכה! 🌟</h2>
       </div>
 
+      <!-- שורת ניווט בכרטיסיות -->
+      <nav class="tab-nav" id="dashboard-tabs" role="tablist" aria-label="אזורי המערכת">
+        <button class="tab-btn active" data-tab="tab-assignments" role="tab">📚 מטלות וביצוע</button>
+        <button class="tab-btn" data-tab="tab-notices" role="tab">📢 מודעות</button>
+        <button class="tab-btn" data-tab="tab-milk" role="tab">🥛 תורנות חלב</button>
+        <button class="tab-btn" data-tab="tab-schedule" role="tab">🗓️ מערכת שעות</button>
+        <button class="tab-btn" data-tab="tab-calendar" role="tab">📅 לוח שנה</button>
+      </nav>
+
+      <!-- כרטיסייה: מטלות וביצוע (כולל סטטיסטיקות) -->
+      <section class="tab-panel active" id="tab-assignments">
       <div class="dashboard-grid">
-        
+
         <!-- אזור 1: מטלות ושיעורי בית עם רשימת בחירה למקצועות -->
         <section class="glass-card assignments-focus">
           <h2>📚 מטלות ושיעורי בית</h2>
@@ -138,37 +149,6 @@
           </details>
         </section>
 
-        <!-- אזור 2: לוח מודעות והודעות כיתתיות -->
-        <section class="glass-card dashboard-secondary">
-          <h2>📢 לוח מודעות והודעות</h2>
-          <form id="notice-form" style="margin-bottom: 15px;">
-            <div class="input-group">
-              <input type="text" id="notice-title" placeholder="כותרת ההודעה" required>
-            </div>
-            <div class="input-group">
-              <textarea id="notice-content" placeholder="תוכן ההודעה (שולח מייל לכולן)..." rows="2" required></textarea>
-            </div>
-            <button type="submit" class="neon-btn outline" style="font-size: 0.9rem; padding: 8px;">פרסמי מודעה ושלחי מייל</button>
-          </form>
-          <div id="notices-list" class="assignments-grid"></div>
-        </section>
-
-        <!-- אזור 3: תורנות חלב -->
-        <section class="glass-card dashboard-secondary">
-          <h2>🥛 תורנות חלב (סבב אוטומטי)</h2>
-          <div style="background: rgba(0,0,0,0.4); padding: 15px; border-radius: 8px; border-right: 4px solid var(--neon-cyan); margin-bottom: 15px;">
-            <div style="font-size: 0.9rem; color: var(--text-muted);">התורנית כרגע בתור:</div>
-            <div id="current-milk-person" style="font-size: 1.2rem; font-weight: bold; color: var(--neon-cyan); margin: 5px 0;">טוען...</div>
-            
-            <div style="display: flex; gap: 10px; margin-top: 15px;">
-              <div id="fulfill-milk-container" style="flex: 1; display: none;">
-                <button onclick="fulfillMilkDuty()" class="neon-btn" style="font-size: 0.85rem; padding: 6px; width: 100%;">קניתי והעברתי תור 🛒</button>
-              </div>
-            </div>
-            <div id="not-your-turn-msg" style="font-size: 0.8rem; color: #f43f5e; margin-top: 8px; text-align: center; display: none;">* רק התורנית הנוכחית יכולה לסמן שקנתה את החלב.</div>
-          </div>
-        </section>
-
         <!-- אזור 4: סטטיסטיקות ביצוע -->
         <section class="glass-card">
           <h2>📊 סטטיסטיקות ביצוע</h2>
@@ -176,32 +156,76 @@
         </section>
 
       </div>
+      </section><!-- /tab-assignments -->
 
-      <!-- אזור מערכת שעות שבועית - שבבים א' -->
-      <section class="glass-card full-width" style="margin-bottom: 25px;">
-        <h2>🗓️ מערכת שעות שבועית - שבבים א' (לחצי על מקצוע לצפייה במטלות פעילות)</h2>
-        <div id="shvabim-schedule-grid" style="display: grid; grid-template-columns: repeat(6, minmax(150px, 1fr)); gap: 10px; overflow-x: auto; padding-bottom: 10px;"></div>
-      </section>
-
-      <!-- אזור 5: לוח שנה מלא -->
-      <section class="glass-card full-width">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
-          <h2 style="margin: 0; border: none;">📅 לוח שנה שבועי</h2>
-          <div style="display: flex; gap: 10px; align-items: center;">
-            <button onclick="changeWeek(-1)" class="neon-btn outline" style="width: auto; padding: 6px 12px; font-size: 0.85rem;">שבוע קודם ◀</button>
-            <span id="current-week-label" style="color: var(--neon-cyan); font-weight: bold; font-size: 0.95rem;"></span>
-            <button onclick="changeWeek(1)" class="neon-btn outline" style="width: auto; padding: 6px 12px; font-size: 0.85rem;">▶ שבוע הבא</button>
-          </div>
+      <!-- כרטיסייה: מודעות -->
+      <section class="tab-panel" id="tab-notices">
+        <div class="dashboard-grid dashboard-single">
+          <section class="glass-card dashboard-secondary">
+            <h2>📢 לוח מודעות והודעות</h2>
+            <form id="notice-form" style="margin-bottom: 15px;">
+              <div class="input-group">
+                <input type="text" id="notice-title" placeholder="כותרת ההודעה" required>
+              </div>
+              <div class="input-group">
+                <textarea id="notice-content" placeholder="תוכן ההודעה (שולח מייל לכולן)..." rows="2" required></textarea>
+              </div>
+              <button type="submit" class="neon-btn outline" style="font-size: 0.9rem; padding: 8px;">פרסמי מודעה ושלחי מייל</button>
+            </form>
+            <div id="notices-list" class="assignments-grid"></div>
+          </section>
         </div>
+      </section><!-- /tab-notices -->
 
-        <form id="calendar-event-form" style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;">
-          <input type="text" id="event-title" placeholder="שם האירוע / מבחן / פגישה" required style="flex: 2; min-width: 200px;">
-          <input type="date" id="event-date" required style="flex: 1; min-width: 140px;">
-          <button type="submit" class="neon-btn" style="flex: 1; min-width: 120px; padding: 10px;">שמרי בלוח השנה</button>
-        </form>
+      <!-- כרטיסייה: תורנות חלב -->
+      <section class="tab-panel" id="tab-milk">
+        <div class="dashboard-grid dashboard-single">
+          <section class="glass-card dashboard-secondary">
+            <h2>🥛 תורנות חלב (סבב אוטומטי)</h2>
+            <div style="background: rgba(0,0,0,0.4); padding: 15px; border-radius: 8px; border-right: 4px solid var(--neon-cyan); margin-bottom: 15px;">
+              <div style="font-size: 0.9rem; color: var(--text-muted);">התורנית כרגע בתור:</div>
+              <div id="current-milk-person" style="font-size: 1.2rem; font-weight: bold; color: var(--neon-cyan); margin: 5px 0;">טוען...</div>
 
-        <div id="weekly-calendar-grid" class="weekly-calendar-grid"></div>
-      </section>
+              <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <div id="fulfill-milk-container" style="flex: 1; display: none;">
+                  <button onclick="fulfillMilkDuty()" class="neon-btn" style="font-size: 0.85rem; padding: 6px; width: 100%;">קניתי והעברתי תור 🛒</button>
+                </div>
+              </div>
+              <div id="not-your-turn-msg" style="font-size: 0.8rem; color: #f43f5e; margin-top: 8px; text-align: center; display: none;">* רק התורנית הנוכחית יכולה לסמן שקנתה את החלב.</div>
+            </div>
+          </section>
+        </div>
+      </section><!-- /tab-milk -->
+
+      <!-- כרטיסייה: מערכת שעות -->
+      <section class="tab-panel" id="tab-schedule">
+        <section class="glass-card full-width">
+          <h2>🗓️ מערכת שעות שבועית - שבבים א' (לחצי על מקצוע לצפייה במטלות פעילות)</h2>
+          <div id="shvabim-schedule-grid" style="display: grid; grid-template-columns: repeat(6, minmax(150px, 1fr)); gap: 10px; overflow-x: auto; padding-bottom: 10px;"></div>
+        </section>
+      </section><!-- /tab-schedule -->
+
+      <!-- כרטיסייה: לוח שנה -->
+      <section class="tab-panel" id="tab-calendar">
+        <section class="glass-card full-width">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+            <h2 style="margin: 0; border: none;">📅 לוח שנה שבועי</h2>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <button onclick="changeWeek(-1)" class="neon-btn outline" style="width: auto; padding: 6px 12px; font-size: 0.85rem;">שבוע קודם ◀</button>
+              <span id="current-week-label" style="color: var(--neon-cyan); font-weight: bold; font-size: 0.95rem;"></span>
+              <button onclick="changeWeek(1)" class="neon-btn outline" style="width: auto; padding: 6px 12px; font-size: 0.85rem;">▶ שבוע הבא</button>
+            </div>
+          </div>
+
+          <form id="calendar-event-form" style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;">
+            <input type="text" id="event-title" placeholder="שם האירוע / מבחן / פגישה" required style="flex: 2; min-width: 200px;">
+            <input type="date" id="event-date" required style="flex: 1; min-width: 140px;">
+            <button type="submit" class="neon-btn" style="flex: 1; min-width: 120px; padding: 10px;">שמרי בלוח השנה</button>
+          </form>
+
+          <div id="weekly-calendar-grid" class="weekly-calendar-grid"></div>
+        </section>
+      </section><!-- /tab-calendar -->
 
     </div>
   </main>

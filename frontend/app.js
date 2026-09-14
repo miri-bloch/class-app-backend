@@ -212,6 +212,28 @@ function initDashboard(userName, email) {
   loadShvabimSchedule();
   loadWeeklyCalendar();
   loadEmailPreference();
+  initTabs();
+}
+
+// ניווט בכרטיסיות: מציג פאנל אחד בלבד ומעדכן את הכפתור הפעיל
+function initTabs() {
+  const tabButtons = document.querySelectorAll('.tab-btn');
+  tabButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.tab;
+      // עדכון כפתורים פעילים
+      tabButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      // עדכון פאנלים
+      document.querySelectorAll('.tab-panel').forEach(panel => {
+        panel.classList.toggle('active', panel.id === target);
+      });
+      // גלילה עדינה לתחילת התוכן אחרי מעבר
+      if (target !== 'tab-assignments') {
+        document.querySelector('.tab-nav')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
 }
 
 async function loadEmailPreference() {
