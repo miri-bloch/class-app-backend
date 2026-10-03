@@ -548,11 +548,14 @@ async function savePersonalNote(id) {
 
   const saveBtn = card ? card.querySelector('.assignment-personal-note-save') : null;
   const restoreButton = setButtonLoading(saveBtn, 'שומרת...');
+  // שומרים גם את מצב הביצוע הנוכחי (V) כדי שלא יאופס על ידי שמירת הערה.
+  const completeBox = card ? card.querySelector('.complete-checkbox') : null;
+  const isCompleted = completeBox ? completeBox.checked : false;
   try {
     const res = await authFetch(`${API_URL}/assignments/${id}/note`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: currentUserId, is_completed: false, note_text: noteText })
+      body: JSON.stringify({ userId: currentUserId, is_completed: isCompleted, note_text: noteText })
     });
     if (!res.ok) throw new Error('שגיאה בשמירת ההערה');
     showToast('ההערה האישית נשמרה!');
