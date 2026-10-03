@@ -116,8 +116,8 @@
           </div>
           <div id="assignments-list" class="assignments-grid assignment-list"></div>
 
-          <details class="add-assignment-panel">
-            <summary>הוסיפי מטלה חדשה</summary>
+          <div class="add-assignment-panel">
+            <h3 class="add-assignment-heading">➕ הוסיפי מטלה חדשה</h3>
             <form id="add-assignment-form">
               <div class="add-assignment-fields">
                 <div class="input-group">
@@ -146,13 +146,13 @@
               </div>
               <button type="submit" class="neon-btn outline">הוסיפי מטלה</button>
             </form>
-          </details>
+          </div>
         </section>
 
         <!-- אזור 4: סטטיסטיקות ביצוע -->
-        <section class="glass-card">
+        <section class="glass-card stats-fullwidth">
           <h2>📊 סטטיסטיקות ביצוע</h2>
-          <div id="stats-list" class="assignments-grid"></div>
+          <div id="stats-list" class="stats-grid"></div>
         </section>
 
       </div>
@@ -220,7 +220,8 @@
           <form id="calendar-event-form" style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;">
             <input type="text" id="event-title" placeholder="שם האירוע / מבחן / פגישה" required style="flex: 2; min-width: 200px;">
             <input type="date" id="event-date" required style="flex: 1; min-width: 140px;">
-            <button type="submit" class="neon-btn" style="flex: 1; min-width: 120px; padding: 10px;">שמרי בלוח השנה</button>
+            <button type="submit" data-scope="shared" class="neon-btn" style="flex: 1; min-width: 120px; padding: 10px;">🌍 אירוע לכולן</button>
+            <button type="submit" data-scope="personal" class="neon-btn outline" style="flex: 1; min-width: 120px; padding: 10px;">🔒 אירוע אישי (רק אני)</button>
           </form>
 
           <div id="weekly-calendar-grid" class="weekly-calendar-grid"></div>
@@ -283,6 +284,8 @@
             <button onclick="saveMilkRotation()" class="neon-btn outline" style="width: 100%; font-size: 0.85rem; padding: 8px; border-color: var(--neon-purple); color: var(--neon-purple);">שמרי סדר התור 💾</button>
           </div>
 
+          <h3 style="color: var(--neon-cyan); font-size: 0.9rem; margin: 0 0 4px 0;">שליחת מייל מעוצב למייל מסוים ✉️</h3>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0 0 8px 0;">משלחים רק לכתובות שאת רושמת להלן — לא לכל המשתמשות.</p>
           <form id="admin-email-form" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;">
             <textarea id="admin-email-to" placeholder="כתובות מייל, מופרדות בפסיקים או בשורות חדשות" rows="2" required style="padding: 8px; font-size: 0.85rem;"></textarea>
             <input type="text" id="admin-email-subject" placeholder="נושא המייל" required style="padding: 8px; font-size: 0.85rem;">

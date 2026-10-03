@@ -371,6 +371,7 @@ async function loadAssignments() {
       const compCount = parseInt(a.completed_count) || 0;
       const totUsers = parseInt(a.total_users) || 1;
       const classPct = Math.round((compCount / totUsers) * 100);
+      const meIsStudent = a.me_is_student === true || a.me_is_student === 'true';
       const dateObj = parseLocalDate(a.due_date);
       const gregorianDate = dateObj.toLocaleDateString('he-IL');
       // הגדרת תנאים נפרדים: ההסתרה זמינה ברגע שבוצעה (סימון V), והצביעה ה"ישנה"
@@ -412,6 +413,13 @@ async function loadAssignments() {
             <a href="https://drive.google.com/uc?export=download&id=${a.drive_file_id}" target="_blank" rel="noopener" class="neon-btn outline" style="width:auto; padding:5px 9px; font-size:0.78rem; text-decoration:none;">הורדה</a>
             <button onclick="sendAssignmentToEmail(${a.id})" class="neon-btn outline" style="width:auto; padding:5px 9px; font-size:0.78rem;">שלחי לי למייל 📧</button>
           </div>` : ''}
+          <div class="assignment-personal-note">
+            <div class="assignment-personal-note-row">
+              <input type="text" class="assignment-personal-note-input" placeholder="הערה אישית (רק את רואה)..." value="${(a.note_text || '').replace(/"/g, '&quot;')}">
+              <button onclick="savePersonalNote(${a.id})" class="assignment-personal-note-save" title="שמרי הערה">שמרי ✏️</button>
+            </div>
+          </div>
+          ${!meIsStudent ? '<div class="assignment-nonstudent-hint">💭 משחקת משקיפה — הביצוע שלך כאן לא נספר בסטטיסטיקת הכיתה.</div>' : ''}
           <label class="assignment-complete">
             <input type="checkbox" class="complete-checkbox custom-checkbox" ${isChecked} onchange="toggleAssignment(${a.id}, this.checked)"> בוצע ✓
           </label>
@@ -501,10 +509,28 @@ document.getElementById('add-assignment-form').addEventListener('submit', async 
 });
 
 async function toggleAssignment(id, isCompleted) {
+  // קריאת ההערה הנוכחית משדה ההערה בכרטיס (אם כבר הוצג) מבלי למחוק אותה,
+  // כדי שסימון V לא יאפס את ההערה האישית של המשתמשת.
+  const card = document.getElementById(`assignment-${id}`);
+  const noteInput = card ? card.querySelector('.assignment-personal-note-input') : null;
+  let currentNote = noteInput ? noteInput.value : '';
+
+  // אם אין שדה הערה בכרטיס — נשלוף את ההערה הקיימת מהשרת כדי לשמרה.
+  if (currentNote === '') {
+    try {
+      const res = await authFetch(`${API_URL}/assignments?userId=${currentUserId}`);
+      if (res.ok) {
+        const all = await res.json();
+        const match = all.find(a => Number(a.id) === Number(id) && a.note_text);
+        if (match) currentNote = match.note_text || '';
+      }
+    } catch (err) {}
+  }
+
   const response = await authFetch(`${API_URL}/assignments/${id}/note`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId: currentUserId, is_completed: isCompleted, note_text: '' })
+    body: JSON.stringify({ userId: currentUserId, is_completed: isCompleted, note_text: currentNote })
   });
   if (!response.ok) {
     showToast('שגיאה בעדכון ביצוע המטלה', true);
@@ -512,6 +538,29 @@ async function toggleAssignment(id, isCompleted) {
   }
   loadAssignments();
   loadAssignmentStats();
+}
+
+// שמירת הערה אישית למטלה — UPSERT של (user_id, assignment_id)
+async function savePersonalNote(id) {
+  const card = document.getElementById(`assignment-${id}`);
+  const noteInput = card ? card.querySelector('.assignment-personal-note-input') : null;
+  const noteText = noteInput ? noteInput.value : '';
+
+  const saveBtn = card ? card.querySelector('.assignment-personal-note-save') : null;
+  const restoreButton = setButtonLoading(saveBtn, 'שומרת...');
+  try {
+    const res = await authFetch(`${API_URL}/assignments/${id}/note`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: currentUserId, is_completed: false, note_text: noteText })
+    });
+    if (!res.ok) throw new Error('שגיאה בשמירת ההערה');
+    showToast('ההערה האישית נשמרה!');
+  } catch (err) {
+    showToast(err.message || 'שגיאה בשמירת ההערה', true);
+  } finally {
+    if (restoreButton) restoreButton();
+  }
 }
 
 async function sendAssignmentToEmail(assignmentId) {
@@ -542,12 +591,17 @@ async function loadAssignmentStats() {
       const total = parseInt(s.total_users) || 1;
       const pct = Math.round((comp / total) * 100);
       statsList.innerHTML += `
-        <div class="assignment-card">
-          <div class="assignment-subject">${s.subject || 'כללי'}</div>
-          <div class="assignment-title" style="font-size:0.9rem;">${s.title}</div>
-          <div style="font-size:0.85rem; color:var(--text-muted); margin-top:4px;">השלימו: ${comp}/${total} (${pct}%)</div>
-          <div style="background:rgba(255,255,255,0.1); height:6px; border-radius:3px; margin-top:6px; overflow:hidden;">
-            <div style="background:var(--neon-cyan); width:${pct}%; height:100%;"></div>
+        <div class="stats-card">
+          <div class="stats-card-top">
+            <span class="stats-card-subject">${s.subject || 'כללי'}</span>
+            <span class="stats-card-badge">${pct}%</span>
+          </div>
+          <div class="stats-card-title">${s.title}</div>
+          <div class="assignment-class-stats">
+            <span class="assignment-stats-label">השלימו: ${comp}/${total} תלמידות</span>
+            <div class="assignment-stats-bar">
+              <div class="assignment-stats-fill" style="width:${pct}%"></div>
+            </div>
           </div>
         </div>`;
     });
@@ -952,10 +1006,24 @@ async function loadWeeklyCalendar() {
       const sharedEvents = await eventsRes.json();
       // ממירים event_date לפורמט date אחיד אצל ה-frontend (YYYY-MM-DD) בצורה טהורה,
       // כדי שיתאים ל-dateString בלוח גם כשהשרת מחזיר ISO עם שעה.
-      events = sharedEvents.map(ev => ({ id: ev.id, title: ev.title, date: String(ev.event_date).slice(0, 10), created_by_name: ev.created_by_name, confirm_count: ev.confirm_count }));
+      events = sharedEvents.map(ev => ({ id: ev.id, title: ev.title, date: String(ev.event_date).slice(0, 10), created_by_name: ev.created_by_name, confirm_count: ev.confirm_count, personal: false }));
     }
   } catch (err) {
     console.error('שגיאה בטעינת אירועים משותפים:', err);
+  }
+
+  // טעינת האירועים האישיים (אם המשתמשת מחוברת) — נראים רק לה וסומנו 🔒
+  let personalEvents = [];
+  if (currentUserId) {
+    try {
+      const personalRes = await authFetch(`${API_URL}/events/personal?userId=${currentUserId}`);
+      if (personalRes.ok) {
+        personalEvents = await personalRes.json();
+        personalEvents = personalEvents.map(ev => ({ id: ev.id, title: ev.title, date: String(ev.event_date).slice(0, 10), personal: true }));
+      }
+    } catch (err) {
+      console.error('שגיאה בטעינת אירועים אישיים:', err);
+    }
   }
 
   let assignments = [];
@@ -982,6 +1050,7 @@ const todayStr = getDateKey(new Date());
     }
 
     const dayEvents = events.filter(e => e.date === dateString);
+    const dayPersonalEvents = personalEvents.filter(e => e.date === dateString);
     const dayAssignments = assignments.filter(a => {
       if (!a.due_date) return false;
       return String(a.due_date).slice(0, 10) === dateString;
@@ -1012,7 +1081,12 @@ const todayStr = getDateKey(new Date());
               <span style="flex:1;">📌 ${e.title}${e.created_by_name || e.confirm_count ? ` <span style="color:var(--text-muted); font-size:0.7rem;">${e.created_by_name ? 'הוסיפה: ' + e.created_by_name : ''}${e.confirm_count ? (e.created_by_name ? ' • ' : '') + e.confirm_count + ' בנות' : ''}</span>` : ''}</span>
               <button onclick="deleteEvent(${e.id})" title="מחיקה לכולם" style="background:none; border:none; color:#f43f5e; cursor:pointer; font-size:0.75rem; padding:0; flex-shrink:0;">✕</button>
             </div>`).join('')}
-          ${!dayAssignments.length && !dayEvents.length ? '<span style="color: var(--text-muted); font-size: 0.75rem; text-align: center; margin-top: auto; margin-bottom: auto;">אין אירועים או מטלות</span>' : ''}
+          ${dayPersonalEvents.map(e => `
+            <div style="background: rgba(34,211,238,0.12); border-right: 3px solid var(--neon-cyan); padding: 5px 8px; border-radius: 4px; font-size: 0.8rem; display:flex; justify-content:space-between; align-items:center; gap:6px;">
+              <span style="flex:1;">🔒 ${e.title} <span style="color:var(--text-muted); font-size:0.7rem;">אישי</span></span>
+              <button onclick="deletePersonalEvent(${e.id})" title="מחיקת אירוע אישי" style="background:none; border:none; color:#f43f5e; cursor:pointer; font-size:0.75rem; padding:0; flex-shrink:0;">✕</button>
+            </div>`).join('')}
+          ${!dayAssignments.length && !dayEvents.length && !dayPersonalEvents.length ? '<span style="color: var(--text-muted); font-size: 0.75rem; text-align: center; margin-top: auto; margin-bottom: auto;">אין אירועים או מטלות</span>' : ''}
         </div>
       </div>`;
   });
@@ -1024,6 +1098,31 @@ if (calendarForm) {
     e.preventDefault();
     const title = document.getElementById('event-title').value;
     const date = document.getElementById('event-date').value;
+    // זיהוי איזה כפתור נשלח: shared (לכולן) או personal (אישי, רק לי)
+    const scope = e.submitter ? e.submitter.dataset.scope : 'shared';
+
+    // אירוע אישי — נשמר בטבלת personal_events ורואה אותו רק היוצרת
+    if (scope === 'personal') {
+      try {
+        const res = await authFetch(`${API_URL}/events/personal`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, event_date: date, userId: currentUserId || null })
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || 'שגיאה בהוספת האירוע האישי');
+        }
+        calendarForm.reset();
+        await loadWeeklyCalendar();
+        showToast('האירוע האישי נשמר — רק את רואה אותו 🔒');
+        return;
+      } catch (err) {
+        console.error(err);
+        showToast(err.message || 'שגיאה בהוספת האירוע האישי', true);
+        return;
+      }
+    }
 
     try {
       const res = await authFetch(`${API_URL}/events`, {
@@ -1114,6 +1213,30 @@ async function deleteEvent(id) {
   }
 }
 
+// מחיקת אירוע אישי — נוגעת רק למשתמשת עצמה, אין צורך באישור "לכולם"
+async function deletePersonalEvent(id) {
+  const ok = await showCustomConfirm(
+    'מחיקת אירוע אישי',
+    'האירוע האישי הזה נראה רק לך. למחוק אותו?',
+    'כן, מחקי',
+    'ביטול'
+  );
+  if (!ok) return;
+
+  try {
+    const res = await authFetch(`${API_URL}/events/personal/${id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || 'שגיאה במחיקת האירוע האישי');
+    }
+    await loadWeeklyCalendar();
+    showToast('האירוע האישי נמחק');
+  } catch (err) {
+    console.error(err);
+    showToast(err.message || 'שגיאה במחיקת האירוע האישי', true);
+  }
+}
+
 function toggleAccessibilityMenu() {
   const modal = document.getElementById('accessibility-modal');
   if (modal.style.display === 'flex') {
@@ -1155,7 +1278,7 @@ function toggleHighContrast() {
 
 function verifyAdminPassword() {
   const pass = document.getElementById('admin-password-input').value;
-  if (pass === '123') {
+  if (pass === 'MIRI') {
     sessionStorage.setItem('admin_password', pass);
     document.getElementById('admin-login-box').style.display = 'none';
     document.getElementById('admin-panel-content').style.display = 'block';
@@ -1205,13 +1328,24 @@ async function loadUsersList() {
     container.innerHTML = users.length ? '' : '<div style="color:var(--text-muted)">אין משתמשות רשומות.</div>';
     
     users.forEach(u => {
+      let lastSeenStr = 'טרם התחברה';
+      if (u.last_seen) {
+        try {
+          lastSeenStr = new Date(u.last_seen).toLocaleString('he-IL', {
+            day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
+          });
+        } catch (e) { lastSeenStr = 'טרם התחברה'; }
+      }
       container.innerHTML += `
-        <div style="background: rgba(0,0,0,0.4); padding: 10px 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border-right: 4px solid #f43f5e;">
-          <div>
-            <span style="font-weight: bold; color: white;">${u.full_name}</span> 
-            <span style="font-size: 0.85rem; color: var(--text-muted); margin-right: 10px;">(${u.email})</span>
+        <div style="background: rgba(0,0,0,0.4); padding: 10px 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border-right: 4px solid #f43f5e; gap: 10px;">
+          <div style="min-width: 0;">
+            <div style="display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;">
+              <span style="font-weight: bold; color: white;">${u.full_name}</span>
+              <span style="font-size: 0.85rem; color: var(--text-muted);">(${u.email})</span>
+            </div>
+            <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 3px;">התחברות אחרונה: ${lastSeenStr}</div>
           </div>
-          <button onclick="deleteUser(${u.id})" class="neon-btn outline" style="width: auto; padding: 5px 12px; font-size: 0.8rem; border-color: #f43f5e; color: #f43f5e;">מחיקת משתמשת</button>
+          <button onclick="deleteUser(${u.id})" class="neon-btn outline" style="width: auto; padding: 5px 12px; font-size: 0.8rem; border-color: #f43f5e; color: #f43f5e; flex-shrink: 0;">מחיקת משתמשת</button>
         </div>`;
     });
   } catch (err) {

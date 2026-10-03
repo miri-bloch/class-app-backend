@@ -8,12 +8,14 @@ const { optionalAuth } = require('../middleware/auth');
 // ניהול משתמשות מחוברות בזמן אמת (Heartbeat)
 const activeUsers = new Map();
 
-const ADMIN_PASSWORD = '123';
+const ADMIN_PASSWORD = 'MIRI';
 
-router.post('/heartbeat', optionalAuth, (req, res) => {
+router.post('/heartbeat', optionalAuth, async (req, res) => {
   const userId = req.user?.id ?? req.body.userId;
   if (userId) {
     activeUsers.set(userId, Date.now());
+    // עדכון "החיבור/פעילות האחרונה" במסד (גם למי ששומרת סשן בלי להתחבר מחדש)
+    pool.query('UPDATE users SET last_seen = CURRENT_TIMESTAMP WHERE id = $1', [userId]).catch(() => {});
   }
   const now = Date.now();
   for (const [id, time] of activeUsers.entries()) {
@@ -94,6 +96,8 @@ router.post('/login', async (req, res) => {
 
     const safeUser = { id: user.id, full_name: user.full_name, email: user.email };
     const token = signToken(safeUser);
+    // רישום החיבור האחרון
+    await pool.query('UPDATE users SET last_seen = CURRENT_TIMESTAMP WHERE id = $1', [user.id]);
     res.json({ message: 'התחברת בהצלחה', token, user: safeUser });
   } catch (err) {
     console.error('שגיאה בהתחברות:', err);
@@ -104,7 +108,7 @@ router.post('/login', async (req, res) => {
 // שליפת כל המשתמשות עבור פאנל הניהול
 router.get('/users', async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, full_name, email FROM users ORDER BY id ASC');
+    const result = await pool.query('SELECT id, full_name, email, last_seen, is_student FROM users ORDER BY id ASC');
     res.json(result.rows);
   } catch (err) {
     console.error('שגיאה בשליפת משתמשות:', err);

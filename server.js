@@ -86,6 +86,8 @@ const PORT = process.env.PORT || 3000;
 pool.query(`
   ALTER TABLE users ADD COLUMN IF NOT EXISTS email_notifications BOOLEAN DEFAULT TRUE;
   ALTER TABLE users ADD COLUMN IF NOT EXISTS notification_time TIME DEFAULT '20:00';
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS is_student BOOLEAN DEFAULT FALSE;
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS last_seen TIMESTAMP;
   ALTER TABLE assignments ADD COLUMN IF NOT EXISTS drive_file_id VARCHAR(255);
   ALTER TABLE assignments ADD COLUMN IF NOT EXISTS drive_web_view_link TEXT;
   ALTER TABLE assignments ADD COLUMN IF NOT EXISTS attachment_name VARCHAR(255);
@@ -113,6 +115,16 @@ pool.query(`
     UNIQUE(user_id),
     UNIQUE(position)
   );
+  CREATE TABLE IF NOT EXISTS personal_events (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(200) NOT NULL,
+    event_date DATE NOT NULL,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE INDEX IF NOT EXISTS idx_personal_events_user_date ON personal_events(user_id, event_date);
+  -- סימון 11 התלמידות הפעילות (היתר — מורה/אורחות — נשארות מסומנות FALSE)
+  UPDATE users SET is_student = TRUE WHERE id IN (8, 12, 14, 13, 15, 16, 11, 20, 9, 17, 10);
 `).catch(err => console.error('שגיאה בעדכון עמודות קבצי המטלות:', err));
 
 app.listen(PORT, () => {

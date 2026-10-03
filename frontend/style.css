@@ -750,3 +750,146 @@ footer span {
   background: rgba(148, 163, 184, 0.55);
   border-radius: 8px;
 }
+
+/* ---------- סטטיסטיקות (רוחב מלא + רשת כרטיסים) ---------- */
+.stats-fullwidth {
+  grid-column: 1 / -1;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+  /* ללא max-height וללא overflow — כל הכרטיסים מוצגים במלואם */
+}
+
+.stats-card {
+  background: rgba(0, 0, 0, 0.35);
+  border-right: 4px solid var(--neon-purple);
+  padding: 14px 16px;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.08);
+}
+
+.stats-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.stats-card-subject {
+  color: var(--neon-purple);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.stats-card-badge {
+  background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+  color: #050508;
+  font-size: 0.85rem;
+  font-weight: 800;
+  padding: 2px 10px;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.stats-card-title {
+  font-weight: 700;
+  color: var(--neon-cyan);
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+body.light-theme .stats-card {
+  background: rgba(255, 255, 255, 0.68);
+  border-color: rgba(38, 91, 125, 0.15);
+}
+
+/* ---------- הערה אישית למטלה ---------- */
+.assignment-personal-note {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+body.light-theme .assignment-personal-note {
+  border-top-color: rgba(38, 91, 125, 0.14);
+}
+
+.assignment-personal-note-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.assignment-personal-note-input {
+  flex: 1;
+  padding: 8px 10px;
+  font-size: 0.82rem;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(168, 85, 247, 0.25);
+  color: white;
+  min-width: 0;
+}
+
+body.light-theme .assignment-personal-note-input {
+  background: var(--input-bg);
+  color: var(--text-main);
+  border-color: rgba(124, 58, 237, 0.3);
+}
+
+.assignment-personal-note-input:focus {
+  outline: none;
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.35);
+}
+
+.assignment-personal-note-save {
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid var(--neon-cyan);
+  color: var(--neon-cyan);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.assignment-personal-note-save:hover {
+  background: rgba(34, 211, 238, 0.12);
+}
+
+.assignment-personal-note-save:disabled,
+.assignment-personal-note-save.is-loading {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+/* משפט עקיצה למשקיפות (מי שאינן תלמידות) */
+.assignment-nonstudent-hint {
+  margin-top: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgba(192, 132, 252, 0.1);
+  border-right: 3px solid var(--neon-purple);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+/* ---------- הבחנה אישי/ציבורי בלוח השנה ---------- */
+.calendar-event-shared {
+  background: rgba(168, 85, 247, 0.15);
+  border-right: 3px solid var(--neon-purple);
+}
+
+.calendar-event-personal {
+  background: rgba(34, 211, 238, 0.12);
+  border-right: 3px solid var(--neon-cyan);
+}

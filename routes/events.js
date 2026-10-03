@@ -130,6 +130,76 @@ router.post('/:id/confirm', optionalAuth, async (req, res) => {
   }
 });
 
+// ---------- אירועים אישיים (נראים רק ליוצרת, אינם מתאחדים עם המשותפים) ----------
+
+// שליפת האירועים האישיים של המשתמשת המחוברת בלבד
+router.get('/personal', optionalAuth, async (req, res) => {
+  const userId = req.user?.id ?? req.query.userId ?? null;
+  try {
+    const result = await pool.query(
+      `SELECT id, title, event_date
+       FROM personal_events
+       WHERE user_id = $1
+       ORDER BY event_date ASC`,
+      [userId]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'שגיאה בשליפת האירועים האישיים' });
+  }
+});
+
+// הוספת אירוע אישי (שמור רק למשתמשת שיצרה אותו)
+router.post('/personal', optionalAuth, async (req, res) => {
+  const { title, event_date } = req.body;
+  const userId = req.user?.id ?? req.body.userId ?? null;
+
+  if (!title || !event_date) {
+    return res.status(400).json({ error: 'כותרת ותאריך הם שדות חובה' });
+  }
+  if (!userId) {
+    return res.status(401).json({ error: 'נדרשת התחברות להוספת אירוע אישי' });
+  }
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO personal_events (title, event_date, user_id)
+       VALUES ($1, $2, $3)
+       RETURNING *`,
+      [title, event_date, userId]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'שגיאה בהוספת האירוע האישי' });
+  }
+});
+
+// מחיקת אירוע אישי — רק היוצרת יכולה למחוק את האירוע שלה
+router.delete('/personal/:id', auth, async (req, res) => {
+  const eventId = req.params.id;
+  const userId = req.user?.id;
+
+  try {
+    const result = await pool.query(
+      `DELETE FROM personal_events
+       WHERE id = $1 AND user_id = $2
+       RETURNING *`,
+      [eventId, userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'האירוע האישי לא נמצא או אינו שלך' });
+    }
+
+    res.json({ message: 'האירוע האישי נמחק בהצלחה' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'שגיאה במחיקת האירוע האישי' });
+  }
+});
+
 // מחיקת אירוע משותף (משפיעה על כולם — דורש התחברות וה-frontend מבקש אישור)
 router.delete('/:id', auth, async (req, res) => {
   const eventId = req.params.id;

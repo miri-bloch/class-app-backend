@@ -34,9 +34,15 @@ router.get('/', optionalAuth, async (req, res) => {
       `SELECT a.*,
               pn.is_completed,
               pn.note_text,
+              -- סופרים ביצוע רק בקרב התלמידות הפעילות (is_student = TRUE)
               (SELECT COUNT(*) FROM private_notes pc
-                WHERE pc.assignment_id = a.id AND pc.is_completed = TRUE) AS completed_count,
-              (SELECT COUNT(DISTINCT u.id) FROM users u) AS total_users
+                JOIN users pc_u ON pc.user_id = pc_u.id
+                WHERE pc.assignment_id = a.id
+                  AND pc.is_completed = TRUE
+                  AND pc_u.is_student = TRUE) AS completed_count,
+              (SELECT COUNT(*) FROM users u WHERE u.is_student = TRUE) AS total_users,
+              -- מציין אם המשתמשת הנוכחית היא תלמידה (להצגת משפט עדין לאחרות)
+              (SELECT is_student FROM users WHERE id = $1) AS me_is_student
        FROM assignments a
        LEFT JOIN private_notes pn ON a.id = pn.assignment_id AND pn.user_id = $1
        ORDER BY a.due_date ASC`,
@@ -119,10 +125,12 @@ router.get('/stats/completion', async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT a.id, a.subject, a.title,
-              COUNT(pn.id) FILTER (WHERE pn.is_completed = TRUE) as completed_count,
-              (SELECT COUNT(*) FROM users) as total_users
+              -- ביצוע נספר רק בקרב התלמידות הפעילות
+              COUNT(pn.id) FILTER (WHERE pn.is_completed = TRUE AND u.is_student = TRUE) as completed_count,
+              (SELECT COUNT(*) FROM users WHERE is_student = TRUE) as total_users
        FROM assignments a
        LEFT JOIN private_notes pn ON a.id = pn.assignment_id
+       LEFT JOIN users u ON pn.user_id = u.id
       GROUP BY a.id, a.subject, a.title`
     );
 
