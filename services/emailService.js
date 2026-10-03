@@ -54,9 +54,14 @@ function getBaseEmailTemplate(subtitleText, contentHtml) {
           ${contentHtml}
         </div>
 
-        <!-- פוטר מערכת -->
+        <!-- פוטר מערכת עם קישור כניסה לאתר -->
         <div style="border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 20px;">
-          <p style="font-size: 11px; color: #64748b; margin: 0;">M BLOCH - HighCode © כל הזכויות שמורות</p>
+          <p style="font-size: 11px; color: #64748b; margin: 0 0 14px 0;">M BLOCH - HighCode © כל הזכויות שמורות</p>
+          <a href="https://class-app-backend.onrender.com" target="_blank" rel="noopener"
+             style="display: inline-block; background: linear-gradient(135deg, #22d3ee, #c084fc); color: #050508; text-decoration: none; font-weight: bold; font-size: 13px; padding: 11px 26px; border-radius: 8px; letter-spacing: 0.5px;">
+            🔗 כניסה למערכת HighCode
+          </a>
+          <p style="font-size: 11px; color: #64748b; margin: 12px 0 0 0;">הקישור יעביר אותך ישירות לכניסה לכל מערכות הכיתה</p>
         </div>
 
       </div>
