@@ -419,7 +419,7 @@ async function loadAssignments() {
               <button onclick="savePersonalNote(${a.id})" class="assignment-personal-note-save" title="שמרי הערה">שמרי ✏️</button>
             </div>
           </div>
-          ${!meIsStudent ? '<div class="assignment-nonstudent-hint">💭 משחקת משקיפה — הביצוע שלך כאן לא נספר בסטטיסטיקת הכיתה.</div>' : ''}
+          ${!meIsStudent ? '<div class="assignment-nonstudent-hint">💭 משתמשת יקרה — הביצוע שלך כאן לא נספר בסטטיסטיקת הכיתה.</div>' : ''}
           <label class="assignment-complete">
             <input type="checkbox" class="complete-checkbox custom-checkbox" ${isChecked} onchange="toggleAssignment(${a.id}, this.checked)"> בוצע ✓
           </label>
@@ -1264,7 +1264,14 @@ let isHighContrast = localStorage.getItem('class_app_theme') !== 'dark';
 
 function applyTheme() {
   document.body.classList.toggle('light-theme', isHighContrast);
-  const contrastButton = document.querySelector('[onclick="toggleHighContrast()"]');
+  // עדכון סמל מצב התאורה בהדר — סמל יחיד (☀️ למצב בהיר, 🌙 למצב כהה) במקום טקסט ארוך.
+  const themeToggle = document.querySelector('.theme-toggle-btn');
+  if (themeToggle) {
+    themeToggle.textContent = isHighContrast ? '🌙' : '☀️';
+    themeToggle.title = isHighContrast ? 'החלף למצב כהה' : 'החלף למצב בהיר';
+  }
+  // עדכון הכפתור במודל הנגישות.
+  const contrastButton = document.querySelector('[onclick="toggleHighContrast()"]:not(.theme-toggle-btn)');
   if (contrastButton) {
     contrastButton.textContent = isHighContrast ? 'הפעלת מצב כהה 🌙' : 'הפעלת מצב בהיר ☀️';
   }

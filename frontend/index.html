@@ -39,6 +39,7 @@
         <input type="checkbox" id="daily-email-toggle" onchange="updateEmailPreference(this.checked)">
         <span>מייל מטלות ב־20:00</span>
       </label>
+      <button onclick="toggleHighContrast()" class="neon-btn outline theme-toggle-btn" title="החלפת מצב תאורה — כהה או בהיר" style="padding: 4px 10px; font-size: 0.9rem; width: auto;">🌙</button>
       <button onclick="logoutSession()" class="neon-btn outline" style="padding: 4px 10px; font-size: 0.75rem; width: auto; border-color: #f43f5e; color: #f43f5e;">התנתקי</button>
     </div>
   </header>
@@ -220,8 +221,8 @@
           <form id="calendar-event-form" style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;">
             <input type="text" id="event-title" placeholder="שם האירוע / מבחן / פגישה" required style="flex: 2; min-width: 200px;">
             <input type="date" id="event-date" required style="flex: 1; min-width: 140px;">
-            <button type="submit" data-scope="shared" class="neon-btn" style="flex: 1; min-width: 120px; padding: 10px;">🌍 אירוע לכולן</button>
-            <button type="submit" data-scope="personal" class="neon-btn outline" style="flex: 1; min-width: 120px; padding: 10px;">🔒 אירוע אישי (רק אני)</button>
+            <button type="submit" data-scope="shared" class="neon-btn" style="flex: 1; min-width: 120px; padding: 10px;">🌍 הוספת האירוע כאירוע לכולן</button>
+            <button type="submit" data-scope="personal" class="neon-btn outline" style="flex: 1; min-width: 120px; padding: 10px;">🔒 הוספת האירוע כאירוע אישי (גלוי רק לך)</button>
           </form>
 
           <div id="weekly-calendar-grid" class="weekly-calendar-grid"></div>
