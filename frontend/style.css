@@ -381,8 +381,6 @@ input:focus, textarea:focus {
 .assignments-grid {
   display: grid;
   gap: 12px;
-  max-height: 350px;
-  overflow-y: auto;
   padding-left: 5px;
 }
 
@@ -415,11 +413,8 @@ input:focus, textarea:focus {
 }
 
 .assignment-list {
-  max-height: 520px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   padding: 4px 8px 4px 2px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--neon-cyan) rgba(255, 255, 255, 0.08);
 }
 
 .add-assignment-panel {
