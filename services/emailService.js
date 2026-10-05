@@ -84,30 +84,30 @@ async function sendBrandedEmailWithAttachment(toEmail, subject, subtitleText, co
   await sendEmail(toEmail, subject, getBaseEmailTemplate(subtitleText, contentHtml), attachments);
 }
 
-// 1. מייל שחזור סיסמה מעוצב בדיוק לפי הדרישה והתמונה
-async function sendPasswordResetEmail(toEmail, userName, password) {
+// 1. מייל איפוס סיסמה — שולח קוד בן 4 ספרות לצורך הגדרה מחדש של הסיסמה
+async function sendPasswordResetEmail(toEmail, userName, code) {
   const content = `
     <div style="font-size: 20px; font-weight: bold; color: #22d3ee; margin-bottom: 20px;">
-      שחזור סיסמה למערכת 🔐
+      איפוס סיסמה למערכת 🔐
     </div>
     <div style="font-size: 15px; color: #cbd5e1; margin-bottom: 8px;">
       שלום ${userName},
     </div>
     <div style="font-size: 14px; color: #94a3b8; margin-bottom: 25px;">
-      הנה הפרטים לשחזור הגישה למערכת שלך:
+      הוגשה בקשה לאיפוס סיסמת הגישה למערכת שלך. הנה קוד האיפוס החדש בן 4 הספרות:
     </div>
-    <div style="display: inline-block; background: rgba(34, 211, 238, 0.05); border: 2px dashed #22d3ee; padding: 12px 30px; border-radius: 10px; font-size: 24px; font-weight: bold; color: #22d3ee; margin-bottom: 25px; letter-spacing: 2px;">
-      ${password}
+    <div style="display: inline-block; background: rgba(34, 211, 238, 0.05); border: 2px dashed #22d3ee; padding: 12px 30px; border-radius: 10px; font-size: 24px; font-weight: bold; color: #22d3ee; margin-bottom: 25px; letter-spacing: 4px;">
+      ${code}
     </div>
     <div style="font-size: 12px; color: #64748b;">
-      מומלץ להתחבר למערכת ולשמור את הסיסמה במקום בטוח.
+      התחברי למערכת עם הקוד הזה ואז תוכלי להגדיר סיסמה חדשה משלך.
     </div>
   `;
 
   await sendBrevoEmail(
     toEmail,
-    'שחזור סיסמה - HighCode',
-    getBaseEmailTemplate('PASSWORD RECOVERY', content)
+    '🔐 איפוס סיסמה - HighCode',
+    getBaseEmailTemplate('PASSWORD RESET', content)
   );
 }
 

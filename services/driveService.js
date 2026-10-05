@@ -1,8 +1,7 @@
 const { google } = require('googleapis');
-const path = require('path');
 require('dotenv').config();
 
-// הגדרת אימות OAuth2 באמצעות פרטי הגישה שלך
+// הגדרת אימות OAuth2
 const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET,
@@ -27,9 +26,8 @@ async function uploadFileToDrive(file) {
 
     const fileMetadata = {
       name: file.originalname,
-      // אם תרצי שהקבצים יגיעו לתיקייה ספציפית, נכניס כאן את ה-ID שלה
-      ...(process.env.GOOGLE_FOLDER_ID && {
-        parents: [process.env.GOOGLE_FOLDER_ID.trim()],
+      ...(process.env.GOOGLE_DRIVE_FOLDER_ID && {
+        parents: [process.env.GOOGLE_DRIVE_FOLDER_ID.trim()],
       }),
     };
 

@@ -3,6 +3,7 @@ const router = express.Router();
 const pool = require('../db');
 const { sendPasswordResetEmail, sendBrandedEmail } = require('../services/emailService');
 const { signToken } = require('../services/tokenService');
+const { hashPassword, comparePassword } = require('../services/passwordService');
 const { optionalAuth } = require('../middleware/auth');
 
 // ניהול משתמשות מחוברות בזמן אמת (Heartbeat)
@@ -66,9 +67,12 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'כתובת המייל כבר קיימת במערכת' });
     }
 
+    // גיבוב הסיסמה לפני שמירה — לעולם לא נאחסן סיסמה בשפה ברורה
+    const hashedPassword = await hashPassword(password);
+
     const newUser = await pool.query(
       'INSERT INTO users (full_name, email, password_hash) VALUES ($1, $2, $3) RETURNING id, full_name, email',
-      [full_name, email, password]
+      [full_name, email, hashedPassword]
     );
 
     const savedUser = newUser.rows[0];
@@ -90,7 +94,8 @@ router.post('/login', async (req, res) => {
     }
 
     const user = result.rows[0];
-    if (user.password_hash !== password) {
+    const ok = await comparePassword(password, user.password_hash);
+    if (!ok) {
       return res.status(400).json({ error: 'שם משתמש או סיסמה שגויים' });
     }
 
@@ -139,10 +144,17 @@ router.post('/forgot-password', async (req, res) => {
 
     const user = result.rows[0];
     
-    // שליחת המייל המעוצב באמצעות השירות הייעודי
-    await sendPasswordResetEmail(email, user.full_name, user.password_hash);
+    // יצירת קוד איפוס חדש בן 4 ספרות. הקוד נשלח במייל, ורק הגיבוב שלו נשמר במסד.
+    const resetCode = String(Math.floor(1000 + Math.random() * 9000));
+    const hashedCode = await hashPassword(resetCode);
 
-    res.json({ message: 'הסיסמה נשלחה בהצלחה לכתובת המייל שלך!' });
+    // עדכון הסיסמה בגיבוב החדש — כך גם משתמשות חדשות וגם ישנות יקבלו קוד שימושי
+    await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [hashedCode, user.id]);
+
+    // שליחת הקוד (4 ספרות) במייל האיפוס החדש
+    await sendPasswordResetEmail(email, user.full_name, resetCode);
+
+    res.json({ message: 'קוד איפוס חדש נשלח בהצלחה לכתובת המייל שלך!' });
   } catch (err) {
     console.error('שגיאה בשחזור סיסמה:', err);
     res.status(500).json({ error: 'שגיאת שרת בתהליך שחזור הסיסמה' });
