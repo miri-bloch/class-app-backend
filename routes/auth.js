@@ -30,7 +30,7 @@ router.get('/notification-settings/:userId', optionalAuth, async (req, res) => {
     // זהות סמכותית מהטוקן אם קיים, אחרת (לגאסי) מהנתיב
     const targetId = req.user?.id ?? req.params.userId;
     const result = await pool.query(
-      'SELECT email_notifications FROM users WHERE id = $1',
+      'SELECT email_notifications, notification_time FROM users WHERE id = $1',
       [targetId]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'המשתמשת לא נמצאה' });
@@ -42,13 +42,36 @@ router.get('/notification-settings/:userId', optionalAuth, async (req, res) => {
 });
 
 router.patch('/notification-settings/:userId', optionalAuth, async (req, res) => {
-  const { email_notifications } = req.body;
+  const { email_notifications, notification_time } = req.body;
+  const updates = [];
+  const values = [];
+
+  if (typeof email_notifications === 'boolean') {
+    values.push(email_notifications);
+    updates.push(`email_notifications = $${values.length}`);
+  }
+
+  if (notification_time !== undefined) {
+    if (typeof notification_time !== 'string' || !/^([01]\d|2[0-3]):[0-5]\d$/.test(notification_time)) {
+      return res.status(400).json({ error: 'שעת התראה לא תקינה' });
+    }
+    values.push(notification_time);
+    updates.push(`notification_time = $${values.length}::time`);
+  }
+
+  if (updates.length === 0) {
+    return res.status(400).json({ error: 'לא נשלחו הגדרות לעדכון' });
+  }
+
   try {
     // זהות סמכותית מהטוקן אם קיים, אחרת (לגאסי) מהנתיב
     const targetId = req.user?.id ?? req.params.userId;
+    values.push(targetId);
     const result = await pool.query(
-      'UPDATE users SET email_notifications = $1 WHERE id = $2 RETURNING email_notifications',
-      [Boolean(email_notifications), targetId]
+      `UPDATE users SET ${updates.join(', ')}
+       WHERE id = $${values.length}
+       RETURNING email_notifications, notification_time`,
+      values
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'המשתמשת לא נמצאה' });
     res.json(result.rows[0]);

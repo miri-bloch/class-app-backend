@@ -6,21 +6,49 @@ function initScheduler() {
   cron.schedule('5 0 * * *', async () => {
     try {
       await pool.query(`
-        DELETE FROM assignments
-        WHERE due_date < CURRENT_DATE - 2
+        DELETE FROM assignments a
+        WHERE a.due_date <= CURRENT_DATE - 2
+          AND EXISTS (SELECT 1 FROM users WHERE is_student = TRUE)
+          AND NOT EXISTS (
+            SELECT 1
+            FROM users u
+            LEFT JOIN private_notes pn
+              ON pn.user_id = u.id
+             AND pn.assignment_id = a.id
+            WHERE u.is_student = TRUE
+              AND COALESCE(pn.is_completed, FALSE) = FALSE
+          )
       `);
-      console.log('מטלות שעברו יומיים נמחקו בהצלחה');
+      console.log('מטלות שהושלמו ועברו יומיים ממועד הגשתן נמחקו בהצלחה');
     } catch (err) {
       console.error('שגיאה במחיקת מטלות שפג תוקפן:', err);
     }
   }, { timezone: 'Asia/Jerusalem' });
 
-  cron.schedule('0 20 * * *', async () => {
+  cron.schedule('* * * * *', async () => {
     try {
+      const timeParts = new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Asia/Jerusalem',
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23'
+      }).formatToParts(new Date());
+      const currentTime = `${timeParts.find(part => part.type === 'hour').value}:${timeParts.find(part => part.type === 'minute').value}`;
+      const weekday = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Jerusalem',
+        weekday: 'long'
+      }).format(new Date());
+      const examReminder = weekday === 'Sunday'
+        ? 'ביום ראשון יש ללמוד לבוחן במערכות הפעלה, שיתקיים מחר.'
+        : weekday === 'Monday'
+          ? 'ביום שני יש ללמוד לבוחן ב-CORE, שיתקיים מחר.'
+          : '';
       const usersResult = await pool.query(
         `SELECT id, full_name, email
          FROM users 
-         WHERE email_notifications = TRUE`
+         WHERE email_notifications = TRUE
+           AND to_char(notification_time, 'HH24:MI') = $1`,
+        [currentTime]
       );
 
       if (usersResult.rows.length === 0) return;
@@ -41,8 +69,8 @@ function initScheduler() {
           [user.id]
         );
 
-        if (userAssignments.rows.length > 0) {
-          await sendHomeworkDigest(user.email, user.full_name, userAssignments.rows);
+        if (userAssignments.rows.length > 0 || examReminder) {
+          await sendHomeworkDigest(user.email, user.full_name, userAssignments.rows, examReminder);
         }
       }
     } catch (err) {

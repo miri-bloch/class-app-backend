@@ -1,8 +1,20 @@
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
 const pool = require('../db');
-const { sendBrandedEmail } = require('../services/emailService');
+const { uploadFileToDrive } = require('../services/driveService');
+const { sendBrandedEmail, sendBrandedEmailWithAttachment } = require('../services/emailService');
 const { auth, optionalAuth } = require('../middleware/auth');
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }
+});
+
+function normalizeFilename(filename) {
+  const decoded = Buffer.from(filename, 'latin1').toString('utf8');
+  return /[\u0590-\u05FF]/.test(decoded) ? decoded : filename;
+}
 
 // שליפת כל המודעות
 router.get('/', async (req, res) => {
@@ -21,7 +33,7 @@ router.get('/', async (req, res) => {
 });
 
 // הוספת מודעה חדשה ושליחת מייל מעוצב לכל המשתמשות דרך Brevo
-router.post('/', optionalAuth, async (req, res) => {
+router.post('/', optionalAuth, upload.single('attachment'), async (req, res) => {
   const { title, content, is_important } = req.body;
   // זהות סמכותית מהטוקן אם קיים (במוד תאימות — מה-body)
   const author_id = req.user?.id ?? req.body.author_id;
@@ -31,27 +43,55 @@ router.post('/', optionalAuth, async (req, res) => {
   }
 
   try {
+    const attachmentName = req.file ? normalizeFilename(req.file.originalname) : null;
+    const driveData = req.file
+      ? await uploadFileToDrive({ ...req.file, originalname: attachmentName })
+      : null;
     const newNotice = await pool.query(
-      `INSERT INTO notice_board (author_id, title, content, is_important)
-       VALUES ($1, $2, $3, $4) RETURNING *`,
-      [author_id, title, content, is_important || false]
+      `INSERT INTO notice_board (
+         author_id, title, content, is_important,
+         drive_file_id, drive_web_view_link, attachment_name
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [
+        author_id,
+        title,
+        content,
+        is_important || false,
+        driveData?.id || null,
+        driveData?.webViewLink || null,
+        attachmentName
+      ]
     );
 
     // שליחת מייל אוטומטי לכל המשתמשות הרשומות דרך Brevo
     const usersResult = await pool.query('SELECT email FROM users WHERE email IS NOT NULL');
+    let emailFailures = 0;
     for (const user of usersResult.rows) {
       try {
         const contentHtml = `
           <div style="font-size: 20px; font-weight: bold; color: #22d3ee; margin-bottom: 15px;">📢 ${title}</div>
           <div style="font-size: 15px; color: #d1d5db; line-height: 1.6;">${content}</div>
         `;
-        await sendBrandedEmail(user.email, `📢 הודעה חדשה בלוח המודעות: ${title}`, 'CLASS SYSTEM NOTIFICATION', contentHtml);
+        const subject = `📢 הודעה חדשה בלוח המודעות: ${title}`;
+        if (req.file) {
+          await sendBrandedEmailWithAttachment(
+            user.email,
+            subject,
+            'CLASS SYSTEM NOTIFICATION',
+            contentHtml,
+            { buffer: req.file.buffer, name: attachmentName, mimeType: req.file.mimetype }
+          );
+        } else {
+          await sendBrandedEmail(user.email, subject, 'CLASS SYSTEM NOTIFICATION', contentHtml);
+        }
       } catch (mailErr) {
+        emailFailures += 1;
         console.error('שגיאה בשליחת מייל למשתמשת:', user.email, mailErr);
       }
     }
 
-    res.status(201).json(newNotice.rows[0]);
+    res.status(201).json({ ...newNotice.rows[0], email_failures: emailFailures });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'שגיאה בהוספת מודעה ושליחת מייל' });

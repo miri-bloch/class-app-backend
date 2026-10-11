@@ -37,7 +37,8 @@
       <span id="user-profile-name" style="font-size: 0.9rem; font-weight: 500; color: white;"></span>
       <label class="email-preference" title="מייל יומי על מטלות למחר">
         <input type="checkbox" id="daily-email-toggle" onchange="updateEmailPreference(this.checked)">
-        <span>מייל מטלות ב־20:00</span>
+        <span>מייל מטלות בשעה</span>
+        <input type="time" id="daily-email-time" aria-label="שעת שליחת המייל היומי" onchange="updateEmailTime(this.value)">
       </label>
       <button onclick="toggleHighContrast()" class="neon-btn outline theme-toggle-btn" title="החלפת מצב תאורה — כהה או בהיר" style="padding: 4px 10px; font-size: 0.9rem; width: auto;">🌙</button>
       <button onclick="logoutSession()" class="neon-btn outline" style="padding: 4px 10px; font-size: 0.75rem; width: auto; border-color: #f43f5e; color: #f43f5e;">התנתקי</button>
@@ -93,6 +94,10 @@
       
       <div class="glass-card full-width" style="text-align: center; padding: 15px; margin-bottom: 25px;">
         <h2 id="greeting-banner" style="margin: 0; border: none; font-size: 1.4rem; color: var(--neon-cyan);">שלום וברכה! 🌟</h2>
+      </div>
+      <div id="exam-reminder" class="exam-reminder" hidden>
+        <span id="exam-reminder-text"></span>
+        <button type="button" id="dismiss-exam-reminder" aria-label="סגירת תזכורת">×</button>
       </div>
 
       <!-- שורת ניווט בכרטיסיות -->
@@ -170,6 +175,9 @@
               </div>
               <div class="input-group">
                 <textarea id="notice-content" placeholder="תוכן ההודעה (שולח מייל לכולן)..." rows="2" required></textarea>
+              </div>
+              <div class="input-group">
+                <input type="file" id="notice-attachment" aria-label="קובץ מצורף למודעה">
               </div>
               <button type="submit" class="neon-btn outline" style="font-size: 0.9rem; padding: 8px;">פרסמי מודעה ושלחי מייל</button>
             </form>

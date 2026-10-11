@@ -112,10 +112,10 @@ async function sendPasswordResetEmail(toEmail, userName, code) {
 }
 
 // 2. מייל עדכון שיעורי בית מעוצב במרכז
-async function sendHomeworkDigest(toEmail, userName, assignments) {
-  if (!assignments || assignments.length === 0) return;
+async function sendHomeworkDigest(toEmail, userName, assignments, examReminder = '') {
+  if ((!assignments || assignments.length === 0) && !examReminder) return;
 
-  const assignmentListHtml = assignments.map(a => `
+  const assignmentListHtml = (assignments || []).map(a => `
     <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(34,211,238,0.2); padding: 12px; border-radius: 8px; margin-bottom: 12px; text-align: right;">
       <strong style="color: #ffffff; font-size: 15px;">${a.title}</strong> <span style="color: #22d3ee; font-size: 13px;">(${a.subject})</span><br/>
       <span style="color: #94a3b8; font-size: 12px;">תאריך הגשה: ${new Date(a.due_date).toLocaleDateString('he-IL')}</span>
@@ -129,8 +129,9 @@ async function sendHomeworkDigest(toEmail, userName, assignments) {
     <div style="font-size: 14px; color: #cbd5e1; margin-bottom: 20px;">
       הנה ריכוז המטלות הפעילות הממתינות לך:
     </div>
+    ${examReminder ? `<div style="background: rgba(192,132,252,0.12); border-right: 4px solid #c084fc; padding: 12px; margin-bottom: 18px; text-align: right; color: #e9d5ff;">📣 ${examReminder}</div>` : ''}
     <div style="max-width: 450px; margin: auto;">
-      ${assignmentListHtml}
+      ${assignmentListHtml || '<div style="font-size: 14px; color: #94a3b8;">אין מטלות שמועד ההגשה שלהן מחר.</div>'}
     </div>
   `;
 

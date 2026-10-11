@@ -69,6 +69,9 @@ CREATE TABLE IF NOT EXISTS notice_board (
   title VARCHAR(200) NOT NULL,
   content TEXT NOT NULL,
   is_important BOOLEAN DEFAULT FALSE,
+  drive_file_id VARCHAR(255),
+  drive_web_view_link TEXT,
+  attachment_name VARCHAR(255),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

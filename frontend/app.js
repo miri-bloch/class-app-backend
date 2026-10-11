@@ -132,13 +132,15 @@ function getDateKey(dateValue) {
 }
 
 function normalizeSubjectName(subject) {
-  return String(subject || '')
+  const normalized = String(subject || '')
     .normalize('NFKC')
     .replace(/[׳’`]/g, "'")
     .replace(/[–—−]/g, '-')
     .replace(/\s+/g, ' ')
     .trim()
     .toLowerCase();
+  if (['c#', 'פרויקט c#', 'תכנות מתקדם עם c#'].includes(normalized)) return 'c#';
+  return normalized;
 }
 
 document.getElementById('register-form').addEventListener('submit', async (e) => {
@@ -205,6 +207,7 @@ function initDashboard(userName, email) {
   document.getElementById('user-avatar-circle').textContent = userName ? userName.charAt(0).toUpperCase() : 'U';
 
   setGreetingBanner(userName);
+  showExamReminder();
   loadNotices();
   loadAssignments();
   loadAssignmentStats();
@@ -235,6 +238,7 @@ function initTabs() {
 
 async function loadEmailPreference() {
   const toggle = document.getElementById('daily-email-toggle');
+  const timeInput = document.getElementById('daily-email-time');
   if (!toggle || !currentUserId) return;
 
   try {
@@ -242,6 +246,10 @@ async function loadEmailPreference() {
     if (response.ok) {
       const settings = await response.json();
       toggle.checked = settings.email_notifications;
+      if (timeInput && settings.notification_time) {
+        timeInput.value = settings.notification_time.slice(0, 5);
+        timeInput.dataset.savedValue = timeInput.value;
+      }
     }
   } catch (error) {
     showToast('לא הצלחנו לטעון את העדפת המייל', true);
@@ -267,6 +275,26 @@ async function updateEmailPreference(enabled) {
   }
 }
 
+async function updateEmailTime(notificationTime) {
+  if (!currentUserId || !notificationTime) return;
+  const timeInput = document.getElementById('daily-email-time');
+  const previousTime = timeInput.dataset.savedValue || '';
+
+  try {
+    const response = await authFetch(`${API_URL}/auth/notification-settings/${currentUserId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notification_time: notificationTime })
+    });
+    if (!response.ok) throw new Error('Notification time update failed');
+    timeInput.dataset.savedValue = notificationTime;
+    showToast('שעת המייל היומי נשמרה');
+  } catch (error) {
+    timeInput.value = previousTime;
+    showToast('לא הצלחנו לשמור את שעת המייל', true);
+  }
+}
+
 setInterval(async () => {
   if (!currentUserId) return;
   try {
@@ -287,22 +315,31 @@ document.getElementById('notice-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const title = document.getElementById('notice-title').value;
   const content = document.getElementById('notice-content').value;
+  const attachment = document.getElementById('notice-attachment').files[0];
   const restoreButton = setButtonLoading(e.currentTarget.querySelector('button[type="submit"]'), 'שולחת מייל...');
   showToast('המודעה נשמרת והמייל נשלח, נא להמתין...');
 
   try {
+    const formData = new FormData();
+    formData.append('author_id', currentUserId);
+    formData.append('title', title);
+    formData.append('content', content);
+    formData.append('is_important', 'true');
+    if (attachment) formData.append('attachment', attachment);
+
     const res = await authFetch(`${API_URL}/notices`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ author_id: currentUserId, title, content, is_important: true })
+      body: formData
     });
-    if (res.ok) {
-      showToast('המודעה פורסמה ונשלח מייל אוטומטי לכולן!');
-      document.getElementById('notice-form').reset();
-      loadNotices();
-    }
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'שגיאה בפרסום המודעה');
+    showToast(result.email_failures
+      ? `המודעה פורסמה, אך שליחת המייל נכשלה ל-${result.email_failures} משתמשות`
+      : 'המודעה פורסמה ונשלח מייל אוטומטי לכולן!');
+    document.getElementById('notice-form').reset();
+    loadNotices();
   } catch (err) {
-    showToast('שגיאה בפרסום המודעה', true);
+    showToast(err.message || 'שגיאה בפרסום המודעה', true);
   } finally {
     restoreButton();
   }
@@ -322,10 +359,35 @@ async function loadNotices() {
             <button onclick="deleteNotice(${n.id})" style="background:none; border:none; color:#f43f5e; cursor:pointer; font-size:0.8rem; padding:0;" title="מחק הודעה">✕ מחיקה</button>
           </div>
           <div style="font-size:0.9rem; margin-top:4px;">${n.content}</div>
+          ${n.drive_file_id ? `<a class="notice-attachment" href="${n.drive_web_view_link || `https://drive.google.com/file/d/${n.drive_file_id}/view`}" target="_blank" rel="noopener">📎 ${n.attachment_name || 'פתיחת קובץ מצורף'}</a>` : ''}
           <div class="assignment-date" style="margin-top:6px;">מאת: ${n.author_name || 'כיתה'}</div>
         </div>`;
     });
   } catch (err) { list.innerHTML = 'שגיאה בטעינת מודעות'; }
+}
+
+function showExamReminder() {
+  const reminder = document.getElementById('exam-reminder');
+  const text = document.getElementById('exam-reminder-text');
+  const dismissButton = document.getElementById('dismiss-exam-reminder');
+  if (!reminder || !text || !dismissButton) return;
+
+  const today = new Date();
+  const weekday = today.getDay();
+  const examText = weekday === 0
+    ? 'מחר יש בוחן במערכות הפעלה — בהצלחה בלמידה!'
+    : weekday === 1
+      ? 'מחר יש בוחן ב-CORE — בהצלחה בלמידה!'
+      : '';
+  const dismissedKey = `dismissed_exam_reminder_${getDateKey(today)}`;
+  if (!examText || localStorage.getItem(dismissedKey)) return;
+
+  text.textContent = examText;
+  reminder.hidden = false;
+  dismissButton.onclick = () => {
+    localStorage.setItem(dismissedKey, 'true');
+    reminder.hidden = true;
+  };
 }
 
 async function deleteNotice(noticeId) {
@@ -374,6 +436,9 @@ async function loadAssignments() {
       const meIsStudent = a.me_is_student === true || a.me_is_student === 'true';
       const dateObj = parseLocalDate(a.due_date);
       const gregorianDate = dateObj.toLocaleDateString('he-IL');
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const isDueTomorrow = getDateKey(dateObj) === getDateKey(tomorrow);
       // הגדרת תנאים נפרדים: ההסתרה זמינה ברגע שבוצעה (סימון V), והצביעה ה"ישנה"
       // נשארת קשורה לעברת זמן ההגשה כדי לשמר את האפקט של "מטלה שעברה זמנה".
       const isDue = dateObj < today;
@@ -391,7 +456,10 @@ async function loadAssignments() {
         <div class="assignment-card assignment-item ${isDue ? 'assignment-old' : ''}" id="assignment-${a.id}">
           <div class="assignment-card-header">
             <div>
-              <div class="assignment-subject">${a.subject}</div>
+              <div class="assignment-subject-row">
+                <div class="assignment-subject">${a.subject}</div>
+                ${isDueTomorrow ? '<span class="assignment-tomorrow-badge">למחר!</span>' : ''}
+              </div>
               <div class="assignment-title">${a.title}</div>
             </div>
             <div class="assignment-actions">

@@ -18,8 +18,18 @@ function normalizeFilename(filename) {
 
 async function removeExpiredAssignments() {
   await pool.query(`
-    DELETE FROM assignments
-    WHERE due_date < CURRENT_DATE - 2
+    DELETE FROM assignments a
+    WHERE a.due_date <= CURRENT_DATE - 2
+      AND EXISTS (SELECT 1 FROM users WHERE is_student = TRUE)
+      AND NOT EXISTS (
+        SELECT 1
+        FROM users u
+        LEFT JOIN private_notes pn
+          ON pn.user_id = u.id
+         AND pn.assignment_id = a.id
+        WHERE u.is_student = TRUE
+          AND COALESCE(pn.is_completed, FALSE) = FALSE
+      )
   `);
 }
 

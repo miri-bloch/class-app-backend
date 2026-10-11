@@ -91,6 +91,9 @@ pool.query(`
   ALTER TABLE assignments ADD COLUMN IF NOT EXISTS drive_file_id VARCHAR(255);
   ALTER TABLE assignments ADD COLUMN IF NOT EXISTS drive_web_view_link TEXT;
   ALTER TABLE assignments ADD COLUMN IF NOT EXISTS attachment_name VARCHAR(255);
+  ALTER TABLE notice_board ADD COLUMN IF NOT EXISTS drive_file_id VARCHAR(255);
+  ALTER TABLE notice_board ADD COLUMN IF NOT EXISTS drive_web_view_link TEXT;
+  ALTER TABLE notice_board ADD COLUMN IF NOT EXISTS attachment_name VARCHAR(255);
   CREATE TABLE IF NOT EXISTS shared_events (
     id SERIAL PRIMARY KEY,
     title VARCHAR(200) NOT NULL,
