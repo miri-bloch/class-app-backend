@@ -67,6 +67,8 @@ const milkRoutes = require('./routes/milk');
 const noticeRoutes = require('./routes/noticeBoard');
 const summaryRoutes = require('./routes/summaries');
 const eventRoutes = require('./routes/events');
+const personalFileRoutes = require('./routes/personalFiles');
+const feedbackRoutes = require('./routes/feedback');
 
 // חיבור כל הנתיבים (Routes) לקידומת ה-API שלהם
 app.use('/api/auth', authRoutes);
@@ -75,6 +77,8 @@ app.use('/api/milk', milkRoutes);
 app.use('/api/notices', noticeRoutes);
 app.use('/api/summaries', summaryRoutes);
 app.use('/api/events', eventRoutes);
+app.use('/api/personal-files', personalFileRoutes);
+app.use('/api/feedback', feedbackRoutes);
 
 // בדיקת בריאות השרת
 app.get('/api/health', (req, res) => {
@@ -126,6 +130,48 @@ pool.query(`
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
   CREATE INDEX IF NOT EXISTS idx_personal_events_user_date ON personal_events(user_id, event_date);
+  -- קבצים אישיים — כל קובץ משויך למשתמשת אחת בלבד ולמקצוע
+  CREATE TABLE IF NOT EXISTS personal_files (
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    subject VARCHAR(120) NOT NULL,
+    file_name VARCHAR(255) NOT NULL,
+    drive_file_id VARCHAR(255) NOT NULL,
+    drive_folder_id VARCHAR(255),
+    mime_type VARCHAR(150),
+    size_bytes BIGINT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE INDEX IF NOT EXISTS idx_personal_files_user ON personal_files(user_id, created_at DESC);
+  -- דיווחי תקלות ובקשות פיצ'רים
+  CREATE TABLE IF NOT EXISTS feedback_reports (
+    id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(id) ON DELETE SET NULL,
+    type VARCHAR(30) NOT NULL DEFAULT 'other',
+    description TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  );
+  -- קבצים מרובים למטלה ולמודעה
+  CREATE TABLE IF NOT EXISTS assignment_files (
+    id SERIAL PRIMARY KEY,
+    assignment_id INT NOT NULL REFERENCES assignments(id) ON DELETE CASCADE,
+    original_name VARCHAR(255) NOT NULL,
+    drive_file_id VARCHAR(255) NOT NULL,
+    drive_web_view_link TEXT,
+    mime_type VARCHAR(150),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE INDEX IF NOT EXISTS idx_assignment_files_assignment ON assignment_files(assignment_id);
+  CREATE TABLE IF NOT EXISTS notice_files (
+    id SERIAL PRIMARY KEY,
+    notice_id INT NOT NULL REFERENCES notice_board(id) ON DELETE CASCADE,
+    original_name VARCHAR(255) NOT NULL,
+    drive_file_id VARCHAR(255) NOT NULL,
+    drive_web_view_link TEXT,
+    mime_type VARCHAR(150),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE INDEX IF NOT EXISTS idx_notice_files_notice ON notice_files(notice_id);
   -- סימון 11 התלמידות הפעילות (היתר — מורה/אורחות — נשארות מסומנות FALSE)
   UPDATE users SET is_student = TRUE WHERE id IN (8, 12, 14, 13, 15, 16, 11, 20, 9, 17, 10);
 `).catch(err => console.error('שגיאה בעדכון עמודות קבצי המטלות:', err));

@@ -28,6 +28,47 @@ header {
   margin-bottom: 30px;
 }
 
+/* ---------- סרגל עליון: שלושה אזורים ----------
+   הלוגו ממורכז במסך, ולכן שני הצדדים מקבלים רוחב גמיש זהה
+   ומשאירים "נתיב פנוי" באמצע שהלוגו לא ייכנס לתוכו.
+   בלי זה, פס הפרופיל הארוך נכנס מתחת ללוגו וחופף אותו. */
+#dashboard-header {
+  position: relative;
+  display: grid;
+  /* הרוחב שנשמר ללוגו במרכז. מצטמצם במסכים צרים (ראו media queries). */
+  --brand-zone: 260px;
+  /* צד ימין | נתיב פנוי ללוגו | צד שמאל */
+  grid-template-columns: minmax(0, 1fr) var(--brand-zone) minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+}
+
+/* כל תא בסרגל יכול להתכווץ במקום לדחוף את הלוגו */
+#dashboard-header > * {
+  min-width: 0;
+}
+
+#user-profile-header {
+  justify-self: start;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+#online-users-badge {
+  justify-self: end;
+  white-space: nowrap;
+}
+
+/* הלוגו יושב בתוך הנתיב האמצעי — ממורכז ולא חופף לשכנים */
+#dashboard-header .brand-card-wrapper {
+  grid-column: 2;
+  justify-self: center;
+  position: static;
+  left: auto;
+  transform: none;
+  max-width: 100%;
+}
+
 .brand-card-wrapper {
   position: relative;
   padding: 3px;
@@ -119,6 +160,12 @@ header {
 }
 
 @media (max-width: 760px) {
+  /* במסך צר הלוגו מתכווץ, ולכן גם הנתיב הפנוי שנשמר לו מצטמצם */
+  #dashboard-header {
+    --brand-zone: 170px;
+    gap: 8px;
+  }
+
   .brand-container {
     padding: 11px 18px;
   }
@@ -140,6 +187,37 @@ header {
 
   .weekly-calendar-grid {
     gap: 4px;
+  }
+}
+
+/* במסך צר מאוד הסרגל נשבר לשתי שורות: מונה המחוברות והפרופיל
+   יורדים מתחת ללוגו במקום להתנגש בו. */
+@media (max-width: 620px) {
+  #dashboard-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "brand brand"
+      "online profile";
+    row-gap: 14px;
+  }
+
+  #dashboard-header .brand-card-wrapper {
+    grid-area: brand;
+    grid-column: auto;
+    justify-self: center;
+  }
+
+  #online-users-badge {
+    grid-area: online;
+    justify-self: start;
+  }
+
+  #user-profile-header {
+    grid-area: profile;
+    justify-self: end;
+    max-width: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
 }
 

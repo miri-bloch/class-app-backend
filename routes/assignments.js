@@ -11,6 +11,18 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 }
 });
 
+// מקבל גם את השדה החדש (attachments, מרובה) וגם את הישן (attachment, בודד)
+// כדי לא לשבור לקוחות קיימים.
+const uploadAttachments = upload.fields([
+  { name: 'attachments', maxCount: 10 },
+  { name: 'attachment', maxCount: 1 }
+]);
+
+function collectUploadedFiles(req) {
+  const grouped = req.files || {};
+  return [...(grouped.attachments || []), ...(grouped.attachment || [])];
+}
+
 function normalizeFilename(filename) {
   const decoded = Buffer.from(filename, 'latin1').toString('utf8');
   return /[\u0590-\u05FF]/.test(decoded) ? decoded : filename;
@@ -52,7 +64,18 @@ router.get('/', optionalAuth, async (req, res) => {
                   AND pc_u.is_student = TRUE) AS completed_count,
               (SELECT COUNT(*) FROM users u WHERE u.is_student = TRUE) AS total_users,
               -- מציין אם המשתמשת הנוכחית היא תלמידה (להצגת משפט עדין לאחרות)
-              (SELECT is_student FROM users WHERE id = $1) AS me_is_student
+              (SELECT is_student FROM users WHERE id = $1) AS me_is_student,
+              -- כל הקבצים המצורפים למטלה (השדות הישנים נשמרים לתאימות לאחור)
+              COALESCE(
+                (SELECT json_agg(json_build_object(
+                          'id', f.id,
+                          'original_name', f.original_name,
+                          'drive_file_id', f.drive_file_id,
+                          'drive_web_view_link', f.drive_web_view_link
+                        ) ORDER BY f.id)
+                   FROM assignment_files f WHERE f.assignment_id = a.id),
+                '[]'::json
+              ) AS files
        FROM assignments a
        LEFT JOIN private_notes pn ON a.id = pn.assignment_id AND pn.user_id = $1
        ORDER BY a.due_date ASC`,
@@ -66,36 +89,70 @@ router.get('/', optionalAuth, async (req, res) => {
   }
 });
 
-// 2. הוספת מטלה חדשה
-router.post('/', upload.single('attachment'), async (req, res) => {
+// 2. הוספת מטלה חדשה (עם תמיכה בכמה קבצים בבת אחת)
+router.post('/', optionalAuth, uploadAttachments, async (req, res) => {
   const { subject, title, description, due_date, difficulty_level } = req.body;
+  const files = collectUploadedFiles(req);
 
   try {
-    let driveData = null;
-    const attachmentName = req.file ? normalizeFilename(req.file.originalname) : null;
-    if (req.file) {
-      driveData = await uploadFileToDrive({ ...req.file, originalname: attachmentName });
-    }
-
     const newAssignment = await pool.query(
-      `INSERT INTO assignments (subject, title, description, due_date, difficulty_level, drive_file_id, drive_web_view_link, attachment_name)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-      [
-        subject,
-        title,
-        description,
-        due_date,
-        difficulty_level,
-        driveData?.id || null,
-        driveData?.webViewLink || null,
-        attachmentName
-      ]
+      `INSERT INTO assignments (subject, title, description, due_date, difficulty_level)
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [subject, title, description, due_date, difficulty_level]
     );
 
-    res.status(201).json(newAssignment.rows[0]);
+    const assignmentId = newAssignment.rows[0].id;
+    const savedFiles = [];
+
+    // כל קובץ עולה בנפרד; כשל בקובץ אחד לא מבטל את שאר ההעלאה
+    for (const file of files) {
+      const attachmentName = normalizeFilename(file.originalname);
+      try {
+        const driveData = await uploadFileToDrive({ ...file, originalname: attachmentName });
+        const row = await pool.query(
+          `INSERT INTO assignment_files
+             (assignment_id, original_name, drive_file_id, drive_web_view_link, mime_type)
+           VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+          [assignmentId, attachmentName, driveData.id, driveData.webViewLink || null, file.mimetype]
+        );
+        savedFiles.push(row.rows[0]);
+      } catch (fileErr) {
+        console.error(`שגיאה בהעלאת קובץ למטלה ${assignmentId}:`, fileErr.message);
+      }
+    }
+
+    // שמירת הקובץ הראשון בשדות הישנים לתאימות לאחור עם לקוחות קיימים
+    const first = savedFiles[0];
+    if (first) {
+      await pool.query(
+        `UPDATE assignments
+            SET drive_file_id = $1, drive_web_view_link = $2, attachment_name = $3
+          WHERE id = $4`,
+        [first.drive_file_id, first.drive_web_view_link, first.original_name, assignmentId]
+      );
+    }
+
+    res.status(201).json({ ...newAssignment.rows[0], files: savedFiles });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'שגיאה בהוספת המטלה' });
+  }
+});
+
+// 2ב. שליפת כל הקבצים המצורפים למטלה
+router.get('/:id/files', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, original_name, drive_file_id, drive_web_view_link, mime_type
+         FROM assignment_files
+        WHERE assignment_id = $1
+        ORDER BY id ASC`,
+      [req.params.id]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'שגיאה בשליפת קבצי המטלה' });
   }
 });
 

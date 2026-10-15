@@ -123,6 +123,21 @@ function parseLocalDate(dateValue) {
   return new Date(dateValue);
 }
 
+// שעת המעבר ל"יום חדש" מבחינת המשתמשת: 4:00 לפנות בוקר.
+// עד 4:00 לפנות בוקר עדיין נחשב "אתמול" לצורך התג "למחר!" —
+// כך מטלה שמגישה מחר לא מסומנת "למחר" כבר בחצות של היום הקודם.
+const LOGICAL_DAY_START_HOUR = 4;
+
+// מחזיר את תאריך "היום הלוגי": אם השעה כעת לפני 4:00 לפנות בוקר,
+// מוזזים יום אחד אחורה (השעה 01:00 נחשבת עדיין אתמול).
+function getLogicalToday() {
+  const now = new Date();
+  if (now.getHours() < LOGICAL_DAY_START_HOUR) {
+    now.setDate(now.getDate() - 1);
+  }
+  return now;
+}
+
 function getDateKey(dateValue) {
   const date = dateValue instanceof Date ? dateValue : parseLocalDate(dateValue);
   const year = date.getFullYear();
@@ -139,7 +154,9 @@ function normalizeSubjectName(subject) {
     .replace(/\s+/g, ' ')
     .trim()
     .toLowerCase();
-  if (['c#', 'פרויקט c#', 'תכנות מתקדם עם c#'].includes(normalized)) return 'c#';
+  // "תרגול C#" הוא אותה מטלה כמו "C#" — לחיצה במערכת השעות על כל אחד מהם
+  // מציגה את אותן מטלות. השמירה עצמה שומרת את המקצוע המקורי שנבחר.
+  if (['c#', 'פרויקט c#', 'תכנות מתקדם עם c#', 'תרגול c#'].includes(normalized)) return 'c#';
   return normalized;
 }
 
@@ -231,6 +248,10 @@ function initTabs() {
       document.querySelectorAll('.tab-panel').forEach(panel => {
         panel.classList.toggle('active', panel.id === target);
       });
+      // טעינת הנתונים של הלשונית שנפתחה
+      if (target === 'tab-files' && typeof window.loadPersonalFiles === 'function') {
+        window.loadPersonalFiles();
+      }
       // ללא גלילה — המעבר משאיר את התצוגה במקומה הנוכחי
     });
   });
@@ -315,7 +336,8 @@ document.getElementById('notice-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const title = document.getElementById('notice-title').value;
   const content = document.getElementById('notice-content').value;
-  const attachment = document.getElementById('notice-attachment').files[0];
+  const attachmentInput = document.getElementById('notice-attachment');
+  const attachments = attachmentInput ? Array.from(attachmentInput.files) : [];
   const restoreButton = setButtonLoading(e.currentTarget.querySelector('button[type="submit"]'), 'שולחת מייל...');
   showToast('המודעה נשמרת והמייל נשלח, נא להמתין...');
 
@@ -325,7 +347,8 @@ document.getElementById('notice-form').addEventListener('submit', async (e) => {
     formData.append('title', title);
     formData.append('content', content);
     formData.append('is_important', 'true');
-    if (attachment) formData.append('attachment', attachment);
+    // כל הקבצים שנבחרו נשלחים תחת אותו שדה (attachments) ונשמרים בנפרד בשרת
+    attachments.forEach(file => formData.append('attachments', file));
 
     const res = await authFetch(`${API_URL}/notices`, {
       method: 'POST',
@@ -345,6 +368,277 @@ document.getElementById('notice-form').addEventListener('submit', async (e) => {
   }
 });
 
+// ─────────────────────────── האזור האישי: קבצים ───────────────────────────
+// כל קובץ נשמר בדרייב של המערכת, אך מוצג אך ורק למשתמשת שהעלתה אותו.
+// השרת מסנן לפי user_id מהטוקן, והקבצים אינם משותפים בקישור ציבורי.
+
+let personalFilesCache = [];
+
+// ממיר גודל בבתים לטקסט קריא
+function formatFileSize(bytes) {
+  const size = Number(bytes);
+  if (!Number.isFinite(size) || size <= 0) return '';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let value = size;
+  let unitIndex = 0;
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+  return `${value.toFixed(value < 10 && unitIndex > 0 ? 1 : 0)} ${units[unitIndex]}`;
+}
+
+// בורח מתווים שעלולים לשבור את ה-HTML במידע חוזר מהשרת
+function escapeHtml(value) {
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+window.loadPersonalFiles = async function loadPersonalFiles() {
+  const list = document.getElementById('personal-files-list');
+  const summary = document.getElementById('personal-files-summary');
+  const filter = document.getElementById('personal-files-filter');
+  if (!list) return;
+
+  const subjectFilter = filter ? filter.value : '';
+  const query = subjectFilter ? `?subject=${encodeURIComponent(subjectFilter)}` : '';
+
+  try {
+    const res = await authFetch(`${API_URL}/personal-files${query}`);
+    if (!res.ok) throw new Error('שגיאה בטעינת הקבצים');
+    personalFilesCache = await res.json();
+
+    if (summary) {
+      summary.textContent = personalFilesCache.length
+        ? `${personalFilesCache.length} קבצים באזור האישי`
+        : '';
+    }
+
+    if (!personalFilesCache.length) {
+      list.innerHTML = '<div class="empty-state">עדיין לא העלית קבצים לאזור האישי.</div>';
+    } else {
+      list.innerHTML = personalFilesCache.map(file => {
+        const uploadedAt = file.created_at
+          ? parseLocalDate(file.created_at).toLocaleDateString('he-IL')
+          : '';
+        const size = formatFileSize(file.size_bytes);
+
+        return `
+          <div class="assignment-card" style="border-right-color: var(--neon-purple);">
+            <div class="assignment-subject-row">
+              <div class="assignment-subject">${escapeHtml(file.subject)}</div>
+              <span style="font-size:0.7rem; background: rgba(168,85,247,0.2); color: var(--neon-purple); padding:2px 7px; border-radius:10px;">🔒 אישי</span>
+            </div>
+            <div class="assignment-title">📄 ${escapeHtml(file.file_name)}</div>
+            <div class="assignment-date">
+              הועלה: ${uploadedAt}${size ? ' · ' + size : ''}
+            </div>
+            <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+              <button onclick="downloadPersonalFile(${file.id})" class="neon-btn outline" style="width:auto; padding:5px 9px; font-size:0.78rem;">הורדה ⬇️</button>
+              <button onclick="deletePersonalFile(${file.id})" class="neon-btn outline" style="width:auto; padding:5px 9px; font-size:0.78rem;">מחיקה 🗑</button>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    loadPersonalFilesFilter();
+  } catch (err) {
+    list.innerHTML = '<div class="empty-state">שגיאה בטעינת הקבצים</div>';
+  }
+};
+
+// בונה את רשימת הסינון לפי המקצועות שקיימים בפועל אצל המשתמשת
+async function loadPersonalFilesFilter() {
+  const filter = document.getElementById('personal-files-filter');
+  if (!filter) return;
+
+  const currentValue = filter.value;
+
+  try {
+    const res = await authFetch(`${API_URL}/personal-files`);
+    if (!res.ok) return;
+    const allFiles = await res.json();
+    const subjects = [...new Set(allFiles.map(f => f.subject).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'he'));
+
+    filter.innerHTML = '<option value="">כל המקצועות</option>'
+      + subjects.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+
+    // שומרים על הסינון שנבחר אם הוא עדיין קיים
+    if (subjects.includes(currentValue)) filter.value = currentValue;
+  } catch (err) {}
+}
+
+document.getElementById('personal-files-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const subject = document.getElementById('personal-file-subject').value;
+  const input = document.getElementById('personal-file-input');
+  const files = input ? Array.from(input.files) : [];
+  const restoreButton = setButtonLoading(e.currentTarget.querySelector('button[type="submit"]'), 'מעלה...');
+
+  if (!subject) {
+    showToast('נא לבחור מקצוע לקובץ', true);
+    restoreButton();
+    return;
+  }
+  if (!files.length) {
+    showToast('נא לבחור לפחות קובץ אחד', true);
+    restoreButton();
+    return;
+  }
+
+  try {
+    const formData = new FormData();
+    formData.append('subject', subject);
+    files.forEach(file => formData.append('files', file));
+
+    const res = await authFetch(`${API_URL}/personal-files`, {
+      method: 'POST',
+      body: formData
+    });
+    // תשובה תקינה: 201 עם מערך הקבצים שנשמרו
+    // תשובה חלקית: 207 עם { files: [...], error }
+    const result = await res.json().catch(() => ({}));
+
+    if (res.status === 207) {
+      const savedCount = Array.isArray(result.files) ? result.files.length : 0;
+      showToast(`הועלו ${savedCount} מתוך ${files.length} קבצים — חלקם נכשלו`, true);
+    } else if (!res.ok) {
+      throw new Error(result.error || 'שגיאה בהעלאת הקבצים');
+    } else {
+      const savedCount = Array.isArray(result) ? result.length : files.length;
+      showToast(`הועלו ${savedCount} קבצים לאזור האישי!`);
+    }
+
+    e.currentTarget.reset();
+    window.loadPersonalFiles();
+  } catch (err) {
+    showToast(err.message || 'שגיאה בהעלאת הקבצים', true);
+  } finally {
+    restoreButton();
+  }
+});
+
+document.getElementById('personal-files-filter').addEventListener('change', () => {
+  window.loadPersonalFiles();
+});
+
+// הורדה דרך בקשה מאומתת — הקובץ עצמו אינו נגיש בקישור ציבורי
+window.downloadPersonalFile = async function downloadPersonalFile(fileId) {
+  try {
+    const res = await authFetch(`${API_URL}/personal-files/${fileId}/download`);
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || 'שגיאה בהורדת הקובץ');
+    }
+
+    const disposition = res.headers.get('Content-Disposition') || '';
+    const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+    const plainMatch = disposition.match(/filename="?([^";]+)"?/i);
+    let fileName = 'קובץ';
+    if (utf8Match) {
+      try { fileName = decodeURIComponent(utf8Match[1]); } catch (e) { fileName = utf8Match[1]; }
+    } else if (plainMatch) {
+      fileName = plainMatch[1];
+    }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    showToast(err.message || 'שגיאה בהורדת הקובץ', true);
+  }
+};
+
+window.deletePersonalFile = async function deletePersonalFile(fileId) {
+  const file = personalFilesCache.find(f => Number(f.id) === Number(fileId));
+  const fileLabel = file ? `"${file.file_name}"` : 'קובץ זה';
+  if (!await showCustomConfirm('מחיקת קובץ', `האם למחוק את ${fileLabel} מהאזור האישי?`)) return;
+
+  try {
+    const res = await authFetch(`${API_URL}/personal-files/${fileId}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || 'שגיאה במחיקת הקובץ');
+    }
+    showToast('הקובץ נמחק');
+    window.loadPersonalFiles();
+  } catch (err) {
+    showToast(err.message || 'שגיאה במחיקת הקובץ', true);
+  }
+};
+
+// ───────────────────── דיווח על תקלות ובקשות פיצ'רים ─────────────────────
+window.toggleFeedbackMenu = function toggleFeedbackMenu() {
+  const modal = document.getElementById('feedback-modal');
+  if (!modal) return;
+  modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+};
+
+const feedbackForm = document.getElementById('feedback-form');
+if (feedbackForm) feedbackForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const type = document.getElementById('feedback-type').value;
+  const description = document.getElementById('feedback-description').value;
+  const modal = document.getElementById('feedback-modal');
+  const restoreButton = setButtonLoading(e.currentTarget.querySelector('button[type="submit"]'), 'שולחת...');
+
+  try {
+    const res = await authFetch(`${API_URL}/feedback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, description })
+    });
+    const result = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(result.error || 'שגיאה בשליחת הפנייה');
+
+    showToast('הפנייה נשלחה בהצלחה! תודה על העדכון 🙏');
+    e.currentTarget.reset();
+    if (modal) modal.style.display = 'none';
+  } catch (err) {
+    showToast(err.message || 'שגיאה בשליחת הפנייה', true);
+  } finally {
+    restoreButton();
+  }
+});
+
+// סגירה בלחיצה על הרקע שמחוץ לטופס
+const feedbackModal = document.getElementById('feedback-modal');
+if (feedbackModal) feedbackModal.addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) e.currentTarget.style.display = 'none';
+});
+
+// מרכיב את קישורי הקבצים של המודעה — כל הקבצים, עם נפילה חזרה לשדה הבודד הישן.
+function renderNoticeAttachments(notice) {
+  const files = Array.isArray(notice.files) && notice.files.length
+    ? notice.files
+    : (notice.drive_file_id
+        ? [{
+            original_name: notice.attachment_name,
+            drive_file_id: notice.drive_file_id,
+            drive_web_view_link: notice.drive_web_view_link
+          }]
+        : []);
+
+  if (!files.length) return '';
+
+  return `<div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;">${
+    files.map(f => {
+      const viewLink = f.drive_web_view_link || `https://drive.google.com/file/d/${f.drive_file_id}/view`;
+      return `<a class="notice-attachment" href="${viewLink}" target="_blank" rel="noopener">📎 ${normalizeAttachmentName(f.original_name) || 'פתיחת קובץ מצורף'}</a>`;
+    }).join('')
+  }</div>`;
+}
+
 async function loadNotices() {
   const list = document.getElementById('notices-list');
   try {
@@ -359,7 +653,7 @@ async function loadNotices() {
             <button onclick="deleteNotice(${n.id})" style="background:none; border:none; color:#f43f5e; cursor:pointer; font-size:0.8rem; padding:0;" title="מחק הודעה">✕ מחיקה</button>
           </div>
           <div style="font-size:0.9rem; margin-top:4px;">${n.content}</div>
-          ${n.drive_file_id ? `<a class="notice-attachment" href="${n.drive_web_view_link || `https://drive.google.com/file/d/${n.drive_file_id}/view`}" target="_blank" rel="noopener">📎 ${n.attachment_name || 'פתיחת קובץ מצורף'}</a>` : ''}
+          ${renderNoticeAttachments(n)}
           <div class="assignment-date" style="margin-top:6px;">מאת: ${n.author_name || 'כיתה'}</div>
         </div>`;
     });
@@ -405,6 +699,35 @@ async function deleteNotice(noticeId) {
   }
 }
 
+// מרכיב את אזור הקבצים של המטלה.
+// אם קיימת רשימת files (מטלה עם כמה קבצים) — מציגים קישור לכל קובץ.
+// אחרת נופלים חזרה לשדה הבודד הישן (drive_file_id) לתאימות לאחור.
+function renderAssignmentAttachments(assignment) {
+  const files = Array.isArray(assignment.files) && assignment.files.length
+    ? assignment.files
+    : (assignment.drive_file_id
+        ? [{
+            original_name: assignment.attachment_name,
+            drive_file_id: assignment.drive_file_id,
+            drive_web_view_link: assignment.drive_web_view_link
+          }]
+        : []);
+
+  if (!files.length) return '';
+
+  const fileLinks = files.map(f => {
+    const viewLink = f.drive_web_view_link || `https://drive.google.com/file/d/${f.drive_file_id}/view`;
+    return `
+      <a href="${viewLink}" target="_blank" rel="noopener" class="neon-btn outline" style="width:auto; padding:5px 9px; font-size:0.78rem; text-decoration:none;">📎 ${normalizeAttachmentName(f.original_name)}</a>
+      <a href="https://drive.google.com/uc?export=download&id=${f.drive_file_id}" target="_blank" rel="noopener" class="neon-btn outline" style="width:auto; padding:5px 9px; font-size:0.78rem; text-decoration:none;">הורדה</a>`;
+  }).join('');
+
+  return `<div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
+    ${fileLinks}
+    <button onclick="sendAssignmentToEmail(${assignment.id})" class="neon-btn outline" style="width:auto; padding:5px 9px; font-size:0.78rem;">שלחי לי למייל 📧</button>
+  </div>`;
+}
+
 async function loadAssignments() {
   const list = document.getElementById('assignments-list');
   const summary = document.getElementById('assignments-summary');
@@ -414,7 +737,7 @@ async function loadAssignments() {
   let showHidden = false;
 
   const renderAssignments = (assignments) => {
-    const today = parseLocalDate(getDateKey(new Date()));
+    const today = parseLocalDate(getDateKey(getLogicalToday()));
     const visibleAssignments = assignments.filter(a => {
       if (showHidden) return true;
       return !hiddenAssignments.has(String(a.id));
@@ -436,7 +759,8 @@ async function loadAssignments() {
       const meIsStudent = a.me_is_student === true || a.me_is_student === 'true';
       const dateObj = parseLocalDate(a.due_date);
       const gregorianDate = dateObj.toLocaleDateString('he-IL');
-      const tomorrow = new Date(today);
+      // "למחר" מחושב מול היום הלוגי (מתחלף ב-4:00 לפנות בוקר)
+      const tomorrow = new Date(getLogicalToday());
       tomorrow.setDate(tomorrow.getDate() + 1);
       const isDueTomorrow = getDateKey(dateObj) === getDateKey(tomorrow);
       // הגדרת תנאים נפרדים: ההסתרה זמינה ברגע שבוצעה (סימון V), והצביעה ה"ישנה"
@@ -476,11 +800,7 @@ async function loadAssignments() {
               <div class="assignment-stats-fill" style="width:${classPct}%"></div>
             </div>
           </div>
-          ${a.drive_file_id ? `<div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
-            <a href="${a.drive_web_view_link || `https://drive.google.com/file/d/${a.drive_file_id}/view`}" target="_blank" rel="noopener" class="neon-btn outline" style="width:auto; padding:5px 9px; font-size:0.78rem; text-decoration:none;">📎 ${normalizeAttachmentName(a.attachment_name)}</a>
-            <a href="https://drive.google.com/uc?export=download&id=${a.drive_file_id}" target="_blank" rel="noopener" class="neon-btn outline" style="width:auto; padding:5px 9px; font-size:0.78rem; text-decoration:none;">הורדה</a>
-            <button onclick="sendAssignmentToEmail(${a.id})" class="neon-btn outline" style="width:auto; padding:5px 9px; font-size:0.78rem;">שלחי לי למייל 📧</button>
-          </div>` : ''}
+          ${renderAssignmentAttachments(a)}
           <div class="assignment-personal-note">
             <div class="assignment-personal-note-row">
               <input type="text" class="assignment-personal-note-input" placeholder="הערה אישית (רק את רואה)..." value="${(a.note_text || '').replace(/"/g, '&quot;')}">
@@ -546,7 +866,8 @@ document.getElementById('add-assignment-form').addEventListener('submit', async 
   const subject = document.getElementById('new-assignment-subject').value;
   const title = document.getElementById('new-assignment-title').value;
   const due_date = document.getElementById('new-assignment-date').value;
-  const attachment = document.getElementById('new-assignment-attachment').files[0];
+  const attachmentInput = document.getElementById('new-assignment-attachment');
+  const attachments = attachmentInput ? Array.from(attachmentInput.files) : [];
   const restoreButton = setButtonLoading(e.currentTarget.querySelector('button[type="submit"]'), 'שומרת...');
 
   try {
@@ -555,7 +876,8 @@ document.getElementById('add-assignment-form').addEventListener('submit', async 
     formData.append('title', title);
     formData.append('due_date', due_date);
     formData.append('difficulty_level', '3');
-    if (attachment) formData.append('attachment', attachment);
+    // כל הקבצים שנבחרו נשלחים תחת אותו שדה (attachments) ונשמרים בנפרד בשרת
+    attachments.forEach(file => formData.append('attachments', file));
 
     const res = await authFetch(`${API_URL}/assignments`, {
       method: 'POST',
@@ -568,6 +890,8 @@ document.getElementById('add-assignment-form').addEventListener('submit', async 
       loadWeeklyCalendar();
       loadShvabimSchedule();
       showToast('המטלה נוספה בהצלחה!');
+    } else {
+      showToast('שגיאה בהוספת המטלה', true);
     }
   } catch (err) {
     showToast('שגיאה בהוספת המטלה', true);
@@ -728,6 +1052,7 @@ async function loadShvabimSchedule() {
     {
       day: 'יום שישי',
       lessons: [
+        { time: '08:30 - 09:50', subject: 'תרגול C#' },
         { time: '10:05 - 11:20', subject: 'מבני נתונים' }
       ]
     }
@@ -760,7 +1085,7 @@ async function showSubjectAssignments(subjectName) {
     if (!res.ok) return;
     const assignments = await res.json();
 
-    const today = parseLocalDate(getDateKey(new Date()));
+    const today = parseLocalDate(getDateKey(getLogicalToday()));
     const hiddenStorageKey = `hidden_assignments_${currentUserId}`;
     const hiddenAssignments = new Set(JSON.parse(localStorage.getItem(hiddenStorageKey) || '[]'));
 
@@ -1105,7 +1430,11 @@ async function loadWeeklyCalendar() {
     }
   } catch (err) {}
 
-const todayStr = getDateKey(new Date());
+  const todayStr = getDateKey(getLogicalToday());
+
+  // תאריך האתמול-הלוגי: בין חצות ל-4:00 לפנות בוקר שני התאים מסומנים "היום",
+  // כדי שהמעבר יתבצע רק ב-4:00 לפנות בוקר ולא בחצות.
+  const yesterdayStr = getDateKey(new Date(parseLocalDate(todayStr).getTime() - 86400000));
 
   weekDays.forEach(day => {
     const dateString = getDateKey(day);
@@ -1127,8 +1456,8 @@ const todayStr = getDateKey(new Date());
       return String(a.due_date).slice(0, 10) === dateString;
     });
 
-    const isToday = (dateString === todayStr);
-    
+    const isToday = (dateString === todayStr || dateString === yesterdayStr);
+
     const cardStyle = isToday 
       ? 'background: rgba(0,0,0,0.5); border: 2px solid var(--neon-cyan); box-shadow: 0 0 15px rgba(34,211,238,0.4); border-radius: 10px; padding: 14px; min-height: 220px; display: flex; flex-direction: column;'
       : 'background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 14px; min-height: 220px; display: flex; flex-direction: column;';

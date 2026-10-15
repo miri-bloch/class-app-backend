@@ -12,14 +12,14 @@
 <body>
 
   <!-- סרגל עליון -->
-  <header style="position: relative; width: 100%; max-width: 1200px; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; box-sizing: border-box; margin-top: 40px; margin-bottom: 35px; min-height: 80px;">
+  <header id="dashboard-header" style="width: 100%; max-width: 1200px; padding: 0 20px; box-sizing: border-box; margin-top: 40px; margin-bottom: 35px; min-height: 80px;">
     
     <!-- צד ימין: מונה מחוברות עכשיו -->
     <div id="online-users-badge" style="background: rgba(34,211,238,0.1); border: 1px solid var(--neon-cyan); padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; color: var(--neon-cyan); z-index: 2;">
       מחוברות כעת: <span id="online-count">1</span> 🟢
     </div>
 <!-- לוגו מחובר ומשמש כקישור רענון במרכז המסך -->
-    <div class="brand-card-wrapper" style="position: absolute; left: 50%; transform: translateX(-50%); z-index: 1;">
+    <div class="brand-card-wrapper" style="z-index: 1;">
       <a href="" onclick="window.location.reload(); return false;" style="text-decoration: none; cursor: pointer;">
         <div class="brand-container">
           <div class="logo-main">
@@ -32,9 +32,10 @@
     </div>
     
     <!-- צד שמאל: פרופיל משתמשת וכפתור התנתקות -->
-    <div id="user-profile-header" style="display: none; align-items: center; gap: 12px; background: var(--glass-bg); padding: 8px 15px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); z-index: 2;">
+    <!-- min-width: 0 מאפשר לפס להתכווץ במקום להתנגש בלוגו שבמרכז -->
+    <div id="user-profile-header" style="display: none; align-items: center; gap: 12px; background: var(--glass-bg); padding: 8px 15px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); z-index: 2; min-width: 0; max-width: 45%;">
       <div id="user-avatar-circle" style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--neon-purple), var(--neon-cyan)); display: flex; align-items: center; justify-content: center; font-weight: bold; color: #050508; font-size: 0.95rem; box-shadow: 0 0 10px rgba(34,211,238,0.4);"></div>
-      <span id="user-profile-name" style="font-size: 0.9rem; font-weight: 500; color: white;"></span>
+      <span id="user-profile-name" style="font-size: 0.9rem; font-weight: 500; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;"></span>
       <label class="email-preference" title="מייל יומי על מטלות למחר">
         <input type="checkbox" id="daily-email-toggle" onchange="updateEmailPreference(this.checked)">
         <span>מייל מטלות בשעה</span>
@@ -106,6 +107,7 @@
         <button class="tab-btn" data-tab="tab-notices" role="tab">📢 מודעות</button>
         <button class="tab-btn" data-tab="tab-milk" role="tab">🥛 תורנות חלב</button>
         <button class="tab-btn" data-tab="tab-schedule" role="tab">🗓️ מערכת שעות</button>
+        <button class="tab-btn" data-tab="tab-files" role="tab">📁 הקבצים שלי</button>
         <button class="tab-btn" data-tab="tab-calendar" role="tab">📅 לוח שנה</button>
       </nav>
 
@@ -148,7 +150,10 @@
                 </div>
                 <div class="input-group"><input type="text" id="new-assignment-title" placeholder="כותרת המטלה" required></div>
                 <div class="input-group"><input type="date" id="new-assignment-date" required></div>
-                <div class="input-group"><input type="file" id="new-assignment-attachment" aria-label="קובץ מצורף למטלה"></div>
+                <div class="input-group">
+                  <label for="new-assignment-attachment" style="font-size:0.8rem; color:var(--text-muted); display:block; margin-bottom:4px;">📎 קבצים מצורפים (אפשר לבחור כמה בבת אחת)</label>
+                  <input type="file" id="new-assignment-attachment" multiple aria-label="קבצים מצורפים למטלה">
+                </div>
               </div>
               <button type="submit" class="neon-btn outline">הוסיפי מטלה</button>
             </form>
@@ -177,7 +182,8 @@
                 <textarea id="notice-content" placeholder="תוכן ההודעה (שולח מייל לכולן)..." rows="2" required></textarea>
               </div>
               <div class="input-group">
-                <input type="file" id="notice-attachment" aria-label="קובץ מצורף למודעה">
+                <label for="notice-attachment" style="font-size:0.8rem; color:var(--text-muted); display:block; margin-bottom:4px;">📎 קבצים מצורפים (אפשר לבחור כמה בבת אחת)</label>
+                <input type="file" id="notice-attachment" multiple aria-label="קבצים מצורפים למודעה">
               </div>
               <button type="submit" class="neon-btn outline" style="font-size: 0.9rem; padding: 8px;">פרסמי מודעה ושלחי מייל</button>
             </form>
@@ -214,6 +220,63 @@
         </section>
       </section><!-- /tab-schedule -->
 
+      <!-- כרטיסייה: הקבצים שלי (אזור אישי — הקבצים גלויים רק לבעלת החשבון) -->
+      <section class="tab-panel" id="tab-files">
+        <div class="dashboard-grid dashboard-single">
+          <section class="glass-card full-width">
+            <h2>📁 הקבצים שלי</h2>
+            <div style="background: rgba(34,211,238,0.08); border-right: 4px solid var(--neon-cyan); padding: 10px 14px; border-radius: 6px; margin-bottom: 18px; font-size: 0.85rem; color: var(--text-muted);">
+              🔒 האזור הזה אישי לחלוטין — הקבצים שהעלית כאן שמורים בדרייב של המערכת וגלויים <strong>רק לך</strong>.
+            </div>
+
+            <form id="personal-files-form" style="background: rgba(0,0,0,0.3); padding: 16px; border-radius: 10px; margin-bottom: 22px;">
+              <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;">
+                <div class="input-group" style="flex: 1; min-width: 200px; margin: 0;">
+                  <label for="personal-file-subject" style="font-size:0.8rem; color:var(--text-muted); display:block; margin-bottom:4px;">מקצוע</label>
+                  <select id="personal-file-subject" required>
+                    <option value="" disabled selected>בחרי מקצוע...</option>
+                    <option value="מבני נתונים">מבני נתונים</option>
+                    <option value="פרויקט C#">פרויקט C#</option>
+                    <option value="תכנות מתקדם עם C#">תכנות מתקדם עם C#</option>
+                    <option value="תרגול C#">תרגול C#</option>
+                    <option value="core">core</option>
+                    <option value="full stack - angular">full stack - angular</option>
+                    <option value="תכנות מתקדם עם ג׳אווה">תכנות מתקדם עם ג׳אווה</option>
+                    <option value="תקשורת נתונים ואבטחת מידע">תקשורת נתונים ואבטחת מידע</option>
+                    <option value="ארגון המחשב">ארגון המחשב</option>
+                    <option value="מערכות הפעלה">מערכות הפעלה</option>
+                    <option value="פייתון">פייתון</option>
+                    <option value="unit test & qa">unit test & qa</option>
+                    <option value="לינוקס">לינוקס</option>
+                    <option value="full stack - react">full stack - react</option>
+                    <option value="node.js">node.js</option>
+                    <option value="עקרונות פיתוח עם AI וחדשנות">עקרונות פיתוח עם AI וחדשנות</option>
+                    <option value="אחר">אחר</option>
+                  </select>
+                </div>
+
+                <div class="input-group" style="flex: 2; min-width: 240px; margin: 0;">
+                  <label for="personal-file-input" style="font-size:0.8rem; color:var(--text-muted); display:block; margin-bottom:4px;">קבצים (אפשר לבחור כמה בבת אחת)</label>
+                  <input type="file" id="personal-file-input" multiple required aria-label="קבצים להעלאה לאזור האישי">
+                </div>
+
+                <button type="submit" class="neon-btn outline" style="padding: 10px 20px; width: auto;">העלי קבצים ⬆️</button>
+              </div>
+            </form>
+
+            <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 14px; flex-wrap: wrap;">
+              <span style="font-size: 0.9rem; color: var(--text-muted);">סינון לפי מקצוע:</span>
+              <select id="personal-files-filter" style="padding: 6px 10px; font-size: 0.85rem;">
+                <option value="">כל המקצועות</option>
+              </select>
+              <span id="personal-files-summary" style="font-size: 0.85rem; color: var(--text-muted); margin-inline-start: auto;"></span>
+            </div>
+
+            <div id="personal-files-list" class="assignments-grid"></div>
+          </section>
+        </div>
+      </section><!-- /tab-files -->
+
       <!-- כרטיסייה: לוח שנה -->
       <section class="tab-panel" id="tab-calendar">
         <section class="glass-card full-width">
@@ -240,11 +303,57 @@
     </div>
   </main>
 
-  <!-- אייקון נגישות וניהול דיסקרטי בצד המסך -->
-  <div style="position: fixed; bottom: 20px; left: 20px; z-index: 1000;">
-    <button onclick="toggleAccessibilityMenu()" title="תפריט נגישות וניהול" style="background: var(--glass-bg); border: 1px solid rgba(255,255,255,0.1); color: var(--neon-cyan); width: 45px; height: 45px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; box-shadow: 0 0 15px rgba(0,0,0,0.5); transition: all 0.3s;" onmouseover="this.style.borderColor='var(--neon-cyan)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'">
+  <!-- כפתור הוספת קישורים לגיטהאב -->
+  <a href="https://docs.google.com/spreadsheets/d/18AV2drnRZ6d_g6Ll0CD-0wdwmq5HmmAyg9cOAH85A8M/edit?usp=sharing"
+     target="_blank" rel="noopener"
+     id="github-links-btn"
+     title="הוספת קישורים לגיטהאב"
+     style="position: fixed; bottom: 20px; right: 20px; z-index: 1000; background: var(--glass-bg); border: 1px solid rgba(255,255,255,0.1); color: var(--neon-cyan); height: 45px; border-radius: 24px; cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 0 16px; font-size: 0.85rem; font-weight: bold; text-decoration: none; box-shadow: 0 0 15px rgba(0,0,0,0.5); transition: all 0.3s;"
+     onmouseover="this.style.borderColor='var(--neon-cyan)'; this.style.transform='translateY(-2px)'"
+     onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.transform='translateY(0)'">
+    <svg viewBox="0 0 16 16" width="22" height="22" fill="currentColor" aria-hidden="true" style="flex-shrink:0;">
+      <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/>
+    </svg>
+    <span>הוספת קישורים</span>
+  </a>
+
+  <!-- אייקונים קבועים בצד המסך: דיווח על תקלות מעל הגדרות נגישות -->
+  <div style="position: fixed; bottom: 20px; left: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 10px; align-items: center;">
+    <button onclick="toggleFeedbackMenu()" title="דיווח על תקלות והוספת פיצ'רים" aria-label="דיווח על תקלות והוספת פיצ'רים" style="background: var(--glass-bg); border: 1px solid rgba(255,255,255,0.1); color: var(--neon-cyan); width: 45px; height: 45px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; box-shadow: 0 0 15px rgba(0,0,0,0.5); transition: all 0.3s;" onmouseover="this.style.borderColor='var(--neon-cyan)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'">
+      🐞
+    </button>
+
+    <button onclick="toggleAccessibilityMenu()" title="תפריט נגישות וניהול" aria-label="תפריט נגישות וניהול" style="background: var(--glass-bg); border: 1px solid rgba(255,255,255,0.1); color: var(--neon-cyan); width: 45px; height: 45px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; box-shadow: 0 0 15px rgba(0,0,0,0.5); transition: all 0.3s;" onmouseover="this.style.borderColor='var(--neon-cyan)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'">
       ⚙️
     </button>
+  </div>
+
+  <!-- ממשק דיווח על תקלות ובקשות פיצ'רים -->
+  <div id="feedback-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5,5,8,0.85); backdrop-filter: blur(5px); z-index: 2000; justify-content: center; align-items: flex-start; overflow-y: auto; padding: 30px 0;">
+    <div class="glass-card" style="width: 100%; max-width: 480px; text-align: right; border: 1px solid var(--neon-cyan); position: relative; max-height: 90vh; overflow-y: auto; margin: auto;">
+      <button onclick="toggleFeedbackMenu()" aria-label="סגירה" style="position: absolute; top: 15px; left: 15px; background: none; border: none; color: #f43f5e; cursor: pointer; font-size: 1rem;">✕</button>
+
+      <h2 style="color: var(--neon-cyan); margin-top: 0; font-size: 1.2rem; border: none;">🐞 דיווח על תקלות והוספת פיצ'רים</h2>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: -6px;">כתבי כאן מה לא עבד או איזה פיצ'ר תרצי שנוסיף — ההודעה תישלח ישירות למערכת.</p>
+
+      <form id="feedback-form">
+        <div class="input-group">
+          <label for="feedback-type" style="font-size:0.8rem; color:var(--text-muted); display:block; margin-bottom:4px;">סוג הפנייה</label>
+          <select id="feedback-type" required>
+            <option value="bug">🐞 דיווח על תקלה</option>
+            <option value="feature">✨ בקשת פיצ'ר</option>
+            <option value="other">📝 אחר</option>
+          </select>
+        </div>
+
+        <div class="input-group">
+          <label for="feedback-description" style="font-size:0.8rem; color:var(--text-muted); display:block; margin-bottom:4px;">תיאור מפורט</label>
+          <textarea id="feedback-description" rows="5" placeholder="תארי את התקלה או הבקשה בפירוט..." required></textarea>
+        </div>
+
+        <button type="submit" class="neon-btn" style="width: 100%;">שליחת הדיווח ✉️</button>
+      </form>
+    </div>
   </div>
 
   <!-- תפריט נגישות וניהול מאובטח -->
