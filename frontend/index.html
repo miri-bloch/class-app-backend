@@ -13,13 +13,13 @@
 
   <!-- סרגל עליון -->
   <header id="dashboard-header" style="width: 100%; max-width: 1200px; padding: 0 20px; box-sizing: border-box; margin-top: 40px; margin-bottom: 35px; min-height: 80px;">
-    
+
     <!-- צד ימין: מונה מחוברות עכשיו -->
     <div id="online-users-badge" style="background: rgba(34,211,238,0.1); border: 1px solid var(--neon-cyan); padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; color: var(--neon-cyan); z-index: 2;">
       מחוברות כעת: <span id="online-count">1</span> 🟢
     </div>
 <!-- לוגו מחובר ומשמש כקישור רענון במרכז המסך -->
-    <div class="brand-card-wrapper" style="z-index: 1;">
+    <div class="brand-card-wrapper" style="position: absolute; left: 50%; transform: translateX(-50%); z-index: 3;">
       <a href="" onclick="window.location.reload(); return false;" style="text-decoration: none; cursor: pointer;">
         <div class="brand-container">
           <div class="logo-main">
@@ -32,10 +32,9 @@
     </div>
     
     <!-- צד שמאל: פרופיל משתמשת וכפתור התנתקות -->
-    <!-- min-width: 0 מאפשר לפס להתכווץ במקום להתנגש בלוגו שבמרכז -->
-    <div id="user-profile-header" style="display: none; align-items: center; gap: 12px; background: var(--glass-bg); padding: 8px 15px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); z-index: 2; min-width: 0; max-width: 45%;">
+    <div id="user-profile-header" style="display: none; align-items: center; gap: 12px; background: var(--glass-bg); padding: 8px 15px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); z-index: 2;">
       <div id="user-avatar-circle" style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--neon-purple), var(--neon-cyan)); display: flex; align-items: center; justify-content: center; font-weight: bold; color: #050508; font-size: 0.95rem; box-shadow: 0 0 10px rgba(34,211,238,0.4);"></div>
-      <span id="user-profile-name" style="font-size: 0.9rem; font-weight: 500; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;"></span>
+      <span id="user-profile-name" style="font-size: 0.9rem; font-weight: 500; color: white; white-space: nowrap;"></span>
       <label class="email-preference" title="מייל יומי על מטלות למחר">
         <input type="checkbox" id="daily-email-toggle" onchange="updateEmailPreference(this.checked)">
         <span>מייל מטלות בשעה</span>
