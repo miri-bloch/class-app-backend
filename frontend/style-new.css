@@ -70,6 +70,12 @@ body.light-theme {
   --n-text-3: #7C82A8;
 
   --n-focus: 0 0 0 3px rgba(109, 40, 217, .35);
+
+  /* צבעים שנבחרו עבור מצב כהה לא נקראים על רקע בהיר — דורסים במפורש */
+  --n-violet: #6D28D9;
+  --n-cyan: #0E7490;
+  --n-magenta: #BE185D;
+  --n-gold: #B45309;
 }
 
 /* ============================ בסיס ============================ */
@@ -626,6 +632,140 @@ input[type="file"]::file-selector-button:hover { background: var(--n-violet-12);
 .assignments-grid p { margin: .3rem 0; font-size: .84rem; color: var(--n-text-2); }
 .assignments-grid a { color: var(--n-cyan); word-break: break-all; }
 
+/* --- פנים כרטיס המטלה ---
+   app.js מייצר את הכרטיסים לפי מחלקות קבועות (assignment-card, assignment-title
+   וכו'). הקבוצה הזו חייבת להתקיים בגיליון, אחרת הכרטיס מתרנדר כערימת דיבים
+   בלי היררכיה ובלי פס ההתקדמות. */
+.assignment-card {
+  background: var(--n-panel-2);
+  border: 1px solid var(--n-line);
+  border-right: 3px solid var(--n-violet);
+  border-radius: var(--n-r);
+  padding: .9rem 1rem;
+}
+.assignment-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: .6rem;
+}
+.assignment-subject-row {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-bottom: .3rem;
+}
+.assignment-subject {
+  color: var(--n-violet);
+  font-size: .95rem;
+  font-weight: 800;
+  letter-spacing: .3px;
+}
+.assignment-title { font-weight: 700; color: var(--n-cyan); font-size: .9rem; line-height: 1.35; }
+.assignment-date { font-size: .8rem; color: var(--n-text-2); margin-top: .35rem; }
+.empty-state { color: var(--n-text-3); padding: 1.2rem .25rem; text-align: center; }
+
+/* מטלה שעברה את מועד ההגשה — דהויה ובצבע ניטרלי */
+.assignment-old { border-right-color: var(--n-text-3); opacity: .82; }
+body.light-theme .assignment-old { background: #F1F3FB; }
+
+.assignment-tomorrow-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  border-radius: 50%;
+  background: var(--n-magenta-12);
+  border: 1px solid var(--n-magenta);
+  color: var(--n-magenta);
+  font-size: .64rem;
+  font-weight: 800;
+  line-height: 1;
+  transform: rotate(-8deg);
+}
+
+.assignment-actions { display: flex; align-items: center; gap: .35rem; flex: 0 0 auto; }
+.assignment-hide {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--n-line);
+  border-radius: var(--n-r-sm);
+  background: transparent;
+  color: var(--n-text-2);
+  cursor: pointer;
+  font-size: .95rem;
+  line-height: 1;
+}
+.assignment-hide:hover { color: var(--n-cyan); border-color: var(--n-cyan); }
+body.light-theme .assignment-hide:hover { color: #0E7490; border-color: #0E7490; }
+
+.assignment-delete {
+  flex: 0 0 auto;
+  background: transparent;
+  border: 1px solid var(--n-magenta-35);
+  color: var(--n-magenta);
+  cursor: pointer;
+  border-radius: var(--n-r-sm);
+  padding: .2rem .5rem;
+  font-size: .74rem;
+  font-family: inherit;
+}
+.assignment-delete:hover { background: var(--n-magenta-12); }
+
+/* פס התקדמות ביצוע בכיתה */
+.assignment-class-stats { margin-top: .5rem; }
+.assignment-stats-label { display: block; font-size: .76rem; color: var(--n-text-2); margin-bottom: .25rem; }
+.assignment-stats-bar { background: var(--n-well); height: 6px; border-radius: 3px; overflow: hidden; }
+.assignment-stats-fill {
+  background: linear-gradient(90deg, var(--n-violet), var(--n-cyan));
+  height: 100%;
+  border-radius: 3px;
+  transition: width .3s ease;
+}
+
+/* שורת סימון "בוצע" בתחתית הכרטיס */
+.assignment-complete {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-top: .75rem;
+  padding-top: .6rem;
+  border-top: 1px solid var(--n-line-soft);
+  color: var(--n-text-2);
+  font-size: .82rem;
+  cursor: pointer;
+}
+
+.assignment-nonstudent-hint {
+  margin-top: .6rem;
+  padding: .5rem .7rem;
+  border-radius: var(--n-r-sm);
+  background: var(--n-gold-12);
+  border: 1px solid var(--n-gold-35);
+  color: var(--n-text-2);
+  font-size: .78rem;
+}
+
+/* כפתורי הכרטיס באזור הקבצים שלי מוזרקים עם המחלקה הזו. היא הייתה קיימת רק
+   בעיצוב הקיים, ולכן בגיליון הזה חייבים להגדיר אותה מחדש. */
+.neon-btn {
+  font-family: inherit;
+  font-size: .8rem;
+  font-weight: 600;
+  padding: .5rem .85rem;
+  border-radius: var(--n-r-sm);
+  border: 1px solid var(--n-line);
+  background: var(--n-raised);
+  color: var(--n-text);
+  cursor: pointer;
+  transition: border-color .2s, color .2s, background .2s;
+}
+.neon-btn.outline { background: transparent; }
+.neon-btn:hover { border-color: var(--n-violet-35); background: var(--n-violet-12); }
+.neon-btn:disabled { opacity: .5; cursor: not-allowed; }
+
 /* צ'קבוקס ביצוע — ישר, בלי לזוז מהשורה */
 .complete-checkbox {
   width: 19px;
@@ -637,6 +777,11 @@ input[type="file"]::file-selector-button:hover { background: var(--n-violet-12);
 body.light-theme .complete-checkbox { accent-color: #4D7C0F; }
 
 /* הערה אישית במטלה */
+.assignment-personal-note { margin-top: .6rem; }
+.assignment-personal-note-row { display: flex; gap: .4rem; align-items: center; }
+.assignment-personal-note-row .assignment-personal-note-input { flex: 1; }
+.assignment-personal-note-row .assignment-personal-note-save { margin-top: 0; flex: 0 0 auto; }
+
 .assignment-personal-note-input {
   width: 100%;
   padding: .5rem .65rem;
