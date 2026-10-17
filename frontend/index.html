@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="he" dir="rtl">
+<html lang="he" dir="rtl" data-design="classic">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -42,13 +42,14 @@
       </label>
       <button onclick="toggleHighContrast()" class="neon-btn outline theme-toggle-btn" title="החלפת מצב תאורה — כהה או בהיר" style="padding: 4px 10px; font-size: 0.9rem; width: auto;">🌙</button>
       <button onclick="logoutSession()" class="neon-btn outline" style="padding: 4px 10px; font-size: 0.75rem; width: auto; border-color: #f43f5e; color: #f43f5e;">התנתקי</button>
+      <button type="button" onclick="switchDesign()" class="neon-btn outline" title="מעבר לעיצוב החדש" aria-label="מעבר לעיצוב החדש" style="padding: 4px 10px; font-size: 0.75rem; width: auto;">🎨 עיצוב חדש</button>
     </div>
   </header>
 
   <main class="container">
     <!-- מסך התחברות / הרשמה -->
-    <div id="auth-container">
-      <section id="login-section" class="glass-card" style="max-width: 450px; margin: 0 auto;">
+    <div id="auth-container" style="display: flex; flex-direction: column; align-items: center;">
+      <section id="login-section" class="glass-card" style="width: 100%; max-width: 450px; margin: 0 auto;">
         <h2>התחברות למערכת</h2>
         <form id="login-form">
           <div class="input-group">
@@ -68,7 +69,7 @@
         </div>
       </section>
 
-      <section id="register-section" class="glass-card" style="max-width: 450px; margin: 0 auto; display: none;">
+      <section id="register-section" class="glass-card" style="width: 100%; max-width: 450px; margin: 0 auto; display: none;">
         <h2>הרשמה למערכת</h2>
         <form id="register-form">
           <div class="input-group">
@@ -328,7 +329,7 @@
   </div>
 
   <!-- ממשק דיווח על תקלות ובקשות פיצ'רים -->
-  <div id="feedback-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5,5,8,0.85); backdrop-filter: blur(5px); z-index: 2000; justify-content: center; align-items: flex-start; overflow-y: auto; padding: 30px 0;">
+  <div id="feedback-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5,5,8,0.85); backdrop-filter: blur(5px); z-index: 2000; justify-content: center; align-items: center; overflow-y: auto; padding: 30px 0;">
     <div class="glass-card" style="width: 100%; max-width: 480px; text-align: right; border: 1px solid var(--neon-cyan); position: relative; max-height: 90vh; overflow-y: auto; margin: auto;">
       <button onclick="toggleFeedbackMenu()" aria-label="סגירה" style="position: absolute; top: 15px; left: 15px; background: none; border: none; color: #f43f5e; cursor: pointer; font-size: 1rem;">✕</button>
 
@@ -356,7 +357,7 @@
   </div>
 
   <!-- תפריט נגישות וניהול מאובטח -->
-  <div id="accessibility-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5,5,8,0.85); backdrop-filter: blur(5px); z-index: 2000; justify-content: center; align-items: flex-start; overflow-y: auto; padding: 30px 0;">
+  <div id="accessibility-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5,5,8,0.85); backdrop-filter: blur(5px); z-index: 2000; justify-content: center; align-items: center; overflow-y: auto; padding: 30px 0;">
     <div class="glass-card" style="width: 100%; max-width: 420px; text-align: center; border: 1px solid var(--neon-cyan); position: relative; max-height: 90vh; overflow-y: auto; margin: auto;">
       <button onclick="toggleAccessibilityMenu()" style="position: absolute; top: 15px; left: 15px; background: none; border: none; color: #f43f5e; cursor: pointer; font-size: 1rem;">✕</button>
       
@@ -420,7 +421,7 @@
 
   <!-- חלון הודעה קופץ מעוצב (Custom Modal) -->
   <div id="custom-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 5, 8, 0.8); backdrop-filter: blur(5px); z-index: 2000; justify-content: center; align-items: center;">
-    <div class="glass-card" style="width: 100%; max-width: 450px; text-align: center; border: 1px solid var(--neon-cyan); box-shadow: 0 0 25px rgba(34, 211, 238, 0.2);">
+    <div class="glass-card" style="width: 100%; max-width: 450px; text-align: center; border: 1px solid var(--neon-cyan); box-shadow: 0 0 25px rgba(34, 211, 238, 0.2); max-height: 90vh; overflow-y: auto; margin: auto;">
       <h3 id="modal-title" style="color: var(--neon-cyan); margin-top: 0; margin-bottom: 15px; font-size: 1.2rem;">כותרת</h3>
       <div id="modal-content-area" style="text-align: right; margin-bottom: 20px; max-height: 300px; overflow-y: auto;">
         <p id="modal-desc" style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 20px;"></p>

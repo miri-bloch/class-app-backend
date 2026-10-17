@@ -80,14 +80,32 @@ function setGreetingBanner(userName) {
   document.getElementById('greeting-banner').textContent = greeting;
 }
 
-function showToast(message, isError = false) {
+function showToast(message, isError = false, duration = 3500) {
   const toast = document.getElementById('toast-notification');
   toast.textContent = message;
   toast.className = isError ? 'error show' : 'show';
-  
-  setTimeout(() => {
+
+  // טיימר אחד בלבד: קריאה חוזרת מאפסת את הקודם כדי שהטוסט לא ייעלם מוקדם מדי
+  if (showToast._timer) clearTimeout(showToast._timer);
+  showToast._timer = setTimeout(() => {
     toast.className = '';
-  }, 3500);
+  }, duration);
+}
+
+// מטפל בתשובת שרת של נתיב "שלחי למייל"/"הורדה".
+// אם הקובץ נמחק מהדרייב (404 + fileGone) — מקבלים הודעה ארוכה וברורה יותר
+// מזמן הטוסט הרגיל, כי המשתמשת צריכה להבין שעליה להעלות את הקובץ מחדש.
+// מחזיר true אם הטיפול נגמר כאן, אחרת את אובייקט השגיאה שהתקבל.
+async function handleFileResponseError(res, fallbackMessage = 'שגיאה בשליחת הקובץ') {
+  let data = {};
+  try { data = await res.json(); } catch (e) { /* תשובה בלי גוף JSON */ }
+
+  if (res.status === 404 && data.fileGone) {
+    showToast(data.error, true, 9000);
+    return true;
+  }
+  showToast(data.error || fallbackMessage, true);
+  return true;
 }
 
 function setButtonLoading(button, loadingText) {
@@ -439,6 +457,7 @@ window.loadPersonalFiles = async function loadPersonalFiles() {
             </div>
             <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
               <button onclick="downloadPersonalFile(${file.id})" class="neon-btn outline" style="width:auto; padding:5px 9px; font-size:0.78rem;">הורדה ⬇️</button>
+              <button onclick="sendPersonalFileToEmail(${file.id})" class="neon-btn outline" style="width:auto; padding:5px 9px; font-size:0.78rem;">שלחי לי למייל 📧</button>
               <button onclick="deletePersonalFile(${file.id})" class="neon-btn outline" style="width:auto; padding:5px 9px; font-size:0.78rem;">מחיקה 🗑</button>
             </div>
           </div>`;
@@ -478,6 +497,8 @@ document.getElementById('personal-files-form').addEventListener('submit', async 
   const input = document.getElementById('personal-file-input');
   const files = input ? Array.from(input.files) : [];
   const restoreButton = setButtonLoading(e.currentTarget.querySelector('button[type="submit"]'), 'מעלה...');
+  // שומרים את הטופס מראש: currentTarget מתאפס אחרי await, ואז אי אפשר לאפס אותו
+  const form = e.currentTarget;
 
   if (!subject) {
     showToast('נא לבחור מקצוע לקובץ', true);
@@ -513,7 +534,7 @@ document.getElementById('personal-files-form').addEventListener('submit', async 
       showToast(`הועלו ${savedCount} קבצים לאזור האישי!`);
     }
 
-    e.currentTarget.reset();
+    form.reset();
     window.loadPersonalFiles();
   } catch (err) {
     showToast(err.message || 'שגיאה בהעלאת הקבצים', true);
@@ -531,8 +552,8 @@ window.downloadPersonalFile = async function downloadPersonalFile(fileId) {
   try {
     const res = await authFetch(`${API_URL}/personal-files/${fileId}/download`);
     if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.error || 'שגיאה בהורדת הקובץ');
+      await handleFileResponseError(res, 'שגיאה בהורדת הקובץ');
+      return;
     }
 
     const disposition = res.headers.get('Content-Disposition') || '';
@@ -590,7 +611,7 @@ if (feedbackForm) feedbackForm.addEventListener('submit', async (e) => {
   const type = document.getElementById('feedback-type').value;
   const description = document.getElementById('feedback-description').value;
   const modal = document.getElementById('feedback-modal');
-  const restoreButton = setButtonLoading(e.currentTarget.querySelector('button[type="submit"]'), 'שולחת...');
+  const restoreButton = setButtonLoading(feedbackForm.querySelector('button[type="submit"]'), 'שולחת...');
 
   try {
     const res = await authFetch(`${API_URL}/feedback`, {
@@ -602,7 +623,7 @@ if (feedbackForm) feedbackForm.addEventListener('submit', async (e) => {
     if (!res.ok) throw new Error(result.error || 'שגיאה בשליחת הפנייה');
 
     showToast('הפנייה נשלחה בהצלחה! תודה על העדכון 🙏');
-    e.currentTarget.reset();
+    feedbackForm.reset();
     if (modal) modal.style.display = 'none';
   } catch (err) {
     showToast(err.message || 'שגיאה בשליחת הפנייה', true);
@@ -634,7 +655,11 @@ function renderNoticeAttachments(notice) {
   return `<div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;">${
     files.map(f => {
       const viewLink = f.drive_web_view_link || `https://drive.google.com/file/d/${f.drive_file_id}/view`;
-      return `<a class="notice-attachment" href="${viewLink}" target="_blank" rel="noopener">📎 ${normalizeAttachmentName(f.original_name) || 'פתיחת קובץ מצורף'}</a>`;
+      // כפתור המייל מוצג רק לקבצים שיש להם רשומה במערכת (id), ולא לשדה הבודד הישן
+      const mailButton = f.id
+        ? `<button onclick="sendNoticeFileToEmail(${f.id})" class="notice-attachment" style="cursor:pointer;">שלחי לי למייל 📧</button>`
+        : '';
+      return `<a class="notice-attachment" href="${viewLink}" target="_blank" rel="noopener">📎 ${normalizeAttachmentName(f.original_name) || 'פתיחת קובץ מצורף'}</a>${mailButton}`;
     }).join('')
   }</div>`;
 }
@@ -964,11 +989,47 @@ async function sendAssignmentToEmail(assignmentId) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' }
     });
-    const data = await res.json();
     if (!res.ok) {
-      showToast(data.error || 'שגיאה בשליחת הקובץ', true);
+      await handleFileResponseError(res, 'שגיאה בשליחת הקובץ');
       return;
     }
+    const data = await res.json().catch(() => ({}));
+    showToast(data.message || 'הקובץ נשלח בהצלחה למייל שלך!');
+  } catch (err) {
+    showToast('תקלת תקשורת מול השרת', true);
+  }
+}
+
+// שליחת קובץ מהאזור האישי למייל של המשתמשת עצמה (לפי ההגדרות שלה)
+async function sendPersonalFileToEmail(fileId) {
+  try {
+    const res = await authFetch(`${API_URL}/personal-files/${fileId}/send-to-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (!res.ok) {
+      await handleFileResponseError(res, 'שגיאה בשליחת הקובץ');
+      return;
+    }
+    const data = await res.json().catch(() => ({}));
+    showToast(data.message || 'הקובץ נשלח בהצלחה למייל שלך!');
+  } catch (err) {
+    showToast('תקלת תקשורת מול השרת', true);
+  }
+}
+
+// שליחת קובץ מצורף של מודעה למייל של המשתמשת עצמה
+async function sendNoticeFileToEmail(fileId) {
+  try {
+    const res = await authFetch(`${API_URL}/notices/files/${fileId}/send-to-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (!res.ok) {
+      await handleFileResponseError(res, 'שגיאה בשליחת הקובץ');
+      return;
+    }
+    const data = await res.json().catch(() => ({}));
     showToast(data.message || 'הקובץ נשלח בהצלחה למייל שלך!');
   } catch (err) {
     showToast('תקלת תקשורת מול השרת', true);
@@ -1683,6 +1744,51 @@ function toggleHighContrast() {
   showToast(isHighContrast ? 'הופעל מצב בהיר' : 'הופעל מצב כהה');
 }
 
+// ==================== מעבר בין העיצוב הקיים לעיצוב החדש ====================
+// אותו עמוד ואותה התחברות — רק קובץ ה-HTML (והעיצוב שלו) מוחלף.
+// שני הקבצים חולקים את אותם מזהים ומחלקות, ולכן app.js זהה בשניהם.
+const DESIGNS = {
+  classic: { file: 'index.html', label: 'העיצוב הקיים' },
+  fresh:   { file: 'index-new.html', label: 'העיצוב החדש' }
+};
+
+// ברירת המחדל היא תמיד העיצוב הקיים, אלא אם נבחר אחרת במפורש.
+function getCurrentDesign() {
+  const saved = localStorage.getItem('class_app_design');
+  // הגנה מהחלפה הדדית אינסופית: אם הסימון לא מתאים לעמוד שאנחנו בו כרגע — מתעלמים ממנו.
+  const facing = document.documentElement.dataset.design;
+  if (facing && saved && saved !== facing) {
+    if (facing === 'fresh' && saved === 'classic') return 'classic';
+    if (saved === 'fresh') return 'fresh';
+  }
+  if (saved && DESIGNS[saved]) return saved;
+  return facing && DESIGNS[facing] ? facing : 'classic';
+}
+
+// נקרא מהכפתור שבהדר — עובר לעיצוב השני ושומר את הבחירה.
+function switchDesign() {
+  const next = getCurrentDesign() === 'fresh' ? 'classic' : 'fresh';
+  localStorage.setItem('class_app_design', next);
+  const target = DESIGNS[next].file;
+  // מעבר מהיר: נטען את אותו עמוד עם פרמטר כדי לעקוף מטמון, אחרי שמירת ההעדפה.
+  window.location.href = target + '?design=' + next;
+}
+
+// מסנכרן את הסימון כדי שהעמוד הנוכחי יידע איזה עיצוב הוא מציג.
+(function stampDesign() {
+  const facing = document.documentElement.dataset.design || 'classic';
+  localStorage.setItem('class_app_design', facing);
+})();
+
+// מעדכן את תיאור הכפתור לפי העיצוב שאליו הוא מוביל.
+(function labelDesignButton() {
+  const btn = document.querySelector('[onclick="switchDesign()"]');
+  if (!btn) return;
+  const other = getCurrentDesign() === 'fresh' ? DESIGNS.classic : DESIGNS.fresh;
+  btn.title = `מעבר ל${other.label}`;
+  btn.setAttribute('aria-label', `מעבר ל${other.label}`);
+})();
+
 function verifyAdminPassword() {
   const pass = document.getElementById('admin-password-input').value;
   if (pass === 'MIRI') {
@@ -1701,7 +1807,9 @@ const adminEmailForm = document.getElementById('admin-email-form');
 if (adminEmailForm) {
   adminEmailForm.addEventListener('submit', async e => {
     e.preventDefault();
-    const submitButton = e.currentTarget.querySelector('button[type="submit"]');
+    // שומרים את הטופס מראש: currentTarget מתאפס אחרי await
+    const form = e.currentTarget;
+    const submitButton = form.querySelector('button[type="submit"]');
     const restoreButton = setButtonLoading(submitButton, 'שולחת מייל...');
 
     try {
@@ -1718,7 +1826,7 @@ if (adminEmailForm) {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
       showToast(data.message || 'המייל המעוצב נשלח בהצלחה!');
-      e.currentTarget.reset();
+      form.reset();
     } catch (err) {
       showToast(err.message || 'שגיאה בשליחת המייל', true);
     } finally {

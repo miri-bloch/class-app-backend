@@ -175,6 +175,9 @@ header {
 .container {
   width: 100%;
   max-width: 1200px;
+  /* margin: 0 auto מצטרף ל-align-items: center של ה-body. בלי זה, אם ילד בתוך
+     המעטפת היה מתרחב מעבר ל-1200px הוא היה נדחף לשמאל במקום להישאר ממורכז. */
+  margin: 0 auto;
   padding: 0 20px;
   box-sizing: border-box;
 }
@@ -740,7 +743,8 @@ footer span {
   border-radius: 12px;
   box-shadow: 0 0 20px rgba(34, 211, 238, 0.3);
   font-size: 0.95rem;
-  z-index: 1000;
+  /* מעל כל החלונות הצפים (2000) — שההודעה תיראה גם כשחלון פתוח */
+  z-index: 3000;
   display: flex;
   align-items: center;
   gap: 10px;

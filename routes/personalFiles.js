@@ -10,6 +10,7 @@ const multer = require('multer');
 const pool = require('../db');
 const { uploadFileToDrive, downloadFileFromDrive, deleteFileFromDrive, getOrCreateFolder } = require('../services/driveService');
 const { auth } = require('../middleware/auth');
+const { sendBrandedEmailWithAttachment } = require('../services/emailService');
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -126,12 +127,77 @@ router.get('/:id/download', auth, async (req, res) => {
     );
     res.send(buffer);
   } catch (err) {
-    console.error(err);
+    console.error('שגיאה בהורדת קובץ אישי:', err);
+    if (err && err.isFileGone) {
+      return res.status(404).json({
+        error: 'הקובץ הזה נמחק מהדרייב ולכן אינו זמין יותר. יש להעלות אותו מחדש לאזור האישי.',
+        fileGone: true,
+      });
+    }
+    if (err && err.isDriveError) {
+      return res.status(502).json({ error: 'שגיאה בהורדת הקובץ מהדרייב. נסי שוב בעוד רגע.' });
+    }
     res.status(500).json({ error: 'שגיאה בהורדת הקובץ' });
   }
 });
 
-// 4. מחיקת קובץ אישי — מורשה רק לבעלת הקובץ
+// 4. שליחת הקובץ האישי למייל של בעלת הקובץ בלבד.
+// הכתובת נלקחת מהמשתמשת המחוברת — אין אפשרות לשלוח לכתובת שרירותית.
+router.post('/:id/send-to-email', auth, async (req, res) => {
+  const userId = req.user.id;
+  const fileId = req.params.id;
+
+  try {
+    const fileRes = await pool.query(
+      'SELECT file_name, subject, drive_file_id, mime_type FROM personal_files WHERE id = $1 AND user_id = $2',
+      [fileId, userId]
+    );
+    if (fileRes.rows.length === 0) {
+      return res.status(404).json({ error: 'הקובץ לא נמצא' });
+    }
+    const file = fileRes.rows[0];
+
+    const userRes = await pool.query(
+      'SELECT full_name, email FROM users WHERE id = $1',
+      [userId]
+    );
+    if (userRes.rows.length === 0) {
+      return res.status(404).json({ error: 'המשתמשת לא נמצאה' });
+    }
+    const user = userRes.rows[0];
+
+    const buffer = await downloadFileFromDrive(file.drive_file_id);
+
+    const contentHtml = `
+      <div style="font-size: 16px; color: #cbd5e1; margin-bottom: 10px;">שלום ${user.full_name},</div>
+      <div style="font-size: 14px; color: #94a3b8; line-height: 1.6;">צורף למייל זה הקובץ ${file.file_name} (${file.subject || 'כללי'}) מהאזור האישי שלך.</div>
+    `;
+
+    await sendBrandedEmailWithAttachment(
+      user.email,
+      `📎 קובץ מהאזור האישי: ${file.file_name}`,
+      'PERSONAL FILE',
+      contentHtml,
+      { buffer, name: file.file_name, mimeType: file.mime_type || undefined }
+    );
+
+    res.json({ message: 'הקובץ נשלח בהצלחה למייל שלך!' });
+  } catch (err) {
+    console.error('שגיאה בשליחת הקובץ האישי למייל:', err);
+    if (err && err.isFileGone) {
+      return res.status(404).json({
+        error: 'הקובץ הזה נמחק מהדרייב ולכן אינו זמין יותר. יש להעלות אותו מחדש לאזור האישי.',
+        fileGone: true,
+      });
+    }
+    if (err && err.isDriveError) {
+      return res.status(502).json({ error: 'שגיאה בהורדת הקובץ מהדרייב. נסי שוב בעוד רגע.' });
+    }
+    res.status(500).json({ error: 'שגיאה בשליחת הקובץ למייל' });
+  }
+});
+
+// 5. מחיקת קובץ אישי — מורשה רק לבעלת הקובץ
 router.delete('/:id', auth, async (req, res) => {
   const userId = req.user.id;
   const fileId = req.params.id;

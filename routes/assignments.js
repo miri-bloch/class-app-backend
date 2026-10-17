@@ -279,8 +279,16 @@ router.post('/:id/send-to-email', auth, async (req, res) => {
     res.json({ message: 'הקובץ נשלח בהצלחה למייל שלך!' });
   } catch (err) {
     console.error('שגיאה בשליחת הקובץ למייל:', err);
+    // הקובץ נמחק מהדרייב — זו אינה תקלת שרת אלא מידע שהמשתמשת צריכה לקבל
+    // כדי לדעת שעליה להעלות את המטלה מחדש.
+    if (err && err.isFileGone) {
+      return res.status(404).json({
+        error: 'הקובץ המצורף של המטלה הזו נמחק מהדרייב ולכן אינו זמין יותר. יש להעלות את המטלה מחדש.',
+        fileGone: true,
+      });
+    }
     if (err && err.isDriveError) {
-      return res.status(500).json({ error: 'שגיאה בהורדת הקובץ מהדרייב' });
+      return res.status(502).json({ error: 'שגיאה בהורדת הקובץ מהדרייב. נסי שוב בעוד רגע.' });
     }
     res.status(500).json({ error: 'שגיאה בשליחת הקובץ למייל' });
   }

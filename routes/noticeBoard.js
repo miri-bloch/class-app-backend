@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const pool = require('../db');
-const { uploadFileToDrive } = require('../services/driveService');
+const { uploadFileToDrive, downloadFileFromDrive } = require('../services/driveService');
 const { sendBrandedEmail, sendBrandedEmailWithAttachment } = require('../services/emailService');
 const { auth, optionalAuth } = require('../middleware/auth');
 
@@ -153,6 +153,65 @@ router.delete('/:id', auth, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'שגיאה במחיקת ההודעה' });
+  }
+});
+
+// שליחת קובץ מצורף של מודעה למייל של המשתמשת המחוברת בלבד.
+// הכתובת נלקחת מהמשתמשת — אין אפשרות לשלוח לכתובת שרירותית.
+router.post('/files/:fileId/send-to-email', auth, async (req, res) => {
+  const userId = req.user.id;
+  const { fileId } = req.params;
+
+  try {
+    const fileRes = await pool.query(
+      `SELECT f.original_name, f.drive_file_id, f.mime_type, n.title
+       FROM notice_files f
+       JOIN notice_board n ON n.id = f.notice_id
+       WHERE f.id = $1`,
+      [fileId]
+    );
+    if (fileRes.rows.length === 0) {
+      return res.status(404).json({ error: 'הקובץ לא נמצא' });
+    }
+    const file = fileRes.rows[0];
+
+    const userRes = await pool.query(
+      'SELECT full_name, email FROM users WHERE id = $1',
+      [userId]
+    );
+    if (userRes.rows.length === 0) {
+      return res.status(404).json({ error: 'המשתמשת לא נמצאה' });
+    }
+    const user = userRes.rows[0];
+
+    const buffer = await downloadFileFromDrive(file.drive_file_id);
+
+    const contentHtml = `
+      <div style="font-size: 16px; color: #cbd5e1; margin-bottom: 10px;">שלום ${user.full_name},</div>
+      <div style="font-size: 14px; color: #94a3b8; line-height: 1.6;">צורף למייל זה הקובץ ${file.original_name} מהמודעה: ${file.title}.</div>
+    `;
+
+    await sendBrandedEmailWithAttachment(
+      user.email,
+      `📎 קובץ מהמודעה: ${file.title}`,
+      'NOTICE FILE',
+      contentHtml,
+      { buffer, name: file.original_name, mimeType: file.mime_type || undefined }
+    );
+
+    res.json({ message: 'הקובץ נשלח בהצלחה למייל שלך!' });
+  } catch (err) {
+    console.error('שגיאה בשליחת קובץ המודעה למייל:', err);
+    if (err && err.isFileGone) {
+      return res.status(404).json({
+        error: 'הקובץ המצורף של המודעה הזו נמחק מהדרייב ולכן אינו זמין יותר. יש להעלות את המודעה מחדש.',
+        fileGone: true,
+      });
+    }
+    if (err && err.isDriveError) {
+      return res.status(502).json({ error: 'שגיאה בהורדת הקובץ מהדרייב. נסי שוב בעוד רגע.' });
+    }
+    res.status(500).json({ error: 'שגיאה בשליחת הקובץ למייל' });
   }
 });
 

@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl" data-design="fresh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Class App - HighCode Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style-new.css">
+</head>
+<body>
+
+  <!-- ==================== עיטור רקע ==================== -->
+  <div class="bg-orbs" aria-hidden="true">
+    <span class="orb orb-1"></span>
+    <span class="orb orb-2"></span>
+    <span class="orb orb-3"></span>
+  </div>
+
+  <!-- ==================== סרגל עליון ==================== -->
+  <header id="dashboard-header" class="topbar">
+    <div id="online-users-badge" class="chip-online">מחוברות כעת: <span id="online-count">1</span> 🟢</div>
+
+    <div class="brand-card-wrapper">
+      <a href="" onclick="window.location.reload(); return false;" class="brand-link">
+        <div class="brand-container">
+          <div class="logo-main">
+            <span class="brand-mark">HC</span>
+            <span class="logo-word">HIGH<span>CODE</span></span>
+          </div>
+          <div class="slogan">CLASS OPERATIONS</div>
+        </div>
+      </a>
+    </div>
+
+    <div id="user-profile-header" class="user-bar">
+      <div id="user-avatar-circle" class="avatar"></div>
+      <span id="user-profile-name" class="user-name"></span>
+      <label class="email-preference" title="מייל יומי על מטלות למחר">
+        <input type="checkbox" id="daily-email-toggle" onchange="updateEmailPreference(this.checked)">
+        <span>מייל מטלות בשעה</span>
+        <input type="time" id="daily-email-time" aria-label="שעת שליחת המייל היומי" onchange="updateEmailTime(this.value)">
+      </label>
+      <button onclick="toggleHighContrast()" class="btn btn-icon theme-toggle-btn" title="החלפת מצב תאורה — כהה או בהיר" aria-label="החלפת מצב תאורה">🌙</button>
+      <button onclick="logoutSession()" class="btn btn-icon btn-danger" title="התנתקות">התנתקי</button>
+      <button type="button" class="btn btn-icon btn-accent" onclick="switchDesign()" title="מעבר בין העיצוב הקיים לעיצוב החדש" aria-label="החלפת עיצוב">🎨</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- ==================== מסך התחברות / הרשמה ==================== -->
+    <div id="auth-container">
+      <div class="auth-grid">
+        <section id="login-section" class="card auth-card">
+          <span class="card-kicker">// התחברות</span>
+          <h2 class="card-title">התחברות למערכת</h2>
+          <form id="login-form">
+            <div class="input-group">
+              <input type="email" id="email" placeholder="דואר אלקטרוני" required>
+            </div>
+            <div class="input-group">
+              <input type="password" id="password" placeholder="סיסמה" required>
+            </div>
+            <div class="auth-row">
+              <a href="#" id="forgot-password-link" class="link-quiet">שכחת סיסמה?</a>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">היכנסי</button>
+          </form>
+          <p id="login-message" class="message-text"></p>
+          <div class="auth-divider"></div>
+          <button id="show-register-btn" class="btn btn-ghost btn-block">אין לך חשבון? הירשמי כאן</button>
+        </section>
+
+        <section id="register-section" class="card auth-card" style="display: none;">
+          <span class="card-kicker">// הרשמה</span>
+          <h2 class="card-title">הרשמה למערכת</h2>
+          <form id="register-form">
+            <div class="input-group">
+              <input type="text" id="reg-name" placeholder="שם מלא" required>
+            </div>
+            <div class="input-group">
+              <input type="email" id="reg-email" placeholder="דואר אלקטרוני" required>
+            </div>
+            <div class="input-group">
+              <input type="password" id="reg-password" placeholder="סיסמה" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">הירשמי</button>
+          </form>
+          <p id="register-message" class="message-text"></p>
+          <div class="auth-divider"></div>
+          <button id="show-login-btn" class="btn btn-ghost btn-block">חזרה להתחברות</button>
+        </section>
+      </div>
+    </div>
+
+    <!-- ==================== לוח הבקרה ==================== -->
+    <div id="dashboard-app" style="display: none;">
+
+      <div class="greet">
+        <span class="greet-kicker">// שלום, טוב לראות אותך</span>
+        <h2 id="greeting-banner" class="greet-h">שלום וברכה! 🌟</h2>
+      </div>
+
+      <div id="exam-reminder" class="reminder" hidden>
+        <span class="reminder-dot" aria-hidden="true"></span>
+        <span id="exam-reminder-text"></span>
+        <button type="button" id="dismiss-exam-reminder" class="reminder-x" aria-label="סגירת תזכורת">×</button>
+      </div>
+
+      <nav class="tab-nav" id="dashboard-tabs" role="tablist" aria-label="אזורי המערכת">
+        <button class="tab-btn active" data-tab="tab-assignments" role="tab">📚 מטלות וביצוע</button>
+        <button class="tab-btn" data-tab="tab-notices" role="tab">📢 מודעות</button>
+        <button class="tab-btn" data-tab="tab-milk" role="tab">🥛 תורנות חלב</button>
+        <button class="tab-btn" data-tab="tab-schedule" role="tab">🗓️ מערכת שעות</button>
+        <button class="tab-btn" data-tab="tab-files" role="tab">📁 הקבצים שלי</button>
+        <button class="tab-btn" data-tab="tab-calendar" role="tab">📅 לוח שנה</button>
+      </nav>
+
+      <!-- ========== כרטיסייה: מטלות וביצוע ========== -->
+      <section class="tab-panel active" id="tab-assignments">
+        <div class="grid-2">
+
+          <section class="card assignments-focus stagger">
+            <h2 class="card-title">📚 מטלות ושיעורי בית</h2>
+
+            <div class="row-toolbar">
+              <span id="assignments-summary" class="tnum"></span>
+              <span class="spacer"></span>
+              <button id="show-hidden-assignments" class="btn btn-ghost btn-sm" type="button" style="display: none;">הציגי מטלות שהוסרו</button>
+            </div>
+
+            <div id="assignments-list" class="assignments-grid"></div>
+
+            <details class="add-panel">
+              <summary class="add-summary">➕ הוספת מטלה חדשה</summary>
+              <form id="add-assignment-form">
+                <div class="field-grid">
+                  <div class="input-group">
+                    <label for="new-assignment-subject" class="field-label">מקצוע</label>
+                    <select id="new-assignment-subject" required>
+                      <option value="" disabled selected>בחרי מקצוע מהרשימה...</option>
+                      <option value="מבני נתונים">מבני נתונים</option>
+                      <option value="פרויקט C#">פרויקט C#</option>
+                      <option value="core">core</option>
+                      <option value="full stack - angular">full stack - angular</option>
+                      <option value="תכנות מתקדם עם C#">תכנות מתקדם עם C#</option>
+                      <option value="תכנות מתקדם עם ג׳אווה">תכנות מתקדם עם ג׳אווה</option>
+                      <option value="תקשורת נתונים ואבטחת מידע">תקשורת נתונים ואבטחת מידע</option>
+                      <option value="ארגון המחשב">ארגון המחשב</option>
+                      <option value="מערכות הפעלה">מערכות הפעלה</option>
+                      <option value="פייתון">פייתון</option>
+                      <option value="unit test & qa">unit test & qa</option>
+                      <option value="לינוקס">לינוקס</option>
+                      <option value="full stack - react">full stack - react</option>
+                      <option value="node.js">node.js</option>
+                      <option value="עקרונות פיתוח עם AI וחדשנות">עקרונות פיתוח עם AI וחדשנות</option>
+                    </select>
+                  </div>
+                  <div class="input-group">
+                    <label for="new-assignment-title" class="field-label">כותרת המטלה</label>
+                    <input type="text" id="new-assignment-title" placeholder="כותרת המטלה" required>
+                  </div>
+                  <div class="input-group">
+                    <label for="new-assignment-date" class="field-label">תאריך הגשה</label>
+                    <input type="date" id="new-assignment-date" required>
+                  </div>
+                  <div class="input-group">
+                    <label for="new-assignment-attachment" class="field-label">📎 קבצים מצורפים (אפשר לבחור כמה בבת אחת)</label>
+                    <input type="file" id="new-assignment-attachment" multiple aria-label="קבצים מצורפים למטלה">
+                  </div>
+                </div>
+                <button type="submit" class="btn btn-primary">הוספת מטלה</button>
+              </form>
+            </details>
+          </section>
+
+          <section class="card stats-fullwidth stagger">
+            <h2 class="card-title">📊 סטטיסטיקות ביצוע</h2>
+            <div id="stats-list" class="stats-grid"></div>
+          </section>
+
+        </div>
+      </section><!-- /tab-assignments -->
+
+      <!-- ========== כרטיסייה: מודעות ========== -->
+      <section class="tab-panel" id="tab-notices">
+        <div class="grid-1">
+          <section class="card stagger">
+            <h2 class="card-title">📢 לוח מודעות והודעות</h2>
+            <form id="notice-form" class="form-well">
+              <div class="input-group">
+                <input type="text" id="notice-title" placeholder="כותרת ההודעה" required>
+              </div>
+              <div class="input-group">
+                <textarea id="notice-content" placeholder="תוכן ההודעה (שולח מייל לכולן)..." rows="2" required></textarea>
+              </div>
+              <div class="input-group">
+                <label for="notice-attachment" class="field-label">📎 קבצים מצורפים (אפשר לבחור כמה בבת אחת)</label>
+                <input type="file" id="notice-attachment" multiple aria-label="קבצים מצורפים למודעה">
+              </div>
+              <button type="submit" class="btn btn-primary">פרסמי מודעה ושלחי מייל</button>
+            </form>
+            <div id="notices-list" class="assignments-grid"></div>
+          </section>
+        </div>
+      </section><!-- /tab-notices -->
+
+      <!-- ========== כרטיסייה: תורנות חלב ========== -->
+      <section class="tab-panel" id="tab-milk">
+        <div class="grid-1">
+          <section class="card stagger">
+            <h2 class="card-title">🥛 תורנות חלב (סבב אוטומטי)</h2>
+            <div class="well">
+              <div class="well-label">התורנית כרגע בתור:</div>
+              <div id="current-milk-person" class="milk-name">טוען...</div>
+
+              <div class="milk-actions">
+                <div id="fulfill-milk-container" style="display: none;">
+                  <button onclick="fulfillMilkDuty()" class="btn btn-primary btn-block">קניתי והעברתי תור 🛒</button>
+                </div>
+              </div>
+              <div id="not-your-turn-msg" class="hint-danger" style="display: none;">* רק התורנית הנוכחית יכולה לסמן שקנתה את החלב.</div>
+            </div>
+          </section>
+        </div>
+      </section><!-- /tab-milk -->
+
+      <!-- ========== כרטיסייה: מערכת שעות ========== -->
+      <section class="tab-panel" id="tab-schedule">
+        <section class="card stagger">
+          <h2 class="card-title">🗓️ מערכת שעות שבועית - שבבים א' (לחצי על מקצוע לצפייה במטלות פעילות)</h2>
+          <div id="shvabim-schedule-grid" class="schedule-scroll"></div>
+        </section>
+      </section><!-- /tab-schedule -->
+
+      <!-- ========== כרטיסייה: הקבצים שלי ========== -->
+      <section class="tab-panel" id="tab-files">
+        <div class="grid-1">
+          <section class="card stagger">
+            <h2 class="card-title">📁 הקבצים שלי</h2>
+            <div class="note-info">
+              🔒 האזור הזה אישי לחלוטין — הקבצים שהעלית כאן שמורים בדרייב של המערכת וגלויים <strong>רק לך</strong>.
+            </div>
+
+            <form id="personal-files-form" class="form-well">
+              <div class="field-row">
+                <div class="input-group grow-1">
+                  <label for="personal-file-subject" class="field-label">מקצוע</label>
+                  <select id="personal-file-subject" required>
+                    <option value="" disabled selected>בחרי מקצוע...</option>
+                    <option value="מבני נתונים">מבני נתונים</option>
+                    <option value="פרויקט C#">פרויקט C#</option>
+                    <option value="תכנות מתקדם עם C#">תכנות מתקדם עם C#</option>
+                    <option value="תרגול C#">תרגול C#</option>
+                    <option value="core">core</option>
+                    <option value="full stack - angular">full stack - angular</option>
+                    <option value="תכנות מתקדם עם ג׳אווה">תכנות מתקדם עם ג׳אווה</option>
+                    <option value="תקשורת נתונים ואבטחת מידע">תקשורת נתונים ואבטחת מידע</option>
+                    <option value="ארגון המחשב">ארגון המחשב</option>
+                    <option value="מערכות הפעלה">מערכות הפעלה</option>
+                    <option value="פייתון">פייתון</option>
+                    <option value="unit test & qa">unit test & qa</option>
+                    <option value="לינוקס">לינוקס</option>
+                    <option value="full stack - react">full stack - react</option>
+                    <option value="node.js">node.js</option>
+                    <option value="עקרונות פיתוח עם AI וחדשנות">עקרונות פיתוח עם AI וחדשנות</option>
+                    <option value="אחר">אחר</option>
+                  </select>
+                </div>
+
+                <div class="input-group grow-2">
+                  <label for="personal-file-input" class="field-label">קבצים (אפשר לבחור כמה בבת אחת)</label>
+                  <input type="file" id="personal-file-input" multiple required aria-label="קבצים להעלאה לאזור האישי">
+                </div>
+
+                <button type="submit" class="btn btn-primary">העלי קבצים ⬆️</button>
+              </div>
+            </form>
+
+            <div class="row-toolbar">
+              <span class="tnum">סינון לפי מקצוע:</span>
+              <select id="personal-files-filter">
+                <option value="">כל המקצועות</option>
+              </select>
+              <span class="spacer"></span>
+              <span id="personal-files-summary" class="tnum"></span>
+            </div>
+
+            <div id="personal-files-list" class="assignments-grid"></div>
+          </section>
+        </div>
+      </section><!-- /tab-files -->
+
+      <!-- ========== כרטיסייה: לוח שנה ========== -->
+      <section class="tab-panel" id="tab-calendar">
+        <section class="card stagger">
+          <div class="card-head">
+            <h2 class="card-title">📅 לוח שנה שבועי</h2>
+            <div class="week-nav">
+              <button onclick="changeWeek(-1)" class="btn btn-ghost btn-sm">שבוע קודם ◀</button>
+              <span id="current-week-label" class="week-label"></span>
+              <button onclick="changeWeek(1)" class="btn btn-ghost btn-sm">▶ שבוע הבא</button>
+            </div>
+          </div>
+
+          <form id="calendar-event-form" class="form-well form-row">
+            <input type="text" id="event-title" placeholder="שם האירוע / מבחן / פגישה" required>
+            <input type="date" id="event-date" required>
+            <button type="submit" data-scope="shared" class="btn btn-primary">🌍 הוספת האירוע כאירוע לכולן</button>
+            <button type="submit" data-scope="personal" class="btn btn-ghost">🔒 הוספת האירוע כאירוע אישי (גלוי רק לך)</button>
+          </form>
+
+          <div id="weekly-calendar-grid" class="weekly-calendar-grid"></div>
+        </section>
+      </section><!-- /tab-calendar -->
+
+    </div>
+  </main>
+
+  <!-- ==================== כפתור קישורי הגשה ==================== -->
+  <a href="https://docs.google.com/spreadsheets/d/18AV2drnRZ6d_g6Ll0CD-0wdwmq5HmmAyg9cOAH85A8M/edit?usp=sharing"
+     target="_blank" rel="noopener"
+     id="github-links-btn"
+     class="fab-git"
+     title="קישורי הגשה — מעבר לגיליון המשותף (גוגל שיטס)"
+     aria-label="קישורי הגשה — מעבר לגיליון המשותף בגוגל שיטס">
+    <svg viewBox="0 0 16 16" width="22" height="22" fill="currentColor" aria-hidden="true">
+      <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/>
+    </svg>
+    <span>קישורי הגשה</span>
+  </a>
+
+  <!-- ==================== כפתורים צפים ==================== -->
+  <div class="float-stack">
+    <button onclick="toggleFeedbackMenu()" class="fab" title="דיווח על תקלות והוספת פיצ'רים" aria-label="דיווח על תקלות והוספת פיצ'רים">🐞</button>
+    <button onclick="toggleAccessibilityMenu()" class="fab" title="תפריט נגישות וניהול" aria-label="תפריט נגישות וניהול">⚙️</button>
+  </div>
+
+  <!-- ==================== חלון דיווח ==================== -->
+  <div id="feedback-modal" class="overlay" style="display: none;">
+    <div class="card modal-card">
+      <button onclick="toggleFeedbackMenu()" class="modal-x" aria-label="סגירה">✕</button>
+      <h2 class="card-title">🐞 דיווח על תקלות והוספת פיצ'רים</h2>
+      <p class="modal-sub">כתבי כאן מה לא עבד או איזה פיצ'ר תרצי שנוסיף — ההודעה תישלח ישירות למערכת.</p>
+
+      <form id="feedback-form">
+        <div class="input-group">
+          <label for="feedback-type" class="field-label">סוג הפנייה</label>
+          <select id="feedback-type" required>
+            <option value="bug">🐞 דיווח על תקלה</option>
+            <option value="feature">✨ בקשת פיצ'ר</option>
+            <option value="other">📝 אחר</option>
+          </select>
+        </div>
+
+        <div class="input-group">
+          <label for="feedback-description" class="field-label">תיאור מפורט</label>
+          <textarea id="feedback-description" rows="5" placeholder="תארי את התקלה או הבקשה בפירוט..." required></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block">שליחת הדיווח ✉️</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== תפריט נגישות וניהול ==================== -->
+  <div id="accessibility-modal" class="overlay" style="display: none;">
+    <div class="card modal-card">
+      <button onclick="toggleAccessibilityMenu()" class="modal-x" aria-label="סגירה">✕</button>
+
+      <h2 class="card-title">♿ נגישות והגדרות מערכת</h2>
+
+      <div class="stack">
+        <div class="group-label">כלי נגישות לתצוגה:</div>
+        <button onclick="adjustFontSize(1)" class="btn btn-ghost btn-block">הגדל טקסט במערכת 🔍+</button>
+        <button onclick="adjustFontSize(-1)" class="btn btn-ghost btn-block">הקטן טקסט במערכת 🔍-</button>
+        <button onclick="toggleHighContrast()" class="btn btn-ghost btn-block">החלף ניגודיות גבוהה 🌓</button>
+      </div>
+
+      <hr class="rule">
+
+      <div class="group-label accent">אזור מנהלות:</div>
+      <div id="admin-login-box" class="row">
+        <input type="password" id="admin-password-input" placeholder="הקלידי סיסמת מנהלת...">
+        <button onclick="verifyAdminPassword()" class="btn btn-primary btn-sm">כנסי</button>
+      </div>
+
+      <div id="admin-panel-content" style="display: none;">
+        <div class="card-head">
+          <h3 class="card-title sm">רשימת משתמשות רשומות</h3>
+          <button onclick="loadUsersList()" class="btn btn-ghost btn-xs">רענן</button>
+        </div>
+        <button onclick="advanceMilkDutyForAdmin()" class="btn btn-accent btn-block btn-sm">קידום תור החלב ⏭️</button>
+
+        <div class="well inset">
+          <div class="group-label">🥛 ניהול סדר תור החלב</div>
+          <div id="milk-rotation-admin-list" class="scroll-box"></div>
+          <div class="row">
+            <select id="milk-rotation-add-select">
+              <option value="">בחרי משתמשת...</option>
+            </select>
+            <button onclick="addToMilkRotation()" class="btn btn-ghost btn-sm">הוסיפי לסוף ➕</button>
+          </div>
+          <button onclick="loadDefaultMilkRotation()" class="btn btn-ghost btn-block btn-sm">מלאי תור מומלץ ✨</button>
+          <button onclick="saveMilkRotation()" class="btn btn-accent btn-block btn-sm">שמרי סדר התור 💾</button>
+        </div>
+
+        <h3 class="card-title sm">שליחת מייל מעוצב למייל מסוים ✉️</h3>
+        <p class="modal-sub">משלחים רק לכתובות שאת רושמת להלן — לא לכל המשתמשות.</p>
+        <form id="admin-email-form" class="stack">
+          <textarea id="admin-email-to" placeholder="כתובות מייל, מופרדות בפסיקים או בשורות חדשות" rows="2" required></textarea>
+          <input type="text" id="admin-email-subject" placeholder="נושא המייל" required>
+          <textarea id="admin-email-content" placeholder="תוכן המייל" rows="4" required></textarea>
+          <button type="submit" class="btn btn-primary btn-block btn-sm">שליחת מייל מעוצב ✉️</button>
+        </form>
+        <div id="users-management-list" class="scroll-box"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-notification" class="toast">הודעת מערכת</div>
+
+  <!-- ==================== חלון הודעה קופץ ==================== -->
+  <div id="custom-modal" class="overlay" style="display: none;">
+    <div class="card modal-card center">
+      <h3 id="modal-title" class="card-title">כותרת</h3>
+      <div id="modal-content-area">
+        <p id="modal-desc" class="modal-sub"></p>
+        <div class="input-group" id="modal-input-container">
+          <input type="email" id="modal-input-field" placeholder="דואר אלקטרוני...">
+        </div>
+      </div>
+      <div class="row">
+        <button id="modal-submit-btn" class="btn btn-primary btn-block">אישור</button>
+        <button id="modal-cancel-btn" class="btn btn-danger btn-block">סגור / ביטול</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="site">
+    פותח ועוצב ע"י <span>M BLOCH</span> | כל הזכויות שמורות © 2026
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

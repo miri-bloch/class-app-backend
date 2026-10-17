@@ -23,6 +23,9 @@ function createSafeDriveError(error, operation) {
   safeError.isDriveError = true;
   safeError.code = error?.code;
   safeError.status = status;
+  // סימון נפרד ל-404: הקובץ פשוט לא קיים יותר בדרייב (למשל נמחק יחד עם תיקיית האב).
+  // זה מקרה עסקי ולא תקלת שרת, ולכן צריך לחזור למשתמשת כ-404 עם הסבר ברור.
+  if (status === 404) safeError.isFileGone = true;
   console.error(`שגיאה ב-${operation} מול Google Drive:`, {
     code: safeError.code,
     status: safeError.status,
@@ -126,10 +129,38 @@ async function downloadFileFromDrive(fileId) {
   try {
     const response = await drive.files.get(
       { fileId, alt: 'media' },
-      { responseType: 'arraybuffer' }
+      { responseType: 'arraybuffer', validateStatus: () => true }
     );
+
+    // השרת של גוגל עלול להחזיר דף HTML (למשל דף שגיאה או דף חסימה של סינון)
+    // במקום תוכן הקובץ. בלי הבדיקה הזו ה-HTML היה נכנס למייל כקובץ פגום.
+    const contentType = String(response.headers?.['content-type'] || '');
+    if (response.status === 404) {
+      const err = new Error('Google Drive הורדת הקובץ failed (HTTP 404)');
+      err.isDriveError = true;
+      err.isFileGone = true;
+      err.status = 404;
+      err.code = 404;
+      console.error('שגיאה ב-הורדת הקובץ מול Google Drive:', { code: 404, status: 404 });
+      throw err;
+    }
+    if (response.status < 200 || response.status >= 300) {
+      const err = new Error(`Google Drive הורדת הקובץ failed (HTTP ${response.status})`);
+      err.isDriveError = true;
+      err.status = response.status;
+      throw err;
+    }
+    if (contentType.includes('text/html')) {
+      const err = new Error('תוכן הקובץ לא התקבל מל-Google Drive (התקבל דף HTML במקום הקובץ)');
+      err.isDriveError = true;
+      console.error('הורדת הקובץ הוחזרה כדף HTML במקום תוכן הקובץ.');
+      throw err;
+    }
+
     return Buffer.from(response.data);
   } catch (error) {
+    // שגיאות שאנחנו עצמנו זרקנו כבר מסומנות — לא לעטוף שוב.
+    if (error && error.isDriveError) throw error;
     throw createSafeDriveError(error, 'הורדת הקובץ');
   }
 }

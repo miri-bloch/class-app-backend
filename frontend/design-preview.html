@@ -1,0 +1,2351 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>תצוגת עיצוב — קובץ ניסיון, אינו מקושר למערכת</title>
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="dark light">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+/* ==========================================================================
+   תצוגת עיצוב — קובץ ניסיון בלבד.
+   שתי כללים ברזל:
+   1. אין מאפייני עיצוב ריקים ואין דריסות כפויות מחוץ לבלוק צמצום התנועה.
+      כל העיצוב חי במחלקות, כך שהחלפת מצב יום/לילה נעשית רק בהחלפת משתנים —
+      בלי דריסות ובלי סלקטורים שבירים.
+      היוצאים היחידים הם רוחבי הפסים בגרף (הערך מגיע מה-HTML) וגווני
+      המקרא (בורר ה-HTML אינו תומך ב-var() בתוך ערך של מאפיין).
+   2. שלושת הפונטים המוצהרים כאן באמת נטענים בפועל (בשונה מ-style.css של
+      המערכת שמצהיר על 'Rubik' שאף פעם לא נטען ולכן נופל ל-sans-serif גנרי).
+   ========================================================================== */
+
+/* ---------- אבני בניין ---------- */
+:root {
+  color-scheme: dark;
+
+  --void:      #060814;
+  --panel:     #0D1024;
+  --panel-2:   #131731;
+  --raised:    #1A1F3E;
+  --line:      #262C52;
+  --line-soft: #1B2043;
+
+  --text:      #EEF0FF;
+  --text-2:    #A6ACD6;
+  --text-3:    #6B7196;
+
+  /* ניאון. לכל גוון יש משמעות קבועה בכל האתר:
+     ויולט = זהות ומקצוע · ציאן = זמן ושיעור · ליים = בוצע
+     מאג'נטה = דחוף ואישי · זהב = אזהרה */
+  --violet:    #A855F7;
+  --magenta:   #FF3D8B;
+  --cyan:      #22D3EE;
+  --lime:      #A3E635;
+  --gold:      #FFC53D;
+
+  --violet-12: rgba(168,85,247,.12);
+  --magenta-12:rgba(255,61,139,.12);
+  --cyan-12:   rgba(34,211,238,.12);
+  --lime-12:   rgba(163,230,53,.12);
+  --gold-12:   rgba(255,197,61,.12);
+  --violet-35: rgba(168,85,247,.35);
+  --magenta-35:rgba(255,61,139,.35);
+  --cyan-35:   rgba(34,211,238,.35);
+  --lime-35:   rgba(163,230,53,.35);
+  --gold-35:   rgba(255,197,61,.35);
+
+  --well:      #090C1C;
+  --code-bg:   #080B18;
+
+  --r-sm: 10px;
+  --r:    16px;
+  --r-lg: 22px;
+  --r-pill: 999px;
+
+  --rail: 3.5rem;
+  --maxw: 1220px;
+
+  --f-body: 'Rubik','Segoe UI',system-ui,sans-serif;
+  --f-head: 'Sora','Rubik',system-ui,sans-serif;
+  --f-mono: 'JetBrains Mono',ui-monospace,'Cascadia Code',Consolas,monospace;
+
+  --shadow: 0 24px 60px -32px rgba(0,0,0,.95), 0 2px 0 rgba(255,255,255,.03) inset;
+  --glow-violet: 0 0 0 1px var(--violet-35), 0 12px 40px -18px var(--violet);
+  --glow-cyan:   0 0 0 1px var(--cyan-35), 0 12px 40px -18px var(--cyan);
+  --glow-magenta:0 0 0 1px var(--magenta-35), 0 12px 40px -18px var(--magenta);
+
+  --focus: 0 0 0 3px var(--void), 0 0 0 6px var(--cyan);
+}
+
+html[data-theme="light"] {
+  color-scheme: light;
+
+  --void:      #F2F3FB;
+  --panel:     #FFFFFF;
+  --panel-2:   #F7F8FE;
+  --raised:    #ECEFFB;
+  --line:      #D3D8EE;
+  --line-soft: #E4E8F6;
+
+  --text:      #141834;
+  --text-2:    #4C5478;
+  --text-3:    #838AA8;
+
+  --violet:    #7B2FD1;
+  --magenta:   #E01262;
+  --cyan:      #0891A6;
+  --lime:      #4E9A06;
+  --gold:      #A86300;
+
+  --violet-12: rgba(123,47,209,.10);
+  --magenta-12:rgba(224,18,98,.10);
+  --cyan-12:   rgba(8,145,166,.10);
+  --lime-12:   rgba(78,154,6,.12);
+  --gold-12:   rgba(168,99,0,.12);
+  --violet-35: rgba(123,47,209,.30);
+  --magenta-35:rgba(224,18,98,.30);
+  --cyan-35:   rgba(8,145,166,.30);
+  --lime-35:   rgba(78,154,6,.30);
+  --gold-35:   rgba(168,99,0,.30);
+
+  --well:      #F4F6FD;
+  --code-bg:   #F7F8FE;
+
+  --shadow: 0 20px 46px -34px rgba(20,24,52,.55);
+  --glow-violet: 0 0 0 1px var(--violet-35), 0 14px 34px -22px var(--violet);
+  --glow-cyan:   0 0 0 1px var(--cyan-35), 0 14px 34px -22px var(--cyan);
+  --glow-magenta:0 0 0 1px var(--magenta-35), 0 14px 34px -22px var(--magenta);
+
+  --focus: 0 0 0 3px #FFFFFF, 0 0 0 6px var(--violet);
+}
+
+/* ---------- איפוס ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--void);
+  color: var(--text);
+  font-family: var(--f-body);
+  font-size: 1rem;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+/* שתי הילות צבעוניות קבועות ברקע — נותנות עומק ניאוני בלי לפגוע בקריאות */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(680px 420px at 88% -6%, var(--violet-12), transparent 70%),
+    radial-gradient(560px 380px at 6% 42%, var(--cyan-12), transparent 72%);
+}
+h1,h2,h3,h4 { font-family: var(--f-head); font-weight: 700; letter-spacing: -0.02em; margin: 0; line-height: 1.2; }
+p { margin: 0; }
+ul,ol { margin: 0; padding: 0; list-style: none; }
+a { color: var(--cyan); text-decoration: none; }
+a:hover { text-decoration: underline; }
+button, input, select, textarea { font: inherit; color: inherit; }
+svg { display: block; }
+::selection { background: var(--violet); color: #fff; }
+
+:focus-visible { outline: none; box-shadow: var(--focus); border-radius: var(--r-sm); }
+
+.tnum { font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; letter-spacing: -0.02em; }
+
+.wrap { position: relative; z-index: 1; max-width: var(--maxw); margin: 0 auto; padding: 0 1.25rem 4rem; }
+
+/* ---------- כרטיס (המשטח הבסיסי) ---------- */
+.sheet {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow);
+  margin-block-end: 1.5rem;
+  overflow: hidden;
+}
+.sheet-body { padding: 1.35rem 1.5rem; }
+.sheet-head {
+  padding: 1.15rem 1.5rem;
+  border-bottom: 1px solid var(--line-soft);
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  flex-wrap: wrap;
+}
+.sheet-h { font-size: 1.15rem; }
+.sheet-note { color: var(--text-3); font-size: .86rem; }
+.spacer { flex: 1; }
+
+/* ---------- סרגל עליון ---------- */
+.masthead {
+  position: relative;
+  z-index: 5;
+  display: grid;
+  /* שלוש עמודות: נוכחות | לוגו במרכז | כלי המשתמשת.
+     ה-1fr בשני הקצוות הוא מה שממרכז את הלוגו באמת, לא "בערך". */
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem 0 1rem;
+}
+/* הסרגל מתפרס על שתי שורות: הלוגו במרכז השורה העליונה, וכלי המשתמשת
+   מיושרים בשורה תחתונה משל עצמם. כך אין שורה "משוננת" שבה הכלים
+   מתחילים להישבר זה מתחת לזה בגדלים שונים. */
+.masthead { grid-template-areas: "left center right" "tools tools tools"; }
+.mast-left { grid-area: left; justify-self: start; }
+.mast-center { grid-area: center; }
+/* הלוגו במרכז — הבמה שלו, לא פינה נשכחת */
+.mast-left, .mast-center { display: flex; align-items: center; gap: .6rem; }
+.mast-center { justify-content: center; }
+/* שורת הכלים — כל הפריטים באותו גובה, נפרסים לרוחב מלא מתחת ללוגו */
+.mast-tools {
+  grid-area: tools;
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: .5rem;
+  margin-block-start: .15rem;
+  padding-block-start: .85rem;
+  border-block-start: 1px solid var(--line-soft);
+}
+.mast-tools .spacer { flex: 1 1 1rem; }
+
+.presence {
+  display: inline-flex; align-items: center; gap: .45rem;
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--r-pill); padding: .3rem .7rem .3rem .8rem;
+  font-size: .82rem; color: var(--text-2);
+}
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); flex: none; }
+.dot-live { background: var(--lime); box-shadow: 0 0 0 4px var(--lime-12); animation: pulse 2.4s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { box-shadow: 0 0 0 3px var(--lime-12); } 50% { box-shadow: 0 0 0 8px transparent; } }
+
+/* הלוגו — סימן הריבוע המעוגל עם הסוגריים המשופעים, ממורכז ולא מוזנח בצד.
+   אותו סמל שהיה קודם: ריבוע מעוגל בגרדיאנט סגול→ורוד עם < /> לבן במרכזו. */
+.brand { display: flex; align-items: center; gap: .7rem; }
+.brand-mark {
+  width: 2.6rem; height: 2.6rem; flex: none;
+  display: grid; place-items: center;
+  border-radius: 11px;
+  color: #fff;
+  background: linear-gradient(135deg, var(--violet), var(--magenta));
+  box-shadow: 0 10px 24px -12px var(--violet);
+}
+/* הסוגריים המשופעים — קו עבה ועגול, כמו בסמל המקורי */
+.brand-mark svg { width: 1.35rem; height: 1.35rem; display: block; }
+.brand-text { display: grid; gap: .08rem; }
+.brand-word {
+  font-family: var(--f-head); font-weight: 700; font-size: 1.02rem;
+  letter-spacing: .01em; line-height: 1.05;
+}
+.brand-seal { color: var(--violet); font-size: .5em; vertical-align: super; margin-inline-start: .12em; }
+.brand-sub {
+  font-family: var(--f-body); font-size: .7rem; color: var(--text-3);
+  letter-spacing: .01em;
+}
+
+/* פס הפרדה מוסדי מתחת לסרגל — שני גוונים ואז קו שקט */
+.mast-rule {
+  display: flex; height: 3px; border-radius: var(--r-pill);
+  overflow: hidden; margin-block-end: 1.25rem;
+}
+.mast-rule i { display: block; }
+.mast-rule i:first-child { flex: 0 0 18%; background: var(--violet); }
+.mast-rule i:last-child { flex: 1; background: var(--line); }
+
+.chip {
+  display: inline-flex; align-items: center; gap: .45rem;
+  background: var(--panel); border: 1px solid var(--line); color: var(--text-2);
+  border-radius: var(--r-pill); padding: .38rem .75rem; font-size: .82rem;
+  cursor: pointer;
+  transition: border-color .18s ease, color .18s ease;
+}
+.chip:hover { border-color: var(--violet-35); color: var(--text); }
+.chip input[type="time"] {
+  background: none; border: 0; padding: 0; width: 4.5rem;
+  font-family: var(--f-mono); font-size: .82rem; color: var(--text-2); direction: ltr;
+}
+.chip svg { width: 15px; height: 15px; }
+
+/* מתג קטן להעדפת המייל היומי — יושב בתוך אותו צ'יפ עם בורר השעה.
+   בין השניים יש קו הפרדה דק, ומילה קטנה שמסבירה למה השעה שייכת;
+   בלעדיהם הצ'יפ נראה כמו שני פקדים שונים שנדחסו יחד. */
+.chip-mail { gap: .5rem; }
+.chip-mail .switch { margin-inline-start: .15rem; padding-inline-start: .55rem; border-inline-start: 1px solid var(--line-soft); }
+.chip-label {
+  font-size: .74rem; color: var(--text-3); white-space: nowrap;
+}
+.switch { display: inline-flex; position: relative; flex: none; cursor: pointer; }
+.switch input {
+  position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer;
+}
+.switch-track {
+  width: 2rem; height: 1.05rem; border-radius: var(--r-pill);
+  background: var(--well); border: 1px solid var(--line);
+  display: block; position: relative;
+  transition: background .18s ease, border-color .18s ease;
+}
+.switch-track::after {
+  content: ""; position: absolute; inset-block-start: 1px; inset-inline-start: 1px;
+  width: .75rem; height: .75rem; border-radius: 50%;
+  background: var(--text-3);
+  transition: transform .18s ease, background .18s ease;
+}
+.switch input:checked + .switch-track { background: var(--violet-12); border-color: var(--violet-35); }
+.switch input:checked + .switch-track::after {
+  transform: translateX(-.85rem); background: var(--violet);
+}
+.switch input:focus-visible + .switch-track { border-color: var(--violet); box-shadow: var(--focus); }
+
+/* כרטיס המשתמשת — רוחב לפי אורך השם, לא קופץ ולא נמתח על כל השורה.
+   inline-flex + הטקסט שלא נשבר = הכרטיס מקיף בדיוק את מה שיש בו. */
+.person {
+  display: inline-flex; align-items: center; gap: .55rem;
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  padding: .28rem .8rem .28rem .28rem;
+  max-width: 15rem;
+}
+.avatar {
+  width: 2rem; height: 2rem; border-radius: 50%;
+  display: grid; place-items: center; flex: none;
+  font-size: .78rem; font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, var(--cyan), var(--violet));
+}
+/* המעטפת של שני הטקסטים יושבת בטור צר בדיוק כמו התוכן */
+.person-meta { display: grid; gap: .05rem; min-width: 0; }
+/* הטקסט לא נשבר באמצע — לכן הכרטיס מתרחב לפי השם ולא "מזנק" בין שורות */
+.person-name { font-size: .86rem; font-weight: 500; line-height: 1.2; white-space: nowrap; }
+.person-role { font-size: .7rem; color: var(--text-3); line-height: 1.2; white-space: nowrap; }
+/* שם ארוך במיוחד נחתך בשתי נקודות במקום לשבור את השורה */
+.person-name, .person-role { overflow: hidden; text-overflow: ellipsis; }
+
+/* ---------- כפתורים ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: .45rem;
+  border-radius: var(--r-sm); border: 1px solid transparent;
+  padding: .58rem 1.1rem; font-size: .9rem; font-weight: 500;
+  cursor: pointer; white-space: nowrap;
+  transition: transform .15s ease, border-color .18s ease, color .18s ease, background .18s ease;
+}
+.btn:active { transform: translateY(1px); }
+.btn svg { width: 16px; height: 16px; flex: none; }
+.btn-solid { background: linear-gradient(135deg, var(--violet), var(--magenta)); color: #fff; font-weight: 600; box-shadow: 0 12px 30px -18px var(--violet); }
+.btn-solid:hover { filter: brightness(1.08); }
+.btn-line { background: var(--panel-2); border-color: var(--line); color: var(--text); }
+.btn-line:hover { border-color: var(--violet-35); color: var(--violet); }
+.btn-ghost { background: none; border-color: transparent; color: var(--text-2); padding: .38rem .6rem; }
+.btn-ghost:hover { color: var(--cyan); }
+.btn-danger { background: var(--magenta-12); border-color: var(--magenta-35); color: var(--magenta); }
+.btn-danger:hover { background: var(--magenta-35); color: #fff; }
+.btn-sm { padding: .34rem .7rem; font-size: .82rem; }
+.btn-block { width: 100%; }
+.btn.is-loading { opacity: .7; pointer-events: none; }
+
+.btn-dotty { display: inline-flex; gap: 3px; }
+.btn-dotty i { width: 4px; height: 4px; border-radius: 50%; background: currentColor; animation: blink 1s steps(2) infinite; }
+.btn-dotty i:nth-child(2) { animation-delay: .2s; }
+.btn-dotty i:nth-child(3) { animation-delay: .4s; }
+@keyframes blink { 0%,100% { opacity: .25; } 50% { opacity: 1; } }
+
+/* ---------- לשוניות ---------- */
+/* הסרגל נשאר בראש העמוד גם כשגוללים בין טאבים.
+   top קטן (.5rem) = "ירידה קטנה" ולא נעלם לאמצע האובייקט. */
+.nav-tabs {
+  position: sticky;
+  top: .5rem;
+  z-index: 30;
+  display: flex; gap: .45rem; flex-wrap: wrap;
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--r-pill); padding: .4rem; margin-block: .5rem 1.75rem;
+}
+/* כשהסרגל דבוק — מסגרת עגולה צפה הייתה נראית כמו בועה תלושה.
+   דבוק: פינות קטנות + צל, כדי שייקרא כסרגל ולא ככרטיס מרחף. */
+.nav-tabs.is-stuck {
+  border-radius: var(--r);
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 14px 34px -20px #000, 0 0 0 1px var(--line-soft);
+}
+.tab {
+  display: inline-flex; align-items: center; gap: .5rem;
+  background: none; border: 1px solid transparent; color: var(--text-2);
+  border-radius: var(--r-pill); padding: .55rem 1rem; font-size: .9rem;
+  cursor: pointer;
+  transition: color .18s ease, background .18s ease, border-color .18s ease;
+}
+.tab:hover { color: var(--text); background: var(--panel-2); }
+.tab svg { width: 17px; height: 17px; }
+.tab[aria-selected="true"] {
+  color: #fff; font-weight: 600;
+  background: linear-gradient(135deg, var(--violet), var(--magenta));
+  box-shadow: 0 10px 26px -16px var(--violet);
+}
+.tab[aria-selected="true"] .count { background: rgba(255,255,255,.22); color: #fff; }
+.count {
+  font-family: var(--f-mono); font-size: .72rem;
+  background: var(--magenta-12); color: var(--magenta);
+  border-radius: var(--r-pill); padding: .05rem .45rem; font-weight: 700;
+}
+
+/* ---------- פתיחה ---------- */
+.greet { margin-block-end: 1.5rem; }
+.greet-kicker {
+  font-family: var(--f-mono); font-size: .78rem; color: var(--cyan);
+  direction: ltr; text-align: right; display: block; margin-block-end: .5rem;
+}
+.greet-h { font-size: clamp(1.7rem, 4vw, 2.6rem); font-weight: 800; }
+.greet-h .caret {
+  display: inline-block; width: .55ch; height: 1em; margin-inline-start: .1rem;
+  background: var(--cyan); vertical-align: -0.12em;
+  animation: caret 1.1s steps(1) infinite;
+}
+@keyframes caret { 0%,49% { opacity: 1; } 50%,100% { opacity: 0; } }
+.greet-sub { color: var(--text-2); margin-block-start: .6rem; font-size: .95rem; }
+.greet-sub b { font-weight: 600; color: var(--text); }
+/* .greet-actions הוסר — כפתור "הוספת מטלה" עבר לתוך לשונית המטלות עצמה,
+   כדי שלא יופיע בעמודים שאין להם שום קשר אליו. */
+
+/* ---------- אזהרה ---------- */
+.reminder {
+  display: flex; align-items: center; gap: .85rem; flex-wrap: wrap;
+  background: var(--gold-12); border: 1px solid var(--gold-35);
+  border-radius: var(--r); padding: .85rem 1.15rem; margin-block-end: 1.5rem;
+}
+.reminder svg { width: 20px; height: 20px; color: var(--gold); flex: none; }
+.reminder b { font-weight: 600; }
+.reminder .spacer { flex: 1; }
+
+/* ---------- כותרת מקטע ---------- */
+.section-head { display: flex; align-items: baseline; gap: .85rem; flex-wrap: wrap; margin-block: 2.5rem 1.1rem; }
+.section-h { font-size: 1.5rem; font-weight: 700; }
+.section-note { color: var(--text-3); font-size: .86rem; }
+
+/* ---------- שורת מטלה ----------
+   המטלה בנויה משני חלקים בלבד, ולא משלושה שמתחרים על אותה שורה:
+     1) שורת הכותרת — תגית המקצוע והכותרת.
+     2) שורת פעולה דקה מתחתיה — הצ'קבוקס "בוצע" מימין, וההערה האישית לידו.
+   הריווח האנכי בין השתיים הוא שמייצר את היישור; קודם הצ'קבוקס היה תקוע
+   בקצה השורה הרחבה ונראה תלוש מהתוכן. */
+.row-list { display: grid; }
+.row {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--rail) minmax(0,1fr);
+  border-block-start: 1px solid var(--line-soft);
+}
+.row:first-child { border-block-start: 0; }
+/* מטלה שבוצעה מחווירה — אבל רק הטקסט. הצ'קבוקס ופס הביצוע נשארים
+   ברורים כדי שאפשר יהיה להסיר את הסימון בקלות. */
+.row:has(.check input:checked) .row-title,
+.row:has(.check input:checked) .tag-subject { opacity: .55; }
+.row::before {
+  content: ""; position: absolute; inset-block: 0; inset-inline-start: 0;
+  width: 3px; background: var(--text-3);
+}
+.r-violet::before { background: var(--violet); box-shadow: 0 0 18px var(--violet); }
+.r-cyan::before { background: var(--cyan); box-shadow: 0 0 18px var(--cyan); }
+.r-magenta::before { background: var(--magenta); box-shadow: 0 0 18px var(--magenta); }
+.r-lime::before { background: var(--lime); box-shadow: 0 0 18px var(--lime); }
+.r-gold::before { background: var(--gold); box-shadow: 0 0 18px var(--gold); }
+
+/* המסילה צרה וצמודה לשורה — המטרה: כל מטלה בגובה של שורה-שתיים, גם כשיש עשר */
+.rail {
+  grid-row: 1 / -1;
+  background: var(--code-bg);
+  border-inline-end: 1px solid var(--line-soft);
+  display: flex; flex-direction: column; align-items: center;
+  padding-block: .7rem .6rem; gap: .35rem;
+}
+.rail-n { font-family: var(--f-mono); font-size: .74rem; color: var(--text-3); }
+.r-violet .rail-n { color: var(--violet); }
+.r-cyan .rail-n { color: var(--cyan); }
+.r-magenta .rail-n { color: var(--magenta); }
+.r-lime .rail-n { color: var(--lime); }
+.r-gold .rail-n { color: var(--gold); }
+.rail-bar { width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: .5; }
+
+/* עמודה אחת בלבד: הכותרת, ואחריה שורת הפעולה. אין יותר "עמודה שנייה"
+   שנמתחת לקצה המסך וגוררת את הצ'קבוקס איתה. */
+.row-body {
+  padding: .8rem 1.1rem .85rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: .5rem;
+  min-width: 0;
+}
+/* שורת הפעולה — הצ'קבוקס צמוד לתוכן ולא תלוש בקצה */
+.row-side {
+  display: flex; align-items: center; gap: .55rem; flex-wrap: wrap;
+  min-width: 0;
+}
+/* ההערה האישית יושבת באותה שורה, מותחת את שארית הרוחב */
+.row-side .note-row { flex: 1 1 18rem; min-width: 12rem; }
+.row-foot {
+  display: flex; align-items: center; gap: .55rem; flex-wrap: wrap;
+  min-width: 0;
+}
+.row-foot:empty { display: none; }
+
+.row-top { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; min-width: 0; }
+.row-title { font-size: .97rem; font-weight: 600; font-family: var(--f-head); line-height: 1.3; }
+.tag {
+  display: inline-flex; align-items: center; gap: .3rem;
+  font-size: .72rem; font-weight: 600; border-radius: var(--r-pill);
+  padding: .12rem .55rem; flex: none;
+}
+.tag svg { width: 12px; height: 12px; }
+.tag-subject { background: var(--violet-12); color: var(--violet); }
+.tag-soon { background: var(--gold-12); color: var(--gold); }
+.tag-personal { background: var(--magenta-12); color: var(--magenta); }
+.tag-done { background: var(--lime-12); color: var(--lime); }
+.tag-hidden { background: var(--well); color: var(--text-3); border: 1px solid var(--line); }
+
+/* הסתרה לכל מטלה בנפרד — אייקון עין קטן בקצה השורה.
+   העין מופיעה רק אחרי שהמטלה סומנה כבוצעה: קודם מסיימים, אחר כך
+   מסתירים. מטלה שלא בוצעה לא מקבלת כפתור בכלל, ולכן אי אפשר להעלים
+   מטלה שעוד פתוחה. */
+.row:not(:has(.check input:checked)) .row-hide { display: none; }
+.row-hide {
+  display: inline-grid; place-items: center;
+  width: 1.9rem; height: 1.9rem; flex: none;
+  background: none; border: 1px solid transparent; border-radius: var(--r-sm);
+  color: var(--text-3); cursor: pointer;
+  transition: color .18s ease, border-color .18s ease, background .18s ease;
+}
+.row-hide:hover { color: var(--violet); border-color: var(--violet-35); background: var(--violet-12); }
+.row-hide:focus-visible { color: var(--violet); box-shadow: var(--focus); }
+.row-hide svg { width: 15px; height: 15px; }
+/* במצב מוסתר הכפתור נשאר מסומן — כדי שיהיה ברור למה השורה ירדה */
+.row-hide[aria-pressed="true"] { color: var(--violet); border-color: var(--violet-35); background: var(--violet-12); }
+.row.is-hidden { background: var(--well); }
+.row.is-hidden .row-title { color: var(--text-2); }
+
+/* מקרא התגיות — שורה אחת מתחת לטולבר, מסבירה כל תגית במילים */
+.tag-key {
+  display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;
+  padding: .6rem 1.1rem .7rem;
+  border-block-end: 1px solid var(--line-soft);
+  font-size: .78rem; color: var(--text-3);
+}
+.tag-key > span:first-child { color: var(--text-2); font-weight: 600; }
+
+.done-head { display: flex; align-items: baseline; justify-content: space-between; gap: .75rem; font-size: .8rem; color: var(--text-2); }
+.bar {
+  height: 7px; border-radius: var(--r-pill); overflow: hidden;
+  background: var(--well); border: 1px solid var(--line-soft);
+  margin-block-start: .35rem;
+}
+.bar-fill {
+  height: 100%; border-radius: var(--r-pill);
+  background: linear-gradient(90deg, var(--cyan), var(--violet));
+  box-shadow: 0 0 14px var(--cyan-35);
+}
+.bar-fill.is-low { background: linear-gradient(90deg, var(--gold), var(--magenta)); box-shadow: 0 0 14px var(--magenta-35); }
+.bar-fill.is-full { background: linear-gradient(90deg, var(--lime), var(--cyan)); box-shadow: 0 0 14px var(--lime-35); }
+
+.note-row { display: flex; align-items: center; gap: .5rem; }
+.field-quiet {
+  flex: 1; min-width: 0;
+  background: var(--well); border: 1px solid var(--line-soft); color: var(--text);
+  border-radius: var(--r-sm); padding: .48rem .8rem; font-size: .9rem;
+}
+.field-quiet:focus-visible { border-color: var(--cyan); }
+
+.attach { display: flex; gap: .5rem; flex-wrap: wrap; }
+.attach a {
+  display: inline-flex; align-items: center; gap: .35rem;
+  background: var(--cyan-12); color: var(--cyan);
+  border: 1px solid var(--cyan-35); border-radius: var(--r-pill);
+  padding: .28rem .7rem; font-size: .82rem;
+}
+.attach a:hover { background: var(--cyan-35); color: #fff; text-decoration: none; }
+.attach svg { width: 13px; height: 13px; }
+
+.check { display: inline-flex; align-items: center; gap: .55rem; cursor: pointer; font-size: .9rem; user-select: none; }
+.check input { position: absolute; opacity: 0; width: 0; height: 0; }
+.check-box {
+  width: 1.6rem; height: 1.6rem; border-radius: 8px; flex: none;
+  border: 1.5px solid var(--line); background: var(--well);
+  display: grid; place-items: center;
+  transition: background .18s ease, border-color .18s ease;
+}
+.check-box svg { width: 15px; height: 15px; color: var(--void); stroke-dasharray: 26; stroke-dashoffset: 26; transition: stroke-dashoffset .28s ease; }
+.check:hover .check-box { border-color: var(--lime); }
+.check input:checked + .check-box { background: var(--lime); border-color: var(--lime); box-shadow: 0 0 20px -4px var(--lime); }
+.check input:checked + .check-box svg { stroke-dashoffset: 0; }
+.check input:focus-visible + .check-box { box-shadow: var(--focus); }
+.check-text { transition: color .18s ease; }
+.check-done { color: var(--lime); font-weight: 600; }
+
+.hint { color: var(--text-3); font-size: .86rem; }
+.row-meta { color: var(--text-3); font-size: .82rem; display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
+
+/* ---------- אזור מנהלות ---------- */
+/* רשימה שטוחה עם קווי הפרדה — לא כרטיסים, כדי שתיבדל מהמטלות */
+.admin-users, .milk-admin { list-style: none; margin: .6rem 0 0; padding: 0; display: grid; gap: .4rem; }
+.admin-user, .milk-admin-row {
+  display: flex; align-items: center; gap: .75rem; flex-wrap: wrap;
+  background: var(--well); border: 1px solid var(--line-soft);
+  border-radius: var(--r-sm); padding: .6rem .85rem;
+}
+.admin-user .btn { margin-inline-start: auto; }
+.admin-user-meta { color: var(--text-3); font-size: .8rem; }
+.milk-admin-row .tnum {
+  flex: none; width: 1.5rem; height: 1.5rem; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--violet-12); border: 1px solid var(--violet-35);
+  color: var(--violet); font-size: .78rem; font-weight: 600;
+}
+.milk-admin-row .btn { padding: .25rem .5rem; }
+#admin-panel-content { border-block-start: 1px dashed var(--line); margin-block-start: 1rem; }
+
+/* ---------- טופס ---------- */
+.grid-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px,1fr)); gap: 1rem; }
+.field { display: grid; gap: .35rem; min-width: 0; }
+.field-wide { grid-column: 1 / -1; }
+.lbl { font-size: .85rem; color: var(--text-2); font-weight: 500; }
+input[type="text"], input[type="email"], input[type="password"], input[type="time"], select, textarea {
+  width: 100%;
+  background: var(--well); border: 1px solid var(--line); color: var(--text);
+  border-radius: var(--r-sm); padding: .6rem .85rem; font-size: .92rem;
+  transition: border-color .18s ease;
+}
+input::placeholder, textarea::placeholder { color: var(--text-3); }
+input:focus-visible, select:focus-visible, textarea:focus-visible { border-color: var(--cyan); box-shadow: none; outline: none; }
+select { appearance: none; cursor: pointer; }
+textarea { min-height: 5.5rem; resize: vertical; line-height: 1.6; }
+input[type="file"] {
+  background: var(--well); border: 1px dashed var(--line); color: var(--text-2);
+  border-radius: var(--r-sm); padding: .55rem .85rem; font-size: .85rem; width: 100%; cursor: pointer;
+}
+input[type="file"]::file-selector-button {
+  font-family: var(--f-body); font-size: .84rem; font-weight: 500;
+  background: var(--violet-12); color: var(--violet);
+  border: 1px solid var(--violet-35); border-radius: var(--r-pill);
+  padding: .3rem .8rem; margin-inline-end: .7rem; cursor: pointer;
+}
+input[type="file"]::file-selector-button:hover { background: var(--violet-35); color: #fff; }
+.actions { display: flex; gap: .6rem; flex-wrap: wrap; margin-block-start: 1.15rem; }
+
+/* ---------- גרף הביצועים — הרגע המרכזי של העמוד ---------- */
+.stat-board {
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background:
+    linear-gradient(180deg, var(--panel-2), var(--panel) 60%);
+  padding: 1.4rem 1.5rem 1.5rem;
+  box-shadow: var(--shadow);
+}
+/* שני טורים: המספר הגדול בצד אחד, המכנה בצד השני. הרווח ביניהם נבלע
+   בינונית עם קו דק, בלי מסגרת כפולה שמפוצלת לשניים. */
+.stat-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1.5rem;
+  align-items: end;
+}
+.stat-lead { display: grid; gap: .2rem; }
+.stat-kicker { font-family: var(--f-mono); font-size: .76rem; color: var(--text-3); direction: ltr; text-align: right; }
+.stat-big { font-family: var(--f-head); font-weight: 800; font-size: clamp(2.8rem, 8vw, 4.4rem); line-height: 1; letter-spacing: -0.04em; }
+.stat-big .pct-sign { font-size: .45em; font-weight: 600; color: var(--cyan); margin-inline-start: .1em; }
+.stat-caption { color: var(--text-2); font-size: .9rem; }
+/* המכנה — קבוע על 11 הבנות של הכיתה, ולכן מוצג במפורש ולא רק באחוזים */
+.stat-denom { text-align: start; }
+.denom-big { font-family: var(--f-head); font-weight: 800; font-size: 2.1rem; line-height: 1; color: var(--cyan); }
+.denom-cap { color: var(--text-3); font-size: .78rem; margin-block-start: .25rem; max-width: 11rem; }
+/* המקרא הוסר: הוא תיאר מצבים בגרדיאנט, בעוד הפסים למטה צבועים לפי
+   מקצוע — שני מפתחות שונים לאותה תמונה. עכשיו כל פס נושא את שמו,
+   והצבעים של is-low / is-full מדברים בעד עצמם. */
+
+.chart { margin-block-start: 1.1rem; }
+.chart svg { width: 100%; height: auto; overflow: visible; }
+.grid-line { stroke: var(--line-soft); stroke-width: 1; }
+.axis-txt { font-family: var(--f-mono); font-size: 10px; fill: var(--text-3); }
+.spark-area { fill: url(#areaFade); opacity: 0; animation: fadeIn .7s ease 1.5s forwards; }
+.spark-line {
+  fill: none; stroke: url(#lineFade); stroke-width: 3;
+  stroke-linecap: round; stroke-linejoin: round;
+  stroke-dasharray: 1200; stroke-dashoffset: 1200;
+  animation: draw 1.9s cubic-bezier(.35,.02,.2,1) .25s forwards;
+  filter: drop-shadow(0 0 10px var(--cyan-35));
+}
+.spark-dot { fill: var(--panel); stroke: var(--cyan); stroke-width: 3; opacity: 0; animation: pop .45s ease forwards; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+@keyframes fadeIn { to { opacity: .5; } }
+@keyframes pop { from { opacity: 0; } to { opacity: 1; } }
+
+.bars { margin-block-start: 1.4rem; display: grid; gap: .95rem; }
+.brow { display: grid; grid-template-columns: minmax(6rem, 11rem) minmax(0,1fr) auto; gap: .9rem; align-items: center; }
+.brow-label { display: flex; align-items: center; gap: .45rem; font-size: .9rem; font-weight: 500; }
+.brow .bar { margin-block-start: 0; height: 12px; }
+.brow .bar-fill { width: 0; animation: grow 1.15s cubic-bezier(.2,.7,.25,1) forwards; }
+.brow:nth-child(1) .bar-fill { animation-delay: .35s; }
+.brow:nth-child(2) .bar-fill { animation-delay: .5s; }
+.brow:nth-child(3) .bar-fill { animation-delay: .65s; }
+.brow:nth-child(4) .bar-fill { animation-delay: .8s; }
+.brow-pct { font-family: var(--f-mono); font-size: .92rem; font-weight: 700; min-width: 3.6rem; text-align: end; }
+.brow-count { font-family: var(--f-mono); font-size: .78rem; color: var(--text-3); }
+/* שורת התחתית של הגרף: ההסבר מימין וכפתור ההרצה מחדש בקצה השני —
+   קטן, שקט, ולא תופס מקום משל עצמו. */
+.chart-foot {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: .8rem; flex-wrap: wrap;
+  margin-block-start: 1rem;
+}
+.chart-foot .brow-count { margin: 0; }
+.replay {
+  display: inline-flex; align-items: center; gap: .3rem;
+  background: none; border: 0; padding: .1rem .2rem;
+  color: var(--text-3); font-family: var(--f-body); font-size: .74rem;
+  cursor: pointer; border-radius: var(--r-sm);
+  transition: color .18s ease;
+}
+.replay:hover { color: var(--violet); }
+.replay svg { width: 12px; height: 12px; flex: none; }
+.replay:focus-visible { color: var(--violet); box-shadow: var(--focus); }
+@keyframes grow { to { width: var(--w); } }
+
+/* ---------- תורנות חלב ---------- */
+.turn { display: flex; align-items: center; gap: 1.1rem; flex-wrap: wrap; }
+.turn-now {
+  display: flex; align-items: center; gap: .9rem;
+  background: var(--cyan-12); border: 1px solid var(--cyan-35);
+  border-radius: var(--r); padding: .9rem 1.15rem;
+}
+.turn-avatar {
+  width: 3rem; height: 3rem; border-radius: 50%; flex: none;
+  display: grid; place-items: center; font-weight: 600; color: #fff;
+  background: linear-gradient(135deg, var(--cyan), var(--violet));
+  box-shadow: 0 0 26px -8px var(--cyan);
+}
+.turn-name { font-family: var(--f-head); font-size: 1.1rem; font-weight: 700; }
+.stat-sub { font-size: .78rem; color: var(--text-3); display: block; }
+.queue { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.queue ol { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.queue li {
+  display: inline-flex; align-items: center; gap: .4rem;
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: var(--r-pill); padding: .3rem .8rem; font-size: .86rem; color: var(--text-2);
+}
+.queue li::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--text-3); }
+.queue li.is-next { border-color: var(--violet-35); color: var(--text); }
+.queue li.is-next::before { background: var(--violet); box-shadow: 0 0 10px var(--violet); }
+
+/* ---------- מערכת שעות ----------
+   ששת הימים יושבים על שורה אחת תמיד. אין auto-fit שגולש, אין גלילה אופקית:
+   הטבלה נמתחת לרוחב המלא, וכל עמודה מצטמצמת יחד עם האחרות. בטלפון
+   מצטמצם ריפוד וטקסט במקום לשבור את השורה. */
+.week {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: .7rem;
+}
+.week-col {
+  position: relative;
+  background: var(--panel-2);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r);
+  padding: .8rem .7rem;
+  display: grid; gap: .5rem; align-content: start;
+  min-width: 0;
+}
+/* קו ניאון דק בראש כל עמודה — נותן לטבלה נוכחות בלי להעמיס */
+.week-col::before {
+  content: ""; position: absolute; inset-block-start: 0; inset-inline: 0;
+  height: 2px; border-radius: var(--r) var(--r) 0 0;
+  background: linear-gradient(90deg, transparent, var(--violet), transparent);
+  opacity: .55;
+}
+.week-col.is-today { border-color: var(--cyan-35); box-shadow: 0 0 0 1px var(--cyan-35), 0 18px 44px -30px var(--cyan); }
+.week-col.is-today::before { background: linear-gradient(90deg, transparent, var(--cyan), transparent); opacity: 1; }
+
+.week-day {
+  font-family: var(--f-head); font-size: .92rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: space-between; gap: .4rem;
+  padding-block-end: .5rem; border-block-end: 1px solid var(--line-soft);
+}
+.week-day .tnum { font-size: .72rem; color: var(--text-3); font-weight: 400; }
+.week-day .day-count { font-family: var(--f-mono); font-size: .7rem; color: var(--text-3); }
+
+.lesson {
+  position: relative;
+  width: 100%; text-align: start; cursor: pointer;
+  background: var(--violet-12);
+  border: 1px solid var(--violet-35);
+  border-radius: var(--r-sm);
+  padding: .55rem .6rem;
+  display: grid; gap: .2rem;
+  min-width: 0;
+  box-shadow: 0 0 0 1px transparent, inset 0 0 22px -14px var(--violet);
+  transition: transform .15s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+.lesson:hover {
+  background: var(--violet-35);
+  transform: translateY(-2px);
+  box-shadow: 0 0 0 1px var(--violet-35), 0 12px 30px -18px var(--violet), inset 0 0 26px -12px var(--violet);
+}
+.lesson-time { font-family: var(--f-mono); font-size: .7rem; color: var(--text-2); direction: ltr; text-align: right; letter-spacing: -.02em; }
+.lesson-name { font-size: .84rem; font-weight: 600; color: var(--text); line-height: 1.3; }
+.lesson.is-remote { background: var(--cyan-12); border-color: var(--cyan-35); box-shadow: inset 0 0 22px -14px var(--cyan); }
+.lesson.is-remote:hover { background: var(--cyan-35); box-shadow: 0 0 0 1px var(--cyan-35), 0 12px 30px -18px var(--cyan), inset 0 0 26px -12px var(--cyan); }
+/* יום שישי — קצר, ולכן מקבל גוון שונה שמסמן "סוף השבוע" */
+.week-col.is-short::before { background: linear-gradient(90deg, transparent, var(--gold), transparent); }
+.week-col.is-short .lesson { background: var(--gold-12); border-color: var(--gold-35); box-shadow: inset 0 0 22px -14px var(--gold); }
+.week-col.is-short .lesson:hover { background: var(--gold-35); box-shadow: 0 0 0 1px var(--gold-35), 0 12px 30px -18px var(--gold), inset 0 0 26px -12px var(--gold); }
+
+/* ---------- קבצים ---------- */
+.file-row {
+  display: flex; align-items: center; gap: .9rem; flex-wrap: wrap;
+  padding: .9rem 1.35rem;
+  border-block-start: 1px solid var(--line-soft);
+}
+.file-row:first-child { border-block-start: 0; }
+.file-ico {
+  width: 2.4rem; height: 2.4rem; border-radius: 12px; flex: none;
+  display: grid; place-items: center;
+  background: var(--cyan-12); color: var(--cyan); border: 1px solid var(--cyan-35);
+}
+.file-ico svg { width: 18px; height: 18px; }
+.file-main { flex: 1; min-width: 10rem; display: grid; gap: .2rem; }
+.file-name { font-size: .95rem; font-weight: 500; }
+.file-acts { display: flex; align-items: center; gap: .5rem; }
+
+/* ---------- לוח שנה ---------- */
+.cal-toolbar { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; padding: 1rem 1.5rem; border-block-end: 1px solid var(--line-soft); }
+.cal-range { font-family: var(--f-mono); font-size: .9rem; color: var(--text-2); direction: ltr; }
+.cal { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap: .8rem; padding: 1.25rem 1.5rem 1.5rem; }
+.cal-day { background: var(--panel-2); border: 1px solid var(--line-soft); border-radius: var(--r); padding: .75rem; display: grid; gap: .6rem; align-content: start; }
+.cal-day.is-today { border-color: var(--magenta-35); box-shadow: 0 0 0 1px var(--magenta-35), 0 18px 40px -30px var(--magenta); }
+.cal-head { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+.cal-name { font-weight: 600; font-size: .92rem; }
+.cal-date { font-family: var(--f-mono); font-size: .76rem; color: var(--text-3); direction: ltr; }
+.cal-today-tag { font-size: .72rem; font-weight: 700; color: var(--magenta); background: var(--magenta-12); border-radius: var(--r-pill); padding: .1rem .5rem; }
+.cal-body { display: grid; gap: .45rem; }
+.ev { border-radius: var(--r-sm); padding: .5rem .65rem; font-size: .84rem; display: grid; gap: .2rem; }
+.ev-due { background: var(--magenta-12); border: 1px solid var(--magenta-35); color: var(--text); }
+.ev-personal { background: var(--violet-12); border: 1px dashed var(--violet-35); }
+.ev-sub { font-size: .74rem; color: var(--text-3); }
+.cal-empty { color: var(--text-3); font-size: .84rem; font-style: italic; }
+
+/* ---------- שער כניסה ---------- */
+.gate-card {
+  max-width: 25rem; margin: 3rem auto;
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--r-lg); padding: 2rem 1.75rem;
+  box-shadow: var(--shadow), 0 0 90px -50px var(--violet);
+  text-align: center;
+}
+.gate-mark {
+  font-family: var(--f-mono); font-weight: 700; font-size: 1.05rem; color: #fff;
+  width: 3.4rem; height: 3.4rem; border-radius: 18px; margin: 0 auto 1rem;
+  display: grid; place-items: center;
+  background: linear-gradient(135deg, var(--violet), var(--magenta));
+  box-shadow: 0 14px 40px -18px var(--violet);
+}
+.gate-h { font-size: 1.4rem; }
+.gate-p { color: var(--text-2); font-size: .92rem; margin-block-start: .5rem; }
+.gate-form { display: grid; gap: .8rem; margin-block-start: 1.4rem; text-align: start; }
+.gate-form[hidden] { display: none; }
+
+/* שער הכניסה: שתי תצוגות באותו כרטיס — התחברות והרשמה, בדיוק כמו במערכת */
+.gate-switch {
+  display: grid; grid-template-columns: 1fr 1fr; gap: .25rem;
+  background: var(--well); border: 1px solid var(--line-soft); border-radius: var(--r-pill);
+  padding: .25rem; margin-block-start: 1.3rem;
+}
+.gate-switch button {
+  font-family: var(--f-body); font-size: .88rem; font-weight: 600;
+  color: var(--text-2); background: transparent; border: 0; cursor: pointer;
+  border-radius: var(--r-pill); padding: .45rem .5rem;
+  transition: background .18s ease, color .18s ease;
+}
+.gate-switch button:hover { color: var(--text); }
+.gate-switch button[aria-selected="true"] {
+  background: var(--violet-12); color: var(--violet); box-shadow: inset 0 0 0 1px var(--violet-35);
+}
+.gate-forgot { text-align: start; font-size: .85rem; }
+.gate-forgot a { color: var(--cyan); }
+.gate-note {
+  margin-block-start: 1.1rem; padding-block-start: .9rem;
+  border-block-start: 1px solid var(--line-soft);
+  font-size: .84rem; color: var(--text-3);
+}
+
+/* ---------- מודאל ---------- */
+.modal {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--r-lg); box-shadow: var(--shadow);
+  max-width: 30rem; overflow: hidden;
+}
+.modal-head { padding: 1.15rem 1.35rem; border-block-end: 1px solid var(--line-soft); display: flex; align-items: center; gap: .6rem; }
+.modal-h { font-size: 1.05rem; }
+.modal-body { padding: 1.25rem 1.35rem; }
+.modal-body .toolbar { border: 1px solid var(--line-soft); border-radius: var(--r-sm); }
+
+/* ---------- טוסט ---------- */
+.toast {
+  display: flex; align-items: center; gap: .55rem;
+  border-radius: var(--r); padding: .7rem 1rem; font-size: .9rem;
+  background: var(--panel-2); border: 1px solid var(--line);
+}
+.toast svg { width: 16px; height: 16px; flex: none; }
+.toast-live { border-color: var(--lime-35); background: var(--lime-12); color: var(--lime); animation: rise .32s cubic-bezier(.2,.7,.25,1); }
+.toast.is-error { border-color: var(--gold-35); background: var(--gold-12); color: var(--gold); }
+@keyframes rise { from { transform: translateY(14px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+/* ---------- סרגל כלים ---------- */
+.toolbar {
+  display: flex; align-items: center; gap: .7rem; flex-wrap: wrap;
+  padding: .85rem 1.5rem; border-block-end: 1px solid var(--line-soft);
+  font-size: .88rem; color: var(--text-2);
+}
+.toolbar .spacer { flex: 1; }
+
+/* ---------- התקדמות ---------- */
+.rail-bar { box-shadow: 0 0 10px currentColor; }
+
+/* ---------- כפתורים צפים ---------- */
+.float-stack {
+  position: fixed; inset-block-end: 1.25rem; inset-inline-start: 1.25rem;
+  z-index: 20; display: grid; gap: .6rem;
+}
+.fab {
+  width: 3rem; height: 3rem; border-radius: 16px;
+  display: grid; place-items: center; cursor: pointer;
+  background: var(--panel); border: 1px solid var(--line); color: var(--text-2);
+  box-shadow: var(--shadow);
+  transition: color .18s ease, border-color .18s ease, transform .15s ease;
+}
+.fab:hover { color: var(--cyan); border-color: var(--cyan-35); transform: translateY(-2px); }
+.fab svg { width: 20px; height: 20px; }
+
+/* כפתור הקישורים: קישור אמיתי (a) ולא כפתור, כדי שיעבור לכתובת החיצונית */
+a.fab { text-decoration: none; }
+.fab-git {
+  color: var(--magenta); border-color: var(--magenta-35); background: var(--magenta-12);
+  width: auto; height: 3rem; padding-inline: .95rem;
+  grid-auto-flow: column; gap: .55rem;
+  font-family: var(--f-body); font-size: .85rem; font-weight: 600;
+}
+.fab-git:hover { color: #fff; border-color: var(--magenta); background: rgba(255,61,139,.22); }
+.fab-git svg { width: 22px; height: 22px; }
+
+/* ---------- כותרת תחתונה ---------- */
+.site {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; flex-wrap: wrap;
+  border-block-start: 1px solid var(--line-soft);
+  margin-block-start: 2rem; padding-block-start: 1.25rem;
+  color: var(--text-3); font-size: .84rem;
+}
+
+/* ---------- תנועה ---------- */
+.row-in { animation: rowIn .42s cubic-bezier(.2,.7,.25,1) both; }
+@keyframes rowIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .row { grid-template-columns: 2.4rem minmax(0,1fr); }
+  .brow { grid-template-columns: minmax(0,1fr) auto; }
+  .brow-label { grid-column: 1 / -1; }
+  /* בטלפון הכלים ממילא לא נכנסים בשורה אחת שליד הלוגו —
+     הם נפרסים לרוחב מלא, והרווח הגמיש מפסיק לדחוף. */
+  .mast-tools { gap: .4rem; }
+  .mast-tools .spacer { display: none; }
+  .stat-top { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+  .stat-denom { padding-block-start: .2rem; }
+  .masthead { padding-block-start: 1rem; }
+  .brand-sub { display: none; }
+  /* הטבלה נשארת על שורה אחת: מצטמצם הריפוד והטקסט, לא מספר העמודות */
+  .week { gap: .3rem; }
+  .week-col { padding: .5rem .3rem; border-radius: var(--r-sm); }
+  .week-day { font-size: .76rem; padding-block-end: .4rem; }
+  .week-day .day-count { display: none; }
+  .lesson { padding: .4rem .3rem; }
+  .lesson-time { font-size: .56rem; }
+  .lesson-name { font-size: .68rem; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ==================== סרגל עליון ==================== -->
+  <header class="masthead">
+    <div class="mast-left">
+      <span class="presence">
+        <span class="dot dot-live"></span>
+        <span class="tnum">4</span> גולשות עכשיו
+      </span>
+    </div>
+
+    <div class="mast-center">
+      <a class="brand" href="#" aria-label="HIGHCODE — חזרה למסך הראשי">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 7.5 4.5 12 9 16.5" />
+            <path d="M15 7.5 19.5 12 15 16.5" />
+            <path d="M13.4 5.4 10.6 18.6" />
+          </svg>
+        </span>
+        <span class="brand-text">
+          <span class="brand-word">HIGHCODE<span class="brand-seal">®</span></span>
+          <span class="brand-sub">CLASS OPERATIONS · שבבים א׳</span>
+        </span>
+      </a>
+    </div>
+
+    <div class="mast-tools">
+      <button class="chip" type="button" onclick="flipTheme()" aria-label="החלפת מצב יום ולילה">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 3v2.2M12 18.8V21M3 12h2.2M18.8 12H21M5.6 5.6l1.6 1.6M16.8 16.8l1.6 1.6M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6"/></svg>
+        מצב תצוגה
+      </button>
+
+      <!-- העדפת המייל היומי: מתג, ואחריו שעת השליחה של אותו מייל -->
+      <span class="chip chip-mail">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5.5" width="18" height="13" rx="2.5"/><path d="M3.8 7 12 13l8.2-6"/></svg>
+        <span class="chip-label">מייל יומי</span>
+        <label class="switch">
+          <input type="checkbox" checked onchange="showToast(this.checked ? 'מייל יומי פעיל' : 'מייל יומי כבוי')" aria-label="מייל יומי">
+          <span class="switch-track"></span>
+        </label>
+        <input type="time" value="20:00" aria-label="שעת שליחת המייל היומי">
+      </span>
+
+      <span class="spacer"></span>
+
+      <span class="person">
+        <span class="avatar" aria-hidden="true">שמ</span>
+        <span class="person-meta">
+          <span class="person-name">שם מלא 1</span>
+          <span class="person-role">תפקיד 1</span>
+        </span>
+      </span>
+
+      <button class="btn btn-line btn-sm" type="button" onclick="showToast('התנתקת מהמערכת')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 8l-4 4 4 4M6 12h9"/></svg>
+        יציאה
+      </button>
+    </div>
+  </header>
+
+  <div class="mast-rule" aria-hidden="true"><i></i><i></i></div>
+
+  <p class="banner-note hint">קובץ תצוגה בלבד — כל התוכן כאן הוא טקסט לדוגמה, והקובץ אינו מקושר למערכת.</p>
+
+  <!-- ==================== לשוניות ==================== -->
+  <nav class="nav-tabs" role="tablist" aria-label="מעבר בין אזורי המערכת">
+    <button class="tab" type="button" role="tab" aria-selected="true" data-panel="p-assign" onclick="openTab(this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5h6M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"/><rect x="4" y="5" width="16" height="15" rx="2.5"/><path d="M8.5 12.5l2 2 4-4.5"/></svg>
+      מטלות וביצוע
+      <span class="count tnum">4</span>
+    </button>
+    <button class="tab" type="button" role="tab" aria-selected="false" data-panel="p-notice" onclick="openTab(this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4a2 2 0 0 0 2 2h2l5 3.5v-15L8 8H6a2 2 0 0 0-2 2z"/><path d="M17 9.5a4 4 0 0 1 0 5"/></svg>
+      מודעות
+    </button>
+    <button class="tab" type="button" role="tab" aria-selected="false" data-panel="p-milk" onclick="openTab(this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6v3l2 3v10a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9l2-3z"/><path d="M7 13h10"/></svg>
+      תורנות חלב
+    </button>
+    <button class="tab" type="button" role="tab" aria-selected="false" data-panel="p-week" onclick="openTab(this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 5V3M16 5V3M8 13.5h3M8 16.5h6"/></svg>
+      מערכת שעות
+    </button>
+    <button class="tab" type="button" role="tab" aria-selected="false" data-panel="p-files" onclick="openTab(this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7.5A2 2 0 0 1 6 5.5h3l1.6 2H18a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg>
+      הקבצים שלי
+    </button>
+    <button class="tab" type="button" role="tab" aria-selected="false" data-panel="p-cal" onclick="openTab(this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 5V3M16 5V3"/><circle cx="9" cy="14.5" r="1.1" fill="currentColor" stroke="none"/><circle cx="15" cy="14.5" r="1.1" fill="currentColor" stroke="none"/></svg>
+      לוח שנה
+    </button>
+  </nav>
+
+  <!-- ==================== פתיחה ==================== -->
+  <div class="greet">
+    <span class="greet-kicker">// שלום, טוב לראות אותך</span>
+    <h1 class="greet-h">צהריים טובים, שם מלא 1<span class="caret"></span></h1>
+    <p class="greet-sub"><b>4</b> מטלות פתוחות · <b>3</b> ימי לימוד השבוע · <b>1</b> בוחן מתקרב</p>
+  </div>
+
+  <div class="reminder">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5 21 20H3z"/><path d="M12 10v4M12 17h.01"/></svg>
+    <span>מחר בוחן — טקסט לדוגמה</span>
+    <span class="spacer"></span>
+    <button class="btn btn-ghost btn-sm" type="button" onclick="dismissReminder(this)">סגירה</button>
+  </div>
+
+  <!-- ==================== 01 מטלות וביצוע ==================== -->
+  <section id="p-assign" role="tabpanel" aria-label="מטלות וביצוע">
+
+    <div class="section-head">
+      <h2 class="section-h">מטלות וביצוע</h2>
+      <span class="section-note">המספר בפס מימין הוא מיקום המטלה ברשימה</span>
+    </div>
+
+    <div class="sheet">
+      <div class="toolbar">
+        <span class="tnum">4</span> מטלות מוצגות
+        <span class="spacer"></span>
+        <button class="btn btn-ghost btn-sm" type="button" id="rows-toggle" onclick="toggleHidden(this)" aria-expanded="false">הצגת מטלות שהוסתרו</button>
+        <button class="btn btn-solid btn-sm" type="button" onclick="showToast('טקסט לדוגמה')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          הוספת מטלה
+        </button>
+      </div>
+
+      <!-- מקרא התגיות: מה כל תגית אומרת. בלי זה אי אפשר לדעת מה מסומן ולמה. -->
+      <div class="tag-key">
+        <span>משמעות התגיות:</span>
+        <span class="tag tag-soon">מחר</span> דדליין קרוב
+        <span class="tag tag-personal">אישי</span> רק שלי
+        <span class="tag tag-done">בוצע</span> הושלמה
+        <span class="tag tag-hidden">מוסתרת</span> ירדה מהרשימה
+      </div>
+
+      <div class="row-list" id="assign-rows">
+
+        <article class="row r-gold">
+          <div class="rail"><span class="rail-bar"></span><span class="rail-n tnum">01</span></div>
+          <div class="row-body">
+            <div class="row-top">
+              <span class="tag tag-subject">תפקיד 1</span>
+              <h3 class="row-title">כותרת</h3>
+              <span class="tag tag-soon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v4.5l3 2"/></svg>
+                מחר
+              </span>
+            </div>
+            <div class="row-side">
+              <label class="check">
+                <input type="checkbox" onchange="markDone(this)">
+                <span class="check-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span>
+                <span class="check-text">בוצע</span>
+              </label>
+              <button class="row-hide" type="button" onclick="toggleRowHidden(this)" aria-label="הסתרת המטלה מהרשימה" title="הסתרה מהרשימה"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+              <div class="note-row">                <input class="field-quiet" type="text" placeholder="הערה אישית" aria-label="הערה אישית">                <button class="btn btn-line btn-sm" type="button" onclick="showToast('ההערה נשמרה')">שמירה</button>              </div>
+            </div>
+            <div class="row-foot">
+              <div class="done">
+              <div class="done-head"><span>ביצוע בכיתה</span><span class="tnum">9 מתוך 11 · 82%</span></div>
+                <div class="bar"><div class="bar-fill" style="width:82%"></div></div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="row r-cyan">
+          <div class="rail"><span class="rail-bar"></span><span class="rail-n tnum">02</span></div>
+          <div class="row-body">
+            <div class="row-top">
+              <span class="tag tag-subject">תפקיד 1</span>
+              <h3 class="row-title">כותרת</h3>
+            </div>
+            <div class="row-side">
+              <label class="check">
+                <input type="checkbox" onchange="markDone(this)">
+                <span class="check-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span>
+                <span class="check-text">בוצע</span>
+              </label>
+              <button class="row-hide" type="button" onclick="toggleRowHidden(this)" aria-label="הסתרת המטלה מהרשימה" title="הסתרה מהרשימה"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+              <div class="note-row">                <input class="field-quiet" type="text" placeholder="הערה אישית" aria-label="הערה אישית">                <button class="btn btn-line btn-sm" type="button" onclick="showToast('ההערה נשמרה')">שמירה</button>              </div>
+            </div>
+            <div class="row-foot">
+              <div class="done">
+              <div class="done-head"><span>ביצוע בכיתה</span><span class="tnum">5 מתוך 11 · 45%</span></div>
+                <div class="bar"><div class="bar-fill is-low" style="width:45%"></div></div>
+              </div>
+            </div>
+            <div class="row-foot">
+              <div class="attach">
+                <a href="https://example.com">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v10M8 11l4 4 4-4M5 18.5h14"/></svg>
+                  פריט 1
+                </a>
+                <a href="https://example.com">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v10M8 11l4 4 4-4M5 18.5h14"/></svg>
+                  פריט 2
+                </a>
+                <button class="btn btn-line btn-sm" type="button" onclick="showToast('הקבצים נשלחו לכתובת שסימנת בהגדרות')">שליחה למייל שלי</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="row r-lime">
+          <div class="rail"><span class="rail-bar"></span><span class="rail-n tnum">03</span></div>
+          <div class="row-body">
+            <div class="row-top">
+              <span class="tag tag-subject">תפקיד 1</span>
+              <h3 class="row-title">כותרת</h3>
+              <span class="tag tag-done">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg>
+                11 מתוך 11
+              </span>
+            </div>
+            <div class="row-side">
+              <label class="check">
+                <input type="checkbox" checked onchange="markDone(this)">
+                <span class="check-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span>
+                <span class="check-text check-done">בוצע</span>
+              </label>
+              <button class="row-hide" type="button" onclick="toggleRowHidden(this)" aria-label="הסתרת המטלה מהרשימה" title="הסתרה מהרשימה"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            </div>
+            <div class="row-foot">
+              <div class="done">
+                <div class="done-head"><span>ביצוע בכיתה</span><span class="tnum">11 מתוך 11 · 100%</span></div>
+                <div class="bar"><div class="bar-fill is-full" style="width:100%"></div></div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="row r-violet">
+          <div class="rail"><span class="rail-bar"></span><span class="rail-n tnum">04</span></div>
+          <div class="row-body">
+            <div class="row-top">
+              <span class="tag tag-subject">תפקיד 1</span>
+              <h3 class="row-title">כותרת</h3>
+              <span class="tag tag-personal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                אישי
+              </span>
+            </div>
+            <div class="row-side">
+              <label class="check">
+                <input type="checkbox" onchange="markDone(this)">
+                <span class="check-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span>
+                <span class="check-text">בוצע</span>
+              </label>
+              <button class="row-hide" type="button" onclick="toggleRowHidden(this)" aria-label="הסתרת המטלה מהרשימה" title="הסתרה מהרשימה"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            </div>
+            <div class="row-foot">
+              <div class="done">
+                <div class="done-head"><span>ביצוע בכיתה</span><span class="tnum">3 מתוך 11 · 27%</span></div>
+                <div class="bar"><div class="bar-fill is-low" style="width:27%"></div></div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- מטלה שהוסתרה מהרשימה — נחשפת בכפתור "הצגת מטלות שהוסתרו" -->
+        <article class="row r-gold is-hidden" hidden>
+          <div class="rail"><span class="rail-bar"></span><span class="rail-n tnum">05</span></div>
+          <div class="row-body">
+            <div class="row-top">
+              <span class="tag tag-subject">תפקיד 1</span>
+              <h3 class="row-title">כותרת</h3>
+              <span class="tag tag-hidden">מוסתרת</span>
+            </div>
+            <div class="row-side">
+              <label class="check">
+                <input type="checkbox" checked onchange="markDone(this)">
+                <span class="check-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span>
+                <span class="check-text check-done">בוצע</span>
+              </label>
+              <button class="row-hide" type="button" onclick="toggleRowHidden(this)" aria-pressed="true" aria-label="החזרת המטלה לרשימה" title="חזרה לרשימה"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l16 16"/><path d="M9.9 5.9A9.6 9.6 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-3.6 4.3"/><path d="M6.2 7.7A16.5 16.5 0 0 0 2.5 12S6 18.5 12 18.5c1.2 0 2.3-.3 3.3-.7"/></svg></button>
+            </div>
+            <div class="row-foot">
+              <div class="done">
+                <div class="done-head"><span>ביצוע בכיתה</span><span class="tnum">1 מתוך 11 · 9%</span></div>
+                <div class="bar"><div class="bar-fill is-low" style="width:9%"></div></div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+      </div>
+    </div>
+
+    <!-- ---------- הוספת מטלה ---------- -->
+    <div class="sheet">
+      <div class="sheet-head">
+        <h3 class="sheet-h">הוספת מטלה</h3>
+      </div>
+      <div class="sheet-body">
+        <form class="grid-form" onsubmit="event.preventDefault(); showToast('המטלה נוספה')">
+          <div class="field">
+            <label class="lbl" for="a-subject">מקצוע</label>
+            <select id="a-subject">
+              <option>פריט 1</option>
+              <option>פריט 2</option>
+              <option>פריט 3</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="lbl" for="a-title">כותרת</label>
+            <input id="a-title" type="text" placeholder="טקסט לדוגמה">
+          </div>
+          <div class="field">
+            <label class="lbl" for="a-due">מועד הגשה</label>
+            <input id="a-due" type="text" placeholder="31.10.2026">
+          </div>
+          <div class="field">
+            <label class="lbl" for="a-files">קבצים</label>
+            <input id="a-files" type="file" multiple>
+          </div>
+          <div class="field field-wide">
+            <label class="lbl" for="a-note">הערה</label>
+            <input id="a-note" type="text" placeholder="טקסט לדוגמה">
+          </div>
+          <div class="field field-wide">
+            <button class="btn btn-solid" type="submit">הוספת מטלה</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ---------- גרף הביצועים: הרגע המרכזי ---------- -->
+    <div class="sheet-head">
+      <h3 class="sheet-h">ביצוע לפי מקצוע</h3>
+      <span class="section-note">המכנה קבוע: <strong class="tnum">11</strong> הבנות של הכיתה</span>
+    </div>
+
+    <div class="stat-board" id="stat-board">
+      <div class="stat-top">
+        <div class="stat-lead">
+          <span class="stat-kicker">subjects :: avg_completion</span>
+          <div class="stat-big"><span class="tnum" data-count="72">0</span><span class="pct-sign">%</span></div>
+          <p class="stat-caption">ממוצע הביצוע שלך לאורך שלושת המקצועות</p>
+        </div>
+        <div class="stat-denom">
+          <div class="denom-big"><span class="tnum">11</span></div>
+          <p class="denom-cap">בנות בכיתה — כל האחוזים מחושבים מולן</p>
+        </div>
+      </div>
+
+      <div class="chart">
+        <svg viewBox="0 0 720 200" role="img" aria-label="גרף התקדמות לאורך שלושת המקצועות">
+          <defs>
+            <linearGradient id="lineFade" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="var(--lime)"/>
+              <stop offset="55%" stop-color="var(--cyan)"/>
+              <stop offset="100%" stop-color="var(--violet)"/>
+            </linearGradient>
+            <linearGradient id="areaFade" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="var(--cyan)" stop-opacity=".38"/>
+              <stop offset="100%" stop-color="var(--cyan)" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+
+          <line class="grid-line" x1="0" y1="40" x2="720" y2="40"/>
+          <line class="grid-line" x1="0" y1="90" x2="720" y2="90"/>
+          <line class="grid-line" x1="0" y1="140" x2="720" y2="140"/>
+          <text class="axis-txt" x="8" y="36">100</text>
+          <text class="axis-txt" x="14" y="86">50</text>
+          <text class="axis-txt" x="20" y="136">0</text>
+
+          <path class="spark-area" d="M40,70 L360,116 L680,52 L680,170 L40,170 Z"/>
+          <path class="spark-line" d="M40,70 L360,116 L680,52"/>
+
+          <circle class="spark-dot" cx="40" cy="70" r="6"/>
+          <circle class="spark-dot" cx="360" cy="116" r="6"/>
+          <circle class="spark-dot" cx="680" cy="52" r="6"/>
+        </svg>
+      </div>
+
+      <div class="bars">
+        <div class="brow">
+          <span class="brow-label">כותרת</span>
+          <span class="bar"><span class="bar-fill" data-w="75%"></span></span>
+          <span class="brow-pct tnum" data-count="75">0%</span>
+        </div>
+        <div class="brow">
+          <span class="brow-label">כותרת</span>
+          <span class="bar"><span class="bar-fill is-low" data-w="45%"></span></span>
+          <span class="brow-pct tnum" data-count="45">0%</span>
+        </div>
+        <div class="brow">
+          <span class="brow-label">כותרת</span>
+          <span class="bar"><span class="bar-fill is-full" data-w="100%"></span></span>
+          <span class="brow-pct tnum" data-count="100">0%</span>
+        </div>
+        <div class="brow">
+          <span class="brow-label">כותרת</span>
+          <span class="bar"><span class="bar-fill" data-w="58%"></span></span>
+          <span class="brow-pct tnum" data-count="58">0%</span>
+        </div>
+      </div>
+
+      <div class="chart-foot">
+        <p class="brow-count hint">הנתונים מתעדכנים בכל סימון של מטלה כבוצעה.</p>
+        <!-- כפתור שחזור התנועה — קטן ושקט, בקצה השורה התחתונה של הגרף -->
+        <button class="replay" type="button" onclick="replayStats()" title="הצגת התנועה שוב">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4v4h-4"/></svg>
+          הצגת התנועה שוב
+        </button>
+      </div>
+    </div>
+
+    <!-- ---------- מצב ריק ---------- -->
+    <div class="sheet" style="margin-block-start:1.5rem">
+      <div class="sheet-body" style="text-align:center; display:grid; gap:.9rem; justify-items:center; padding-block:2.5rem">
+        <span class="file-ico" style="width:3.2rem;height:3.2rem;border-radius:16px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9.5 12 5.5l4 4"/><path d="M12 5.5v9"/><rect x="3.5" y="15" width="17" height="5" rx="2.5"/></svg></span>
+        <h3 class="sheet-h">אין מטלות פתוחות במקצוע הזה כרגע</h3>
+        <p class="hint">ברגע שתוסיף מטלה היא תופיע כאן עם פס הביצוע שלה.</p>
+        <button class="btn btn-solid" type="button">הוספת מטלה חדשה</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 02 מודעות ==================== -->
+  <section id="p-notice" role="tabpanel" aria-label="מודעות" hidden>
+
+    <div class="section-head">
+      <h2 class="section-h">מודעות</h2>
+      <span class="section-note">המודעות החדשות מופיעות ראשונות</span>
+    </div>
+
+    <div class="sheet">
+      <div class="row-list">
+
+        <article class="row r-magenta">
+          <div class="rail"><span class="rail-bar"></span><span class="rail-n tnum">01</span></div>
+          <div class="row-body">
+            <div class="row-top">
+              <span class="tag tag-personal">חדש</span>
+              <h3 class="row-title">כותרת</h3>
+            </div>
+            <p class="notice-body">טקסט לדוגמה</p>
+            <div class="attach">
+              <a href="https://example.com">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a4 4 0 0 0 5.7 0l2.6-2.6a4 4 0 0 0-5.7-5.7L11.5 5.8"/><path d="M14 11a4 4 0 0 0-5.7 0l-2.6 2.6a4 4 0 0 0 5.7 5.7l1.1-1.1"/></svg>
+                פריט 3
+              </a>
+              <button class="btn btn-line btn-sm" type="button" onclick="showToast('הקובץ נשלח לכתובת שסימנת בהגדרות')">שליחה למייל שלי</button>
+            </div>
+            <div class="row-meta">מאת: שם מלא 2 · <span class="tnum">14.10.2026</span></div>
+          </div>
+        </article>
+
+        <article class="row r-cyan">
+          <div class="rail"><span class="rail-bar"></span><span class="rail-n tnum">02</span></div>
+          <div class="row-body">
+            <div class="row-top">
+              <h3 class="row-title">כותרת</h3>
+            </div>
+            <p class="notice-body">טקסט לדוגמה</p>
+            <div class="row-meta">מאת: שם מלא 3 · <span class="tnum">09.10.2026</span></div>
+          </div>
+        </article>
+
+      </div>
+    </div>
+
+    <div class="sheet">
+      <div class="sheet-head">
+        <h3 class="sheet-h">פרסום מודעה</h3>
+        <span class="sheet-note">המודעה נשלחת למייל של כל הבנות</span>
+      </div>
+      <div class="sheet-body">
+        <form class="grid-form" onsubmit="event.preventDefault(); showToast('המודעה פורסמה')">
+          <div class="field field-wide">
+            <label class="lbl" for="n-title">כותרת</label>
+            <input id="n-title" type="text" placeholder="טקסט לדוגמה">
+          </div>
+          <div class="field field-wide">
+            <label class="lbl" for="n-body">תוכן</label>
+            <textarea id="n-body" placeholder="טקסט לדוגמה"></textarea>
+          </div>
+          <div class="field">
+            <label class="lbl" for="n-file">קובץ מצורף</label>
+            <input id="n-file" type="file" multiple>
+          </div>
+          <div class="field" style="align-content:end">
+            <button class="btn btn-solid" type="submit">פרסום ושליחה במייל</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 03 תורנות חלב ==================== -->
+  <section id="p-milk" role="tabpanel" aria-label="תורנות חלב" hidden>
+
+    <div class="section-head">
+      <h2 class="section-h">תורנות חלב</h2>
+      <span class="section-note">התור מתקדם לפי הסדר ברשימה</span>
+    </div>
+
+    <div class="sheet">
+      <div class="sheet-body">
+        <div class="turn">
+          <div class="turn-now">
+            <span class="turn-avatar">שמ</span>
+            <span>
+              <span class="stat-sub">התורנית הנוכחית</span>
+              <span class="turn-name">שם מלא 4</span>
+            </span>
+          </div>
+          <div>
+            <span class="stat-sub">הבאות בתור</span>
+            <div class="queue">
+              <ol>
+                <li class="is-next">שם מלא 5</li>
+                <li>שם מלא 6</li>
+                <li>שם מלא 7</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-solid" type="button" onclick="showToast('התור הועבר')">קניתי והעברתי תור</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sheet">
+      <div class="sheet-body">
+        <p class="hint">רק התורנית הנוכחית יכולה להעביר את התור הלאה. שאר הבנות רואות את הסדר בלבד.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 04 מערכת שעות ==================== -->
+  <section id="p-week" role="tabpanel" aria-label="מערכת שעות" hidden>
+
+    <div class="section-head">
+      <h2 class="section-h">מערכת שעות</h2>
+      <span class="section-note">לוחצים על שיעור כדי לראות את המטלות שלו</span>
+    </div>
+
+    <div class="sheet">
+      <div class="sheet-body">
+        <div class="week">
+
+          <div class="week-col">
+            <div class="week-day">יום ראשון <span class="day-count">2</span></div>
+            <button class="lesson" type="button" onclick="showToast('נפתחו המטלות של השיעור')">
+              <span class="lesson-time">13:05 – 14:40</span>
+              <span class="lesson-name">כותרת</span>
+            </button>
+            <button class="lesson" type="button" onclick="showToast('נפתחו המטלות של השיעור')">
+              <span class="lesson-time">15:20 – 16:10</span>
+              <span class="lesson-name">כותרת</span>
+            </button>
+          </div>
+
+          <div class="week-col">
+            <div class="week-day">יום שני <span class="day-count">3</span></div>
+            <button class="lesson" type="button" onclick="showToast('נפתחו המטלות של השיעור')">
+              <span class="lesson-time">08:45 – 10:35</span>
+              <span class="lesson-name">כותרת</span>
+            </button>
+            <button class="lesson" type="button" onclick="showToast('נפתחו המטלות של השיעור')">
+              <span class="lesson-time">10:45 – 13:05</span>
+              <span class="lesson-name">כותרת</span>
+            </button>
+            <button class="lesson" type="button" onclick="showToast('נפתחו המטלות של השיעור')">
+              <span class="lesson-time">13:05 – 15:20</span>
+              <span class="lesson-name">כותרת</span>
+            </button>
+          </div>
+
+          <div class="week-col is-today">
+            <div class="week-day">יום שלישי <span class="day-count">5</span></div>
+            <button class="lesson" type="button" onclick="showToast('נפתחו המטלות של השיעור')">
+              <span class="lesson-time">08:00 – 10:35</span>
+              <span class="lesson-name">כותרת</span>
+            </button>
+            <button class="lesson" type="button" onclick="showToast('נפתחו המטלות של השיעור')">
+              <span class="lesson-time">10:45 – 13:50</span>
+              <span class="lesson-name">כותרת</span>
+            </button>
+            <button class="lesson" type="button" onclick="showToast('נפתחו המטלות של השיעור')">
+              <span class="lesson-time">14:00 – 15:20</span>
+              <span class="lesson-name">כותרת</span>
+            </button>
+            <button class="lesson" type="button" onclick="showToast('נפתחו המטלות של השיעור')">
+              <span class="lesson-time">17:30 – 19:30</span>
+              <span class="lesson-name">כותרת</span>
+            </button>
+            <button class="lesson" type="button" onclick="showToast('נפתחו המטלות של השיעור')">
+              <span class="lesson-time">19:40 – 21:00</span>
+              <span class="lesson-name">כותרת</span>
+            </button>
+          </div>
+
+          <div class="week-col">
+            <div class="week-day">יום רביעי <span class="day-count">4</span></div>
+            <button class="lesson" type="button" onclick="showToast('נפתחו המטלות של השיעור')">
+              <span class="lesson-time">12:20 – 13:50</span>
+              <span class="lesson-name">כותרת</span>
+            </button>
+            <button class="lesson" type="button" onclick="showToast('נפתחו המטלות של השיעור')">
+              <span class="lesson-time">14:00 – 15:20</span>
+              <span class="lesson-name">כותרת</span>
+            </button>
+            <button class="lesson" type="button" onclick="showToast('נפתחו המטלות של השיעור')">
+              <span class="lesson-time">20:00 – 21:20</span>
+              <span class="lesson-name">כותרת</span>
+            </button>
+            <button class="lesson is-remote" type="button" onclick="showToast('נפתחו המטלות של השיעור')">
+              <span class="lesson-time">מתוקשב</span>
+              <span class="lesson-name">כותרת</span>
+            </button>
+          </div>
+
+          <div class="week-col">
+            <div class="week-day">יום חמישי <span class="day-count">1</span></div>
+            <button class="lesson" type="button" onclick="showToast('נפתחו המטלות של השיעור')">
+              <span class="lesson-time">13:05 – 16:10</span>
+              <span class="lesson-name">כותרת</span>
+            </button>
+          </div>
+
+          <div class="week-col is-short">
+            <div class="week-day">יום שישי <span class="day-count">2</span></div>
+            <button class="lesson" type="button" onclick="showToast('נפתחו המטלות של השיעור')">
+              <span class="lesson-time">08:30 – 09:50</span>
+              <span class="lesson-name">כותרת</span>
+            </button>
+            <button class="lesson" type="button" onclick="showToast('נפתחו המטלות של השיעור')">
+              <span class="lesson-time">10:05 – 11:20</span>
+              <span class="lesson-name">כותרת</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 05 הקבצים שלי ==================== -->
+  <section id="p-files" role="tabpanel" aria-label="הקבצים שלי" hidden>
+
+    <div class="section-head">
+      <h2 class="section-h">הקבצים שלי</h2>
+      <span class="section-note">הקבצים כאן גלויים רק לך</span>
+    </div>
+
+    <div class="sheet">
+      <div class="sheet-head">
+        <h3 class="sheet-h">העלאת קבצים</h3>
+      </div>
+      <div class="sheet-body">
+        <form class="grid-form" onsubmit="event.preventDefault(); showToast('הקבצים הועלו')">
+          <div class="field">
+            <label class="lbl" for="f-subject">מקצוע</label>
+            <select id="f-subject">
+              <option>פריט 1</option>
+              <option>פריט 2</option>
+              <option>פריט 3</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="lbl" for="f-files">בחירת קבצים</label>
+            <input id="f-files" type="file" multiple>
+          </div>
+          <div class="field" style="align-content:end">
+            <button class="btn btn-solid" type="submit">העלאת קבצים</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="sheet">
+      <div class="toolbar">
+        <span class="tnum">3</span> קבצים
+        <span class="spacer"></span>
+        <select class="field-quiet" style="width:auto" aria-label="סינון לפי מקצוע">
+          <option>כל המקצועות</option>
+          <option>פריט 1</option>
+          <option>פריט 2</option>
+        </select>
+      </div>
+
+      <div class="file-row">
+        <span class="file-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4H8a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8z"/><path d="M14 4v4h4"/></svg></span>
+        <span class="file-main">
+          <span class="file-name">פריט 1</span>
+          <span class="row-meta"><span class="tnum">14.10.2026</span> · <span class="tnum">240KB</span> · כותרת</span>
+        </span>
+        <span class="file-acts">
+          <button class="btn btn-line btn-sm" type="button">הורדה</button>
+          <button class="btn btn-line btn-sm" type="button" onclick="showToast('הקובץ נשלח לכתובת שסימנת בהגדרות')">שליחה למייל שלי</button>
+          <button class="btn btn-danger btn-sm" type="button" aria-label="מחיקת קובץ">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M10 7V5h4v2M8 7l.8 12h6.4L16 7"/></svg>
+          </button>
+        </span>
+      </div>
+
+      <div class="file-row">
+        <span class="file-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4H8a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8z"/><path d="M14 4v4h4"/></svg></span>
+        <span class="file-main">
+          <span class="file-name">פריט 2</span>
+          <span class="row-meta"><span class="tnum">09.10.2026</span> · <span class="tnum">1.1MB</span> · כותרת</span>
+        </span>
+        <span class="file-acts">
+          <button class="btn btn-line btn-sm" type="button">הורדה</button>
+          <button class="btn btn-line btn-sm" type="button" onclick="showToast('הקובץ נשלח לכתובת שסימנת בהגדרות')">שליחה למייל שלי</button>
+          <button class="btn btn-danger btn-sm" type="button" aria-label="מחיקת קובץ">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M10 7V5h4v2M8 7l.8 12h6.4L16 7"/></svg>
+          </button>
+        </span>
+      </div>
+
+      <div class="file-row">
+        <span class="file-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4H8a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8z"/><path d="M14 4v4h4"/></svg></span>
+        <span class="file-main">
+          <span class="file-name">פריט 3</span>
+          <span class="row-meta"><span class="tnum">02.10.2026</span> · <span class="tnum">76KB</span> · כותרת</span>
+        </span>
+        <span class="file-acts">
+          <button class="btn btn-line btn-sm" type="button">הורדה</button>
+          <button class="btn btn-line btn-sm" type="button" onclick="showToast('הקובץ נשלח לכתובת שסימנת בהגדרות')">שליחה למייל שלי</button>
+          <button class="btn btn-danger btn-sm" type="button" aria-label="מחיקת קובץ">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M10 7V5h4v2M8 7l.8 12h6.4L16 7"/></svg>
+          </button>
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 06 לוח שנה ==================== -->
+  <section id="p-cal" role="tabpanel" aria-label="לוח שנה" hidden>
+
+    <div class="section-head">
+      <h2 class="section-h">לוח שנה</h2>
+      <span class="section-note">אירוע אישי גלוי רק לך</span>
+    </div>
+
+    <div class="sheet">
+      <div class="sheet-body">
+        <!-- טופס האירוע: שתי פעולות באותו טופס — אירוע לכולן ואירוע אישי -->
+        <form class="grid-form" onsubmit="event.preventDefault(); addCalendarEvent(event)">
+          <div class="field">
+            <label class="lbl" for="e-title">כותרת</label>
+            <input id="e-title" type="text" placeholder="טקסט לדוגמה" required>
+          </div>
+          <div class="field">
+            <label class="lbl" for="e-date">תאריך</label>
+            <input id="e-date" type="text" placeholder="31.10.2026" required>
+          </div>
+          <div class="field field-wide">
+            <div class="actions" style="margin-block-start:0">
+              <button class="btn btn-solid" type="submit" data-scope="shared">הוספה כאירוע לכל הכיתה</button>
+              <button class="btn btn-line" type="submit" data-scope="personal">הוספה כאירוע אישי</button>
+            </div>
+          </div>
+          <p class="hint field-wide" id="cal-msg"></p>
+        </form>
+      </div>
+    </div>
+
+    <div class="sheet">
+      <div class="cal-toolbar">
+        <button class="btn btn-line btn-sm" type="button" onclick="showToast('עברת לשבוע הקודם')">שבוע קודם</button>
+        <span class="cal-range">18.10.2026 – 24.10.2026</span>
+        <button class="btn btn-line btn-sm" type="button" onclick="showToast('עברת לשבוע הבא')">שבוע הבא</button>
+        <span class="spacer"></span>
+        <span class="sheet-note">שבוע זה</span>
+      </div>
+
+      <div class="cal">
+
+        <div class="cal-day">
+          <div class="cal-head">
+            <span class="cal-name">יום ראשון</span>
+            <span class="cal-date">18.10</span>
+          </div>
+          <div class="cal-body">
+            <div class="ev ev-due">
+              <span>מועד הגשה</span>
+              <span class="ev-sub">כותרת</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="cal-day">
+          <div class="cal-head">
+            <span class="cal-name">יום שני</span>
+            <span class="cal-date">19.10</span>
+          </div>
+          <div class="cal-body">
+            <div class="ev ev-personal">
+              <span>אישי — גלוי רק לך</span>
+              <span class="ev-sub">טקסט לדוגמה</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="cal-day is-today">
+          <div class="cal-head">
+            <span class="cal-name">יום שלישי</span>
+            <span class="cal-date tnum">20.10</span>
+          </div>
+          <div class="cal-head">
+            <span class="cal-today-tag">היום</span>
+            <span class="ev-sub">3 בנות</span>
+          </div>
+          <div class="cal-body">
+            <div class="ev ev-due">
+              <span>מועד הגשה</span>
+              <span class="ev-sub">הוסיפה: שם מלא 8</span>
+            </div>
+            <div class="ev ev-personal">
+              <span>אישי — גלוי רק לך</span>
+              <span class="ev-sub">הוסיפה: שם מלא 9</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="cal-day">
+          <div class="cal-head">
+            <span class="cal-name">יום רביעי</span>
+            <span class="cal-date">21.10</span>
+          </div>
+          <div class="cal-body">
+            <p class="cal-empty">אין אירועים ביום הזה</p>
+          </div>
+        </div>
+
+        <div class="cal-day">
+          <div class="cal-head">
+            <span class="cal-name">יום חמישי</span>
+            <span class="cal-date">22.10</span>
+          </div>
+          <div class="cal-body">
+            <p class="cal-empty">אין אירועים ביום הזה</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 07 מסכי מערכת ==================== -->
+  <section aria-label="שער כניסה, מודאלים והודעות">
+
+    <div class="section-head">
+      <h2 class="section-h">מסכים נלווים</h2>
+      <span class="section-note">שער כניסה, חלונות והודעות</span>
+    </div>
+
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.25rem; align-items:start;">
+
+      <!-- שער כניסה: התחברות / הרשמה -->
+      <div class="gate-card" style="margin:0">
+        <span class="gate-mark">&lt;/&gt;</span>
+        <h3 class="gate-h" id="gate-title">התחברות למערכת</h3>
+        <p class="gate-p" id="gate-sub">נכנסות עם כתובת המייל והסיסמה שאיתן נרשמת.</p>
+
+        <div class="gate-switch" role="tablist" aria-label="התחברות או הרשמה">
+          <button type="button" role="tab" id="gate-tab-login" aria-selected="true" onclick="gateView('login')">התחברות</button>
+          <button type="button" role="tab" id="gate-tab-register" aria-selected="false" onclick="gateView('register')">הרשמה</button>
+        </div>
+
+        <!-- התחברות -->
+        <form class="gate-form" id="gate-login" onsubmit="event.preventDefault(); showToast('מתחברת…')">
+          <div class="field">
+            <label class="lbl" for="g-mail">דואר אלקטרוני</label>
+            <input id="g-mail" type="email" placeholder="name@example.com" autocomplete="email">
+          </div>
+          <div class="field">
+            <label class="lbl" for="g-pass">סיסמה</label>
+            <input id="g-pass" type="password" placeholder="••••••" autocomplete="current-password">
+          </div>
+          <p class="gate-forgot"><a href="#" onclick="event.preventDefault(); showToast('נשלח קוד איפוס למייל')">שכחת סיסמה?</a></p>
+          <button class="btn btn-solid btn-block" type="submit">היכנסי</button>
+        </form>
+
+        <!-- הרשמה -->
+        <form class="gate-form" id="gate-register" hidden onsubmit="event.preventDefault(); showToast('החשבון נוצר')">
+          <div class="field">
+            <label class="lbl" for="g-name">שם מלא</label>
+            <input id="g-name" type="text" placeholder="שם מלא" autocomplete="name">
+          </div>
+          <div class="field">
+            <label class="lbl" for="g-rmail">דואר אלקטרוני</label>
+            <input id="g-rmail" type="email" placeholder="name@example.com" autocomplete="email">
+          </div>
+          <div class="field">
+            <label class="lbl" for="g-rpass">סיסמה</label>
+            <input id="g-rpass" type="password" placeholder="••••••" autocomplete="new-password">
+          </div>
+          <button class="btn btn-solid btn-block" type="submit">הירשמי</button>
+        </form>
+
+        <p class="gate-note" id="gate-swap">
+          אין לך חשבון?
+          <a href="#" onclick="event.preventDefault(); gateView('register')">הירשמי כאן</a>
+        </p>
+      </div>
+
+      <!-- מודאל: דיווח -->
+      <div class="modal" style="max-width:none">
+        <div class="modal-head">
+          <h3 class="modal-h">דיווח על תקלה או רעיון</h3>
+        </div>
+        <div class="modal-body">
+          <form class="grid-form" onsubmit="event.preventDefault(); showToast('הדיווח נשלח')">
+            <div class="field">
+              <label class="lbl" for="fb-type">סוג הפנייה</label>
+              <select id="fb-type">
+                <option>תקלה</option>
+                <option>רעיון לשיפור</option>
+                <option>אחר</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="lbl" for="fb-subject">כותרת</label>
+              <input id="fb-subject" type="text" placeholder="טקסט לדוגמה">
+            </div>
+            <div class="field field-wide">
+              <label class="lbl" for="fb-body">פירוט</label>
+              <textarea id="fb-body" placeholder="טקסט לדוגמה"></textarea>
+            </div>
+            <div class="field field-wide">
+              <button class="btn btn-solid btn-block" type="submit">שליחת הדיווח</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- מודאל: נגישות והגדרות — כולל אזור הניהול -->
+      <div class="modal" style="max-width:none">
+        <div class="modal-head">
+          <h3 class="modal-h">נגישות והגדרות מערכת</h3>
+        </div>
+        <div class="modal-body">
+
+          <!-- כלי נגישות -->
+          <div class="actions" style="margin-block-start:0">
+            <button class="btn btn-line" type="button" onclick="showToast('הטקסט הוגדל')">הגדלת טקסט</button>
+            <button class="btn btn-line" type="button" onclick="showToast('הטקסט הוקטן')">הקטנת טקסט</button>
+            <button class="btn btn-line" type="button" onclick="flipTheme()">החלפת מצב תצוגה</button>
+          </div>
+
+          <!-- אזור מנהלות -->
+          <div class="toolbar" style="margin-block-start:1.5rem">
+            <span>אזור מנהלות</span>
+            <span class="spacer"></span>
+            <span class="sheet-note">נדרשת סיסמת מנהלת</span>
+          </div>
+
+          <div class="actions" id="admin-login-box" style="margin-block-start:.85rem; align-items:flex-end">
+            <div class="field" style="flex:1">
+              <label class="lbl" for="admin-password-input">סיסמת מנהלת</label>
+              <input id="admin-password-input" type="password" placeholder="הקלידי סיסמת מנהלת…">
+            </div>
+            <button class="btn btn-solid" type="button" onclick="verifyAdminPassword()">כנסי</button>
+          </div>
+
+          <!-- פאנל הניהול — נפתח רק אחרי סיסמה נכונה -->
+          <div id="admin-panel-content" hidden>
+
+            <div class="toolbar" style="margin-block-start:1.5rem">
+              <span>רשימת משתמשות רשומות</span>
+              <span class="spacer"></span>
+              <button class="btn btn-line btn-sm" type="button" onclick="showToast('הרשימה רועננה')">רענון</button>
+            </div>
+            <ul class="admin-users" id="users-management-list">
+              <li class="admin-user">
+                <span class="person-name">שם מלא 2</span>
+                <span class="admin-user-meta">התחברות אחרונה: טקסט לדוגמה</span>
+                <button class="btn btn-danger btn-sm" type="button" onclick="showToast('המשתמשת הוסרה')">מחיקת משתמשת</button>
+              </li>
+              <li class="admin-user">
+                <span class="person-name">שם מלא 3</span>
+                <span class="admin-user-meta">התחברות אחרונה: טרם התחברה</span>
+                <button class="btn btn-danger btn-sm" type="button" onclick="showToast('המשתמשת הוסרה')">מחיקת משתמשת</button>
+              </li>
+            </ul>
+
+            <div class="toolbar" style="margin-block-start:1.5rem">
+              <span>ניהול סדר תור החלב</span>
+              <span class="spacer"></span>
+              <button class="btn btn-line btn-sm" type="button" onclick="showToast('התור קודם ונשלחה הודעה לבאה בתור')">קידום תור החלב</button>
+            </div>
+            <ul class="milk-admin" id="milk-rotation-admin-list">
+              <li class="milk-admin-row">
+                <span class="tnum">1</span>
+                <span class="person-name">שם מלא 2</span>
+                <span class="spacer"></span>
+                <button class="btn btn-ghost btn-sm" type="button" title="העליי למעלה" aria-label="העליי למעלה">↑</button>
+                <button class="btn btn-ghost btn-sm" type="button" title="הורידי למטה" aria-label="הורידי למטה">↓</button>
+                <button class="btn btn-ghost btn-sm" type="button" title="הסירי מהתור" aria-label="הסירי מהתור">✕</button>
+              </li>
+              <li class="milk-admin-row">
+                <span class="tnum">2</span>
+                <span class="person-name">שם מלא 3</span>
+                <span class="spacer"></span>
+                <button class="btn btn-ghost btn-sm" type="button" title="העליי למעלה" aria-label="העליי למעלה">↑</button>
+                <button class="btn btn-ghost btn-sm" type="button" title="הורידי למטה" aria-label="הורידי למטה">↓</button>
+                <button class="btn btn-ghost btn-sm" type="button" title="הסירי מהתור" aria-label="הסירי מהתור">✕</button>
+              </li>
+            </ul>
+            <div class="actions" style="margin-block-start:.65rem">
+              <select class="field-quiet" style="width:auto" aria-label="בחירת משתמשת להוספה לתור">
+                <option>בחרי משתמשת…</option>
+                <option>שם מלא 4</option>
+                <option>שם מלא 5</option>
+              </select>
+              <button class="btn btn-line btn-sm" type="button" onclick="showToast('נוספה לסוף התור')">הוספה לסוף</button>
+              <button class="btn btn-line btn-sm" type="button" onclick="showToast('תור ברירת המחדל נטען — נשאר לשמור')">מלאי תור מומלץ</button>
+              <button class="btn btn-solid btn-sm" type="button" onclick="showToast('סדר התור נשמר')">שמירת סדר התור</button>
+            </div>
+
+            <!-- מייל מעוצב — נשלח רק לכתובות שמזינות כאן -->
+            <div class="toolbar" style="margin-block-start:1.75rem">
+              <span>שליחת מייל מעוצב למייל מסוים</span>
+            </div>
+            <p class="hint" style="margin-block-start:.35rem">משלחות רק לכתובות שאת רושמת כאן — לא לכל המשתמשות.</p>
+            <form class="grid-form" style="margin-block-start:.85rem" onsubmit="event.preventDefault(); showToast('המייל המעוצב נשלח')">
+              <div class="field field-wide">
+                <label class="lbl" for="admin-email-to">כתובות מייל</label>
+                <textarea id="admin-email-to" placeholder="כתובות מייל, מופרדות בפסיקים או בשורות חדשות"></textarea>
+              </div>
+              <div class="field">
+                <label class="lbl" for="admin-email-subject">נושא המייל</label>
+                <input id="admin-email-subject" type="text" placeholder="טקסט לדוגמה">
+              </div>
+              <div class="field field-wide">
+                <label class="lbl" for="admin-email-content">תוכן המייל</label>
+                <textarea id="admin-email-content" placeholder="טקסט לדוגמה"></textarea>
+              </div>
+              <div class="field field-wide">
+                <button class="btn btn-solid btn-block" type="submit">שליחת מייל מעוצב</button>
+              </div>
+            </form>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- מודאל: אישור -->
+      <div class="modal" style="max-width:none">
+        <div class="modal-head">
+          <h3 class="modal-h">כותרת</h3>
+        </div>
+        <div class="modal-body">
+          <p class="notice-body" style="margin-block-end:1.1rem">טקסט לדוגמה</p>
+          <input class="field-quiet" style="width:100%" type="text" placeholder="טקסט לדוגמה">
+          <div class="actions">
+            <button class="btn btn-solid" type="button">אישור</button>
+            <button class="btn btn-line" type="button">ביטול</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- הודעות -->
+      <div class="modal" style="max-width:none">
+        <div class="modal-head">
+          <h3 class="modal-h">הודעות</h3>
+        </div>
+        <div class="modal-body" style="display:grid; gap:.7rem">
+          <div class="toast toast-live">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg>
+            המודעה פורסמה
+          </div>
+          <div class="toast is-error">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5 21 20H3z"/><path d="M12 10v4M12 17h.01"/></svg>
+            שגיאה בטעינת הנתונים. נסי לרענן את הדף.
+          </div>
+          <button class="btn btn-solid" type="button" data-loading onclick="setLoading(this)">
+            <span class="btn-dotty"><i></i><i></i><i></i></span>
+            שולחת
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ==================== כפתורים צפים ==================== -->
+  <div class="float-stack">
+    <a class="fab fab-git"
+       href="https://docs.google.com/spreadsheets/d/18AV2drnRZ6d_g6Ll0CD-0wdwmq5HmmAyg9cOAH85A8M/edit?usp=sharing"
+       target="_blank" rel="noopener"
+       title="קישורי הגשה — מעבר לגיליון המשותף (גוגל שיטס)"
+       aria-label="קישורי הגשה — מעבר לגיליון המשותף בגוגל שיטס">
+      <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/>
+      </svg>
+    </a>
+    <button class="fab" type="button" title="דיווח על תקלה או רעיון" aria-label="דיווח על תקלה או רעיון">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="13" r="5"/><path d="M12 8V5M8.5 9 6 7M15.5 9 18 7M6 13H3M18 13h3M8.5 17 6 19M15.5 17 18 19"/></svg>
+    </button>
+    <button class="fab" type="button" title="נגישות והגדרות" aria-label="נגישות והגדרות">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 9 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 9a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg>
+    </button>
+  </div>
+
+  <footer class="site">
+    <span>קובץ תצוגת עיצוב — אינו חלק מהמערכת ואינו מקושר אליה.</span>
+    <span>נבנה עבור: שם מלא 10</span>
+  </footer>
+</div>
+
+<script>
+/* ==========================================================================
+   הסקריפט היחיד בקובץ. אין כאן שום קריאה לשרת ואין תלות ב-app.js.
+   ========================================================================== */
+
+/* החלפת מצב יום / לילה — מחליף מאפיין על <html> בלבד. */
+function flipTheme() {
+  const root = document.documentElement;
+  const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  showToast(next === 'dark' ? 'מצב לילה פעיל' : 'מצב יום פעיל');
+}
+
+/* מעבר בין לשוניות. בכל מעבר השורות נחשפות בזו אחר זו מלמעלה למטה.
+   הגלילה מכוונת לדופן התוכן ולא לפאנל עצמו — אחרת הסרגל נגרר למרכז המסך. */
+function openTab(btn) {
+  document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', 'false'));
+  btn.setAttribute('aria-selected', 'true');
+
+  document.querySelectorAll('[role="tabpanel"]').forEach(p => { p.hidden = true; });
+  const panel = document.getElementById(btn.dataset.panel);
+  if (!panel) return;
+  panel.hidden = false;
+
+  reveal(panel);
+
+  /* גוללים בדיוק עד גובה הסרגל, לא עד ראש הפאנל. */
+  const tabs = document.querySelector('.nav-tabs');
+  const top = tabs ? window.scrollY + tabs.getBoundingClientRect().top - 8 : 0;
+  window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+}
+
+/* סימון הסרגל כדבוק — כדי שיקבל פינות וצל של סרגל ולא של כרטיס מרחף. */
+(function trackStuckTabs() {
+  const tabs = document.querySelector('.nav-tabs');
+  if (!tabs) return;
+  const mark = () => {
+    const stuck = tabs.getBoundingClientRect().top <= 9;
+    tabs.classList.toggle('is-stuck', stuck);
+  };
+  mark();
+  window.addEventListener('scroll', mark, { passive: true });
+  window.addEventListener('resize', mark);
+})();
+
+function reveal(panel) {
+  panel.querySelectorAll('.row').forEach((row, i) => {
+    row.classList.remove('row-in');
+    row.style.animationDelay = Math.min(i * 60, 420) + 'ms';
+  });
+  requestAnimationFrame(() => {
+    panel.querySelectorAll('.row').forEach(row => row.classList.add('row-in'));
+  });
+}
+
+/* שחזור התנועה בלחיצה — כדי שאפשר לראות אותה בלי לעבור לשונית. */
+function replayRows() {
+  const panel = document.querySelector('[role="tabpanel"]:not([hidden])');
+  if (panel) reveal(panel);
+}
+
+/* ---------- הגרף: זה הרגע המרכזי של העמוד. ----------
+   הפסים גדלים מאפס, המספרים מטפסים ביחד איתם, והקו מצטייר משמאל לימין.
+   אין תלות בגלילה ואין ספריית גרפים — SVG ו-requestAnimationFrame. */
+let countRaf = null;
+
+function countUp(el, to, duration) {
+  const from = 0;
+  const start = performance.now();
+  function step(now) {
+    const t = Math.min((now - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - t, 3);
+    el.textContent = Math.round(from + (to - from) * eased);
+    if (t < 1) countRaf = requestAnimationFrame(step);
+  }
+  countRaf = requestAnimationFrame(step);
+}
+
+function playStats() {
+  if (countRaf) cancelAnimationFrame(countRaf);
+
+  document.querySelectorAll('#stat-board [data-count]').forEach(el => {
+    countUp(el, Number(el.dataset.count), 1400);
+  });
+
+  /* הפסים: מגדירים רוחב התחלתי, ואז נותנים ל-CSS להריץ את ה-animation מחדש. */
+  document.querySelectorAll('#stat-board .bar-fill').forEach(fill => {
+    fill.style.setProperty('--w', fill.dataset.w || '0%');
+    fill.style.animation = 'none';
+  });
+  void document.getElementById('stat-board').offsetWidth;
+  document.querySelectorAll('#stat-board .bar-fill').forEach(fill => {
+    fill.style.animation = '';
+  });
+
+  /* הקו המצטייר מופעל מחדש */
+  document.querySelectorAll('#stat-board .spark-line').forEach(line => {
+    line.style.animation = 'none';
+    void line.getBoundingClientRect();
+    line.style.animation = '';
+  });
+}
+
+function replayStats() {
+  playStats();
+  const board = document.getElementById('stat-board');
+  if (board) board.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  showToast('הגרף מצייר את עצמו מחדש');
+}
+
+/* שער הכניסה: מחליף בין תצוגת התחברות לתצוגת הרשמה */
+function gateView(view) {
+  const isLogin = view === 'login';
+  document.getElementById('gate-login').hidden = !isLogin;
+  document.getElementById('gate-register').hidden = isLogin;
+  document.getElementById('gate-tab-login').setAttribute('aria-selected', String(isLogin));
+  document.getElementById('gate-tab-register').setAttribute('aria-selected', String(!isLogin));
+  document.getElementById('gate-title').textContent = isLogin ? 'התחברות למערכת' : 'הרשמה למערכת';
+  document.getElementById('gate-sub').textContent = isLogin
+    ? 'נכנסות עם כתובת המייל והסיסמה שאיתן נרשמת.'
+    : 'פותחות חשבון עם שם, מייל וסיסמה.';
+  document.getElementById('gate-swap').innerHTML = isLogin
+    ? 'אין לך חשבון? <a href="#" onclick="event.preventDefault(); gateView(\'register\')">הירשמי כאן</a>'
+    : 'כבר יש לך חשבון? <a href="#" onclick="event.preventDefault(); gateView(\'login\')">חזרה להתחברות</a>';
+}
+
+/* הוספת אירוע ללוח: קוראים את data-scope מהכפתור שלחצו עליו */
+function addCalendarEvent(e) {
+  const submitter = e.submitter;
+  const scope = submitter ? submitter.dataset.scope : 'shared';
+  const title = document.getElementById('e-title').value.trim();
+  const msg = document.getElementById('cal-msg');
+  msg.textContent = scope === 'personal'
+    ? `נשמר אירוע אישי: ${title || 'ללא כותרת'}`
+    : `נשמר אירוע לכל הכיתה: ${title || 'ללא כותרת'}`;
+  showToast(scope === 'personal' ? 'האירוע נוסף כהאירוע האישי שלך' : 'האירוע נוסף לכל הכיתה');
+}
+
+/* הסתרה והחזרה של מטלה בודדת — העין שבקצה השורה.
+   הסימון הוא .is-hidden ותמיד נוסף; מה שקובע אם השורה נראית הוא
+   מצב הטולבר. כך "הצגת מטלות שהוסתרו" יכול לחשוף בלי לאבד את הסימון. */
+const EYE_OPEN = '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>';
+const EYE_OFF  = '<path d="M4 4l16 16"/><path d="M9.9 5.9A9.6 9.6 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-3.6 4.3"/><path d="M6.2 7.7A16.5 16.5 0 0 0 2.5 12S6 18.5 12 18.5c1.2 0 2.3-.3 3.3-.7"/>';
+
+function setRowHidden(row, hidden) {
+  row.classList.toggle('is-hidden', hidden);
+  const btn = row.querySelector('.row-hide');
+  if (btn) {
+    btn.setAttribute('aria-pressed', String(hidden));
+    btn.setAttribute('aria-label', hidden ? 'החזרת המטלה לרשימה' : 'הסתרת המטלה מהרשימה');
+    btn.title = hidden ? 'החזרה לרשימה' : 'הסתרה מהרשימה';
+    const svg = btn.querySelector('svg');
+    if (svg) svg.innerHTML = hidden ? EYE_OFF : EYE_OPEN;
+  }
+  // שורה שהוסתרה נעלמת מהרשימה, אלא אם הטולבר במצב "מציג"
+  const showingAll = document.getElementById('rows-toggle')?.getAttribute('aria-expanded') === 'true';
+  row.hidden = hidden && !showingAll;
+}
+
+function toggleRowHidden(btn) {
+  const row = btn.closest('.row');
+  if (!row) return;
+  const next = !row.classList.contains('is-hidden');
+  setRowHidden(row, next);
+  showToast(next ? 'המטלה הוסתרה מהרשימה' : 'המטלה חזרה לרשימה');
+}
+
+/* מציג ומסתיר את המטלות שהוסתרו */
+function toggleHidden(btn) {
+  const list = document.querySelectorAll('.row.is-hidden');
+  const shown = btn.getAttribute('aria-expanded') === 'true';
+  list.forEach(r => { r.hidden = shown; });
+  btn.setAttribute('aria-expanded', String(!shown));
+  btn.textContent = shown ? 'הצגת מטלות שהוסתרו' : 'הסתרת מטלות שהוסתרו';
+}
+
+/* סגירת התראת הבוחן */
+function dismissReminder(btn) {
+  const box = btn.closest('.reminder');
+  box.style.animation = 'none';
+  box.hidden = true;
+  showToast('ההתראה הוסתרה');
+}
+
+/* כניסה לאזור המנהלות — חושפת את הפאנל. בתצוגה המקדימה אין אימות אמיתי. */
+function verifyAdminPassword() {
+  const input = document.getElementById('admin-password-input');
+  const panel = document.getElementById('admin-panel-content');
+  if (!input.value.trim()) {
+    showToast('צריך למלא סיסמת מנהלת');
+    input.focus();
+    return;
+  }
+  panel.hidden = false;
+  input.value = '';
+  showToast('נכנסת לאזור המנהלות');
+}
+
+/* סימון "בוצע" */
+function markDone(input) {
+  const label = input.closest('.check');
+  const text = label.querySelector('.check-text');
+  text.classList.toggle('check-done', input.checked);
+
+  /* הסרת הסימון מחזירה את המטלה לרשימה. בלי זה נשארת שורה מוסתרת
+     שלא בוצעה — כלומר מטלה נעלמת בלי שאף אחד סימן אותה. */
+  const row = input.closest('.row');
+  if (row && !input.checked && row.classList.contains('is-hidden')) {
+    setRowHidden(row, false);
+  }
+
+  showToast(input.checked ? 'המטלה סומנה כבוצעה' : 'הסימון הוסר');
+}
+
+/* כפתור בשליחה — הנקודות מהבהבות במקום טקסט */
+function setLoading(btn) {
+  btn.classList.add('is-loading');
+  showToast('השינוי נשמר');
+  setTimeout(() => btn.classList.remove('is-loading'), 1200);
+}
+
+/* טוסט — נכנס מלמטה ונעלם. */
+let toastTimer = null;
+function showToast(message) {
+  let el = document.getElementById('live-toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'live-toast';
+    el.setAttribute('role', 'status');
+    document.body.appendChild(el);
+  }
+  el.className = 'toast toast-live';
+  el.textContent = message;
+  el.style.cssText = 'position:fixed;inset-block-end:1.25rem;inset-inline-end:1.25rem;z-index:60;';
+  /* 60 > כל השכבות בתצוגה, כך שההודעה לא נעלמת מאחורי חלון צף */
+  void el.offsetWidth;
+  el.classList.remove('toast-live');
+  void el.offsetWidth;
+  el.classList.add('toast-live');
+
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    el.style.transition = 'opacity 220ms ease';
+    el.style.opacity = '0';
+    setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); el.style.opacity = ''; }, 240);
+  }, 2600);
+}
+
+/* מטלה שכבר מסומנת כמוסתרת מקבלת את אייקון העין החתוכה כבר בטעינה,
+   כדי שלא ייווצר מצב שבו השורה מוסתרת והכפתור עדיין נראה "פתוח". */
+document.querySelectorAll('.row.is-hidden').forEach(row => setRowHidden(row, true));
+
+/* הפעלה ראשונה: הגרף מתחיל לצייר את עצמו מיד עם עליית העמוד. */
+window.addEventListener('load', () => setTimeout(playStats, 250));
+</script>
+</body>
+</html>
