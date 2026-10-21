@@ -16,20 +16,57 @@ function createBrevoEmail({ toEmail, subject, htmlContent, attachments }) {
   };
 }
 
+// שגיאה המסומנת כשגיאת שירות המייל — כך המסלולים יכולים להחזיר הודעה ברורה
+// במקום "שגיאה כללית", בלי לחשוף את פרטי השגיאה של Brevo למשתמשת.
+function createEmailError(message, status) {
+  const err = new Error(message);
+  err.isEmailError = true;
+  if (status) err.status = status;
+  return err;
+}
+
 async function sendEmail(toEmail, subject, htmlContent, attachments) {
-  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-    method: 'POST',
-    headers: {
-      accept: 'application/json',
-      'api-key': process.env.BREVO_API_KEY,
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify(createBrevoEmail({ toEmail, subject, htmlContent, attachments })),
-  });
+  const apiKey = (process.env.BREVO_API_KEY || '').trim();
+  if (!apiKey) {
+    // בלי מפתח אין טעם לפנות ל-Brevo — הוא יחזיר 401 ונבזבז זמן.
+    console.error('BREVO_API_KEY חסר או ריק — לא ניתן לשלוח מייל.');
+    throw createEmailError('שירות המייל אינו מוגדר כרגע (חסר מפתח API)', 503);
+  }
+
+  const senderEmail = (process.env.SENDER_EMAIL || process.env.EMAIL_USER || '').trim();
+  if (!senderEmail) {
+    console.error('SENDER_EMAIL חסר — לא ניתן לשלוח מייל.');
+    throw createEmailError('שירות המייל אינו מוגדר כרגע (חסרה כתובת שולח)', 503);
+  }
+
+  let response;
+  try {
+    response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        accept: 'application/json',
+        'api-key': apiKey,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify(createBrevoEmail({ toEmail, subject, htmlContent, attachments })),
+      signal: AbortSignal.timeout(30000),
+    });
+  } catch (err) {
+    // תקלת רשת / פסק זמן — לא הגענו ל-Brevo בכלל
+    console.error('שגיאת תקשורת מול Brevo:', err.message);
+    throw createEmailError('לא הצלחנו להתחבר לשירות המייל. נסי שוב בעוד רגע.', 502);
+  }
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Brevo API error (${response.status}): ${errorText}`);
+    let errorText = '';
+    try {
+      errorText = await response.text();
+    } catch (_) { /* גוף השגיאה לא חובה */ }
+    console.error(`Brevo API error (${response.status}): ${errorText}`);
+    if (response.status === 401 || response.status === 403) {
+      throw createEmailError('מפתח המייל אינו תקף — יש לפנות למנהלת המערכת', 502);
+    }
+    throw createEmailError(`שירות המייל החזיר שגיאה (${response.status})`, 502);
   }
 
   return response.json();
@@ -160,4 +197,12 @@ async function sendMilkDutyEmail(toEmail, userName) {
   );
 }
 
-module.exports = { sendPasswordResetEmail, sendHomeworkDigest, sendMilkDutyEmail, sendEmail, sendBrandedEmail, sendBrandedEmailWithAttachment };
+module.exports = {
+  sendPasswordResetEmail,
+  sendHomeworkDigest,
+  sendMilkDutyEmail,
+  sendEmail,
+  sendBrandedEmail,
+  sendBrandedEmailWithAttachment,
+  createEmailError,
+};

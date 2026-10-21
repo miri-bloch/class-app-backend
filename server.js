@@ -18,35 +18,10 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'frontend', 'index.html'));
 });
 
-// פונקציית שליחת מייל דרך Brevo API
-async function sendEmailViaBrevo(toEmail, toName, subject, htmlContent) {
-  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-    method: 'POST',
-    headers: {
-      'accept': 'application/json',
-      'api-key': process.env.BREVO_API_KEY,
-      'content-type': 'application/json'
-    },
-    body: JSON.stringify({
-      sender: { 
-        name: "HighCode System",
-        email: process.env.SENDER_EMAIL || "no-reply@yourdomain.com" 
-      },
-      to: [{ email: toEmail, name: toName || 'משתמשת' }],
-      subject: subject,
-      htmlContent: htmlContent
-    })
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'שגיאה בשליחת מייל דרך Brevo');
-  }
-
-  return await response.json();
-}
-
-app.locals.sendEmail = sendEmailViaBrevo;
+// שליחת מייל דרך Brevo — מיוצגת במקום אחד בלבד: services/emailService.js
+// (כאן רק עטיפה דקה עבור מסלולים שניגשים דרך req.app.locals.sendEmail)
+const { sendEmail } = require('./services/emailService');
+app.locals.sendEmail = sendEmail;
 
 // הפעלת מתזמן המיילים האוטומטי
 initScheduler();

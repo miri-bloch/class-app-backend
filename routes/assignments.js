@@ -340,6 +340,10 @@ router.post('/:id/send-to-email', auth, async (req, res) => {
     if (err && err.isDriveError) {
       return res.status(502).json({ error: 'שגיאה בהורדת הקובץ מהדרייב. נסי שוב בעוד רגע.' });
     }
+    // הקובץ ירד מהדרייב בהצלחה, ולכן הכשל הוא בשירות המייל עצמו
+    if (err && err.isEmailError) {
+      return res.status(502).json({ error: err.message, emailFailed: true });
+    }
     res.status(500).json({ error: 'שגיאה בשליחת הקובץ למייל' });
   }
 });
