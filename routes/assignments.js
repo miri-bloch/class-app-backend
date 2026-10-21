@@ -56,6 +56,7 @@ router.get('/', optionalAuth, async (req, res) => {
       `SELECT a.*,
               pn.is_completed,
               pn.note_text,
+              COALESCE(pn.is_hidden, FALSE) AS is_hidden,
               -- סופרים ביצוע רק בקרב התלמידות הפעילות (is_student = TRUE)
               (SELECT COUNT(*) FROM private_notes pc
                 JOIN users pc_u ON pc.user_id = pc_u.id
@@ -208,7 +209,56 @@ router.get('/stats/completion', async (req, res) => {
   }
 });
 
-// 5. מחיקת מטלה (הוספת הנתיב החדש שפתר את השגיאה)
+// 5א. הסרה אישית — המטלה נעלמת רק מהמשתמשת הזו, נשארת אצל כל השאר.
+// אותו דגל שמשמש ל"הסתרה" משמש גם כאן, ולכן ההסרה מופיעה ברשימת המוסתרות
+// ומאפשרת שחזור. הנתיב הזה ממלא גם את תפקיד "בטלי הסתרה" של מטלה שלא בוצעה.
+router.delete('/:id/personal', auth, async (req, res) => {
+  const assignmentId = req.params.id;
+  const userId = req.user.id;
+
+  try {
+    // המטלה עצמה לא נוגעת — רק ההערה האישית של המשתמשת
+    const result = await pool.query(
+      `INSERT INTO private_notes (user_id, assignment_id, note_text, is_completed, is_hidden)
+       VALUES ($1, $2, '', FALSE, TRUE)
+       ON CONFLICT (user_id, assignment_id)
+       DO UPDATE SET is_hidden = TRUE, updated_at = CURRENT_TIMESTAMP
+       RETURNING id`,
+      [userId, assignmentId]
+    );
+
+    res.json({ message: 'המטלה הוסרה מהרשימה האישית שלך בלבד', hidden: true });
+  } catch (err) {
+    // 23503 = הפרת מפתח זר, כלומר המטלה כבר לא קיימת
+    if (err.code === '23503') {
+      return res.status(404).json({ error: 'המטלה לא נמצאה' });
+    }
+    console.error(err);
+    res.status(500).json({ error: 'שגיאה בהסרת המטלה האישית' });
+  }
+});
+
+// 5א2. ביטול ההסרה האישית — המטלה חוזרת לרשימה של המשתמשת
+router.post('/:id/personal/restore', auth, async (req, res) => {
+  const assignmentId = req.params.id;
+  const userId = req.user.id;
+
+  try {
+    await pool.query(
+      `UPDATE private_notes
+          SET is_hidden = FALSE, updated_at = CURRENT_TIMESTAMP
+        WHERE user_id = $1 AND assignment_id = $2`,
+      [userId, assignmentId]
+    );
+
+    res.json({ message: 'המטלה הוחזרה לרשימה שלך', hidden: false });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'שגיאה בהחזרת המטלה' });
+  }
+});
+
+// 5ב. מחיקת מטלה (הוספת הנתיב החדש שפתר את השגיאה)
 router.delete('/:id', async (req, res) => {
   const assignmentId = req.params.id;
 

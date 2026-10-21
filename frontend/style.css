@@ -637,6 +637,37 @@ input:focus, textarea:focus {
   font-size: 0.75rem;
 }
 
+/* הסרה אישית — נראית שקטה בכוונה, כדי שלא תתבלבל עם מחיקה לכולן */
+.assignment-remove-personal,
+.assignment-restore-personal {
+  flex: 0 0 auto;
+  background: transparent;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 3px 7px;
+  font-size: 0.75rem;
+}
+
+.assignment-remove-personal:hover,
+.assignment-restore-personal:hover {
+  color: var(--neon-cyan);
+  border-color: var(--neon-cyan);
+}
+
+/* פס אזהרה בתיבת האישור — מדגיש פעולה שמשפיעה על כולן */
+.modal-warning {
+  margin: -8px 0 18px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  border-right: 4px solid #f43f5e;
+  background: rgba(244, 63, 94, 0.12);
+  color: #fda4af;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
 .assignment-complete {
   display: flex;
   align-items: center;

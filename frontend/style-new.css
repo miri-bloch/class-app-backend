@@ -862,6 +862,27 @@ body.light-theme .assignment-old { background: #F1F3FB; }
 }
 .assignment-delete:hover { background: var(--magenta-12); }
 
+/* הסרה אישית — שקטה ובזווית שונה מהמחיקה לכולן */
+.assignment-remove-personal,
+.assignment-restore-personal {
+  flex: 0 0 auto;
+  background: transparent;
+  border: 1px solid var(--line-soft);
+  color: var(--text-3);
+  cursor: pointer;
+  border-radius: var(--r-sm);
+  padding: .2rem .5rem;
+  font-size: .74rem;
+  font-family: inherit;
+  transition: color .18s, border-color .18s, background .18s;
+}
+.assignment-remove-personal:hover,
+.assignment-restore-personal:hover {
+  color: var(--violet);
+  border-color: var(--violet-35);
+  background: var(--violet-12);
+}
+
 /* פס התקדמות ביצוע בכיתה */
 .assignment-class-stats { margin-top: .5rem; }
 .assignment-stats-label { display: block; font-size: .78rem; color: var(--text-2); margin-bottom: .3rem; }
@@ -1231,6 +1252,18 @@ body.light-theme .overlay { background: rgba(20, 24, 60, .5); }
 .modal-card.center { text-align: center; }
 
 .modal-sub { font-size: .84rem; color: var(--text-2); margin: .4rem 0 .9rem; }
+
+/* שורת אזהרה בתיבת האישור */
+.modal-warning {
+  margin: 0 0 .9rem;
+  padding: .6rem .8rem;
+  border-radius: var(--r-sm);
+  border-right: 3px solid var(--magenta);
+  background: var(--magenta-12);
+  color: var(--magenta);
+  font-size: .82rem;
+  line-height: 1.5;
+}
 
 .modal-x {
   position: absolute;

@@ -757,22 +757,21 @@ async function loadAssignments() {
   const list = document.getElementById('assignments-list');
   const summary = document.getElementById('assignments-summary');
   const showHiddenButton = document.getElementById('show-hidden-assignments');
-  const hiddenStorageKey = `hidden_assignments_${currentUserId}`;
-  const hiddenAssignments = new Set(JSON.parse(localStorage.getItem(hiddenStorageKey) || '[]'));
+  // ההסתרה שמורה בשרת (private_notes.is_hidden) כדי שתישמר בכל מכשיר.
+  const isHidden = (a) => a.is_hidden === true || a.is_hidden === 'true';
   let showHidden = false;
 
   const renderAssignments = (assignments) => {
     const today = parseLocalDate(getDateKey(getLogicalToday()));
-    const visibleAssignments = assignments.filter(a => {
-      if (showHidden) return true;
-      return !hiddenAssignments.has(String(a.id));
-    });
+    const visibleAssignments = assignments.filter(a => showHidden || !isHidden(a));
 
     if (summary) summary.textContent = `${visibleAssignments.length} מטלות מוצגות`;
     if (showHiddenButton) {
-      const hiddenCount = assignments.filter(a => hiddenAssignments.has(String(a.id))).length;
+      const hiddenCount = assignments.filter(isHidden).length;
       showHiddenButton.style.display = hiddenCount > 0 ? 'inline-flex' : 'none';
-      showHiddenButton.textContent = showHidden ? 'הסתירי את המוסתרות' : `הציגי ${hiddenCount} מטלות שהוסתרו`;
+      showHiddenButton.textContent = showHidden
+        ? 'החזירי את הרשימה הרגילה'
+        : `הציגי ${hiddenCount} מטלות שהוסרו אצלי`;
     }
     list.innerHTML = visibleAssignments.length ? '' : '<div class="empty-state">אין מטלות להצגה.</div>';
 
@@ -791,7 +790,7 @@ async function loadAssignments() {
       // הגדרת תנאים נפרדים: ההסתרה זמינה ברגע שבוצעה (סימון V), והצביעה ה"ישנה"
       // נשארת קשורה לעברת זמן ההגשה כדי לשמר את האפקט של "מטלה שעברה זמנה".
       const isDue = dateObj < today;
-      const canHide = Boolean(a.is_completed);
+      const hidden = isHidden(a);
       let hebrewDate = '';
 
       try {
@@ -812,10 +811,10 @@ async function loadAssignments() {
               <div class="assignment-title">${a.title}</div>
             </div>
             <div class="assignment-actions">
-              ${hiddenAssignments.has(String(a.id))
-                ? `<button onclick="unhideAssignment(${a.id})" class="assignment-hide" title="בטלי את ההסתרה של המטלה" aria-label="בטלי הסתרה">🙈</button>`
-                : (canHide ? `<button onclick="hideAssignment(${a.id})" class="assignment-hide" title="הסתרי מטלה שבוצעה" aria-label="הסתרי מטלה שבוצעה">👁</button>` : '')}
-              <button onclick="deleteAssignment(${a.id})" class="assignment-delete" title="מחק מטלה">✕</button>
+              ${hidden
+                ? `<button onclick="restoreAssignmentForMe(${a.id})" class="assignment-restore-personal" title="החזירי את המטלה לרשימה שלי" aria-label="החזירי את המטלה אליי">↩ החזירי</button>`
+                : `<button onclick="removeAssignmentForMe(${a.id})" class="assignment-remove-personal" title="הסירי מהרשימה שלי בלבד — אצל כולן היא תישאר" aria-label="הסירי מהרשימה שלי בלבד">📍 רק אצלי</button>`}
+              <button onclick="deleteAssignment(${a.id})" class="assignment-delete" title="מחיקה לכולן — המטלה תיעלם אצל כל המשתמשות" aria-label="מחיקה לכולן">🗑 מחקי לכולן</button>
             </div>
           </div>
           <div class="assignment-date">הגשה: ${gregorianDate} ${hebrewDate ? '(' + hebrewDate + ')' : ''}</div>
@@ -853,29 +852,58 @@ async function loadAssignments() {
   } catch (err) { list.innerHTML = '<div class="empty-state">שגיאה בטעינת מטלות</div>'; }
 }
 
-function hideAssignment(assignmentId) {
-  const hiddenStorageKey = `hidden_assignments_${currentUserId}`;
-  const hiddenAssignments = new Set(JSON.parse(localStorage.getItem(hiddenStorageKey) || '[]'));
-  hiddenAssignments.add(String(assignmentId));
-  localStorage.setItem(hiddenStorageKey, JSON.stringify([...hiddenAssignments]));
-  loadAssignments();
+// הסרה אישית: המטלה נעלמת מהרשימה של המשתמשת בלבד ונשארת אצל כל השאר.
+async function removeAssignmentForMe(assignmentId) {
+  if (!await showCustomConfirm(
+    'הסרה אצלי בלבד',
+    'המטלה תוסר מהרשימה שלך בלבד. היא תישאר אצל כל שאר המשתמשות, ותמיד תוכלי להחזיר אותה דרך "הציגי מטלות שהוסרו אצלי".',
+    'הסירי אצלי',
+    'ביטול'
+  )) return;
+
+  try {
+    const res = await authFetch(`${API_URL}/assignments/${assignmentId}/personal`, { method: 'DELETE' });
+    if (res.ok) {
+      showToast('המטלה הוסרה מהרשימה שלך בלבד');
+      loadAssignments();
+      loadWeeklyCalendar();
+    } else {
+      showToast('שגיאה בהסרת המטלה', true);
+    }
+  } catch (err) {
+    showToast('תקלת תקשורת מול השרת', true);
+  }
 }
 
-function unhideAssignment(assignmentId) {
-  const hiddenStorageKey = `hidden_assignments_${currentUserId}`;
-  const hiddenAssignments = new Set(JSON.parse(localStorage.getItem(hiddenStorageKey) || '[]'));
-  hiddenAssignments.delete(String(assignmentId));
-  localStorage.setItem(hiddenStorageKey, JSON.stringify([...hiddenAssignments]));
-  loadAssignments();
+async function restoreAssignmentForMe(assignmentId) {
+  try {
+    const res = await authFetch(`${API_URL}/assignments/${assignmentId}/personal/restore`, { method: 'POST' });
+    if (res.ok) {
+      showToast('המטלה הוחזרה לרשימה שלך');
+      loadAssignments();
+      loadWeeklyCalendar();
+    } else {
+      showToast('שגיאה בהחזרת המטלה', true);
+    }
+  } catch (err) {
+    showToast('תקלת תקשורת מול השרת', true);
+  }
 }
 
+// מחיקה לכולן: המטלה נמחקת מהמערכת עבור כל המשתמשות. אין דרך חזרה.
 async function deleteAssignment(assignmentId) {
-  if (!await showCustomConfirm('מחיקת מטלה', 'האם את בטוחה שברצונך למחוק מטלה זו?')) return;
+  if (!await showCustomConfirm(
+    'מחיקה לכולן',
+    'המטלה תימחק מהמערכת עבור כל המשתמשות — לא רק אצלך. הפעולה אינה ניתנת לביטול.',
+    'מחקי לכולן',
+    'ביטול',
+    'רוצה להעלים אותה רק אצלך? סגרי חלון זה ולחצי על "📍 רק אצלי".'
+  )) return;
 
   try {
     const res = await authFetch(`${API_URL}/assignments/${assignmentId}`, { method: 'DELETE' });
     if (res.ok) {
-      showToast('המטלה נמחקה בהצלחה');
+      showToast('המטלה נמחקה אצל כולן');
       loadAssignments();
       loadWeeklyCalendar();
     } else {
@@ -1146,14 +1174,11 @@ async function showSubjectAssignments(subjectName) {
     if (!res.ok) return;
     const assignments = await res.json();
 
-    const today = parseLocalDate(getDateKey(getLogicalToday()));
-    const hiddenStorageKey = `hidden_assignments_${currentUserId}`;
-    const hiddenAssignments = new Set(JSON.parse(localStorage.getItem(hiddenStorageKey) || '[]'));
-
     const subjectAssignments = assignments.filter(a => {
       if (!a.subject || !a.due_date) return false;
       if (normalizeSubjectName(a.subject) !== normalizeSubjectName(subjectName)) return false;
-      if (hiddenAssignments.has(String(a.id))) return false;
+      // מטלה שהוסרה אישית לא מוצגת גם בחלון המקצוע
+      if (a.is_hidden === true || a.is_hidden === 'true') return false;
       return true;
     });
 
@@ -1886,11 +1911,13 @@ async function deleteUser(userId) {
   }
 }
 
-function showCustomConfirm(title, description, confirmLabel = 'כן, מחקי', cancelLabel = 'ביטול') {
+// warning — שורת הדגשה אופציונלית מתחת לתיאור (למשל: הפעולה משפיעה על כולן).
+function showCustomConfirm(title, description, confirmLabel = 'כן, מחקי', cancelLabel = 'ביטול', warning = '') {
   return new Promise(resolve => {
     const modal = document.getElementById('custom-modal');
     const titleEl = document.getElementById('modal-title');
     const descEl = document.getElementById('modal-desc');
+    const warningEl = document.getElementById('modal-warning');
     const inputContainer = document.getElementById('modal-input-container');
     const submitBtn = document.getElementById('modal-submit-btn');
     const cancelBtn = document.getElementById('modal-cancel-btn');
@@ -1898,6 +1925,10 @@ function showCustomConfirm(title, description, confirmLabel = 'כן, מחקי', 
     titleEl.textContent = title;
     descEl.textContent = description;
     descEl.style.display = 'block';
+    if (warningEl) {
+      warningEl.textContent = warning;
+      warningEl.style.display = warning ? 'block' : 'none';
+    }
     inputContainer.style.display = 'none';
     submitBtn.style.display = 'block';
     submitBtn.textContent = confirmLabel;
@@ -1931,6 +1962,8 @@ function showCustomPrompt(title, description, placeholder, callback) {
   titleEl.textContent = title;
   descEl.textContent = description;
   descEl.style.display = 'block';
+  const warningEl = document.getElementById('modal-warning');
+  if (warningEl) warningEl.style.display = 'none';
   inputContainer.style.display = 'block';
   submitBtn.style.display = 'block';
   submitBtn.textContent = 'אישור';

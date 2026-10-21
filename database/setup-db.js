@@ -40,9 +40,13 @@ CREATE TABLE IF NOT EXISTS private_notes (
   assignment_id INT REFERENCES assignments(id) ON DELETE CASCADE,
   note_text TEXT,
   is_completed BOOLEAN DEFAULT FALSE,
+  is_hidden BOOLEAN DEFAULT FALSE,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   UNIQUE(user_id, assignment_id)
 );
+
+-- הסרה אישית של מטלה: המשתמשת מורידה אותה מהרשימה שלה בלבד
+ALTER TABLE private_notes ADD COLUMN IF NOT EXISTS is_hidden BOOLEAN DEFAULT FALSE;
 
 CREATE TABLE IF NOT EXISTS milk_duty (
   id SERIAL PRIMARY KEY,
