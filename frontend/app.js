@@ -609,21 +609,38 @@ const feedbackForm = document.getElementById('feedback-form');
 if (feedbackForm) feedbackForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const type = document.getElementById('feedback-type').value;
-  const description = document.getElementById('feedback-description').value;
+  const description = document.getElementById('feedback-description').value.trim();
+  const screenshotInput = document.getElementById('feedback-screenshot');
   const modal = document.getElementById('feedback-modal');
   const restoreButton = setButtonLoading(feedbackForm.querySelector('button[type="submit"]'), 'שולחת...');
 
+  let screenshotDataUrl = '';
   try {
+    if (screenshotInput && screenshotInput.files && screenshotInput.files[0]) {
+      const file = screenshotInput.files[0];
+      const reader = new FileReader();
+      screenshotDataUrl = await new Promise((resolve, reject) => {
+        reader.onload = () => resolve(String(reader.result || ''));
+        reader.onerror = () => reject(new Error('שגיאה בקריאת צילום המסך'));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    if (!description) {
+      throw new Error('יש לכתוב תיאור לפני השליחה');
+    }
+
     const res = await authFetch(`${API_URL}/feedback`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type, description })
+      body: JSON.stringify({ type, description, screenshotDataUrl })
     });
     const result = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(result.error || 'שגיאה בשליחת הפנייה');
 
     showToast('הפנייה נשלחה בהצלחה! תודה על העדכון 🙏');
     feedbackForm.reset();
+    if (screenshotInput) screenshotInput.value = '';
     if (modal) modal.style.display = 'none';
   } catch (err) {
     showToast(err.message || 'שגיאה בשליחת הפנייה', true);

@@ -56,7 +56,7 @@ function buildFeedbackEmail({ typeLabel, description, reporterName, reportedAt }
 
 // שליחת דיווח חדש
 router.post('/', auth, async (req, res) => {
-  const { type, description } = req.body;
+  const { type, description, screenshotDataUrl } = req.body;
   const reporterName = req.user.full_name || req.user.email || 'משתמשת';
   const userId = req.user.id;
 
@@ -74,14 +74,27 @@ router.post('/', auth, async (req, res) => {
       throw new Error('שירות המייל אינו זמין כרגע');
     }
 
+    const attachments = [];
+    if (screenshotDataUrl && typeof screenshotDataUrl === 'string' && screenshotDataUrl.startsWith('data:image/')) {
+      const match = screenshotDataUrl.match(/^data:(image\/(png|jpeg|jpg|webp));base64,(.*)$/i);
+      if (match) {
+        const [, mimeType, , base64Data] = match;
+        attachments.push({
+          content: base64Data,
+          name: `screenshot-${Date.now()}.${mimeType.split('/')[1] || 'png'}`,
+          type: mimeType,
+        });
+      }
+    }
+
     await sendEmail(
       FEEDBACK_RECIPIENT,
-      'מנהלת המערכת',
       subject,
-      buildFeedbackEmail({ typeLabel, description, reporterName, reportedAt })
+      buildFeedbackEmail({ typeLabel, description, reporterName, reportedAt }) +
+        (screenshotDataUrl ? '<div style="margin-top:16px;color:#64748b;font-size:12px;">הסצנה מצורפת כקובץ תמונה למייל.</div>' : ''),
+      attachments.length ? attachments : undefined
     );
 
-    // שמירה ללוג מקומי — שימושי אם שליחת המייל נכשלת בהמשך
     await req.app.locals.pool?.query?.(
       `INSERT INTO feedback_reports (user_id, type, description) VALUES ($1, $2, $3)`,
       [userId, type || 'other', String(description).trim()]
