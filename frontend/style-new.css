@@ -769,12 +769,18 @@ body.light-theme .tab-btn.active { color: var(--violet); }
   border-inline-start: 3px solid var(--violet);
   border-radius: 0;
   padding: .95rem 1.35rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .assignment-card-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: .6rem;
+  gap: .8rem;
+}
+.assignment-card-main {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 .assignment-subject-row {
   display: flex;
@@ -808,8 +814,8 @@ body.light-theme .tab-btn.active { color: var(--violet); }
 }
 .empty-state { color: var(--text-3); padding: 1.6rem .25rem; text-align: center; font-size: .88rem; }
 
-/* מטלה שעברה את מועד ההגשה — דהויה ובצבע ניטרלי */
-.assignment-old { border-inline-start-color: var(--text-3); opacity: .7; }
+/* מטלה שעברה את מועד ההגשה — רק צבע עמוד השדרה משתנה; הכרטיס נשאר קריא */
+.assignment-old { border-inline-start-color: var(--text-3); }
 .assignment-old .assignment-title { color: var(--text-2); }
 html[data-theme="light"] .assignment-old,
 body.light-theme .assignment-old { background: #F1F3FB; }
@@ -833,76 +839,100 @@ body.light-theme .assignment-old { background: #F1F3FB; }
 }
 
 .assignment-actions { display: flex; align-items: center; gap: .35rem; flex: 0 0 auto; }
-.assignment-hide {
-  display: inline-grid;
-  place-items: center;
-  width: 1.9rem;
-  height: 1.9rem;
-  border: 1px solid transparent;
-  border-radius: var(--r-sm);
-  background: none;
-  color: var(--text-3);
-  cursor: pointer;
-  font-size: .95rem;
-  line-height: 1;
-  transition: color .18s, border-color .18s, background .18s;
-}
-.assignment-hide:hover { color: var(--violet); border-color: var(--violet-35); background: var(--violet-12); }
 
-.assignment-delete {
-  flex: 0 0 auto;
-  background: transparent;
-  border: 1px solid var(--magenta-35);
-  color: var(--magenta);
-  cursor: pointer;
-  border-radius: var(--r-sm);
-  padding: .2rem .5rem;
-  font-size: .74rem;
-  font-family: inherit;
-}
-.assignment-delete:hover { background: var(--magenta-12); }
-
-/* הסרה אישית — שקטה ובזווית שונה מהמחיקה לכולן */
-.assignment-remove-personal,
-.assignment-restore-personal {
-  flex: 0 0 auto;
-  background: transparent;
-  border: 1px solid var(--line-soft);
-  color: var(--text-3);
-  cursor: pointer;
-  border-radius: var(--r-sm);
-  padding: .2rem .5rem;
-  font-size: .74rem;
-  font-family: inherit;
-  transition: color .18s, border-color .18s, background .18s;
-}
-.assignment-remove-personal:hover,
-.assignment-restore-personal:hover {
-  color: var(--violet);
-  border-color: var(--violet-35);
-  background: var(--violet-12);
-}
-
-/* כפתור העין — הסתרה/החזרה של מטלה שבוצעה */
-.assignment-eye {
-  flex: 0 0 auto;
+/* כפתורי פעולה בכרטיס — ריבועים קטנים ואחידים עם אייקון בלבד */
+.assignment-icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
   min-width: 1.9rem;
-  background: transparent;
+  padding: 0;
   border: 1px solid var(--line-soft);
+  border-radius: var(--r-sm);
+  background: transparent;
   color: var(--text-3);
   cursor: pointer;
-  border-radius: var(--r-sm);
-  padding: .2rem .45rem;
-  font-size: .85rem;
-  line-height: 1.1;
-  font-family: inherit;
+  line-height: 1;
   transition: color .18s, border-color .18s, background .18s;
 }
-.assignment-eye:hover { color: var(--violet); border-color: var(--violet-35); background: var(--violet-12); }
-.assignment-eye.is-hidden { color: var(--cyan); border-color: var(--cyan-35); background: var(--cyan-12, var(--violet-12)); }
+.assignment-icon-btn svg { display: block; pointer-events: none; }
+.assignment-icon-btn:hover,
+.assignment-icon-btn:focus-visible {
+  color: var(--violet);
+  border-color: var(--violet-35);
+  background: var(--violet-12);
+  outline: none;
+}
+.assignment-icon-btn.assignment-delete {
+  color: var(--magenta);
+  border-color: var(--magenta-35);
+}
+.assignment-icon-btn.assignment-delete:hover,
+.assignment-icon-btn.assignment-delete:focus-visible {
+  color: #fff;
+  border-color: var(--magenta);
+  background: var(--magenta);
+}
+.assignment-icon-btn.assignment-eye.is-hidden {
+  color: var(--cyan);
+  border-color: var(--cyan-35);
+  background: var(--cyan-12, var(--violet-12));
+}
+
+/* אזור הקבצים — כל קובץ בשורה משלו: שם הקובץ מימין, הכפתורים משמאל */
+.assignment-files { display: flex; flex-direction: column; gap: .4rem; margin-top: .7rem; }
+.assignment-file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .6rem;
+  padding: .4rem .65rem;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-sm);
+  background: var(--violet-12);
+}
+.assignment-file-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--cyan);
+  font-size: .82rem;
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.assignment-file-name:hover { text-decoration: underline; }
+.assignment-file-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: .35rem;
+  flex: 0 0 auto;
+}
+.assignment-file-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: .2rem .55rem;
+  border: 1px solid var(--cyan-35, var(--line));
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--cyan);
+  font-family: inherit;
+  font-size: .74rem;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color .18s, border-color .18s, background .18s;
+}
+.assignment-file-btn:hover { background: var(--cyan-12, var(--violet-12)); }
+
+@media (max-width: 480px) {
+  .assignment-file-item { flex-direction: column; align-items: stretch; }
+  .assignment-file-name { white-space: normal; }
+}
 
 /* מטלה שהוסרה אצלי / נעלמה / נמחקה לכולן — כרטיס עמום עדין */
 .assignment-gone {
@@ -1508,7 +1538,7 @@ div#toast-notification.show { opacity: 1; }
 
 /* ============================ כפתורי צד ============================
    עמודה אחת בצד ימין, בתחתית המסך. כל הכפתורים באותו גודל ובאותו עיצוב:
-   סגור — רק האייקון; בריחוף נפתח שמאלה ומגלה את הכיתוב. */
+   עיגול קבוע עם אייקון ממורכז; בריחוף משתנה רק הצבע. */
 .float-stack {
   position: fixed;
   inset-block-end: 1.25rem;
@@ -1516,7 +1546,7 @@ div#toast-notification.show { opacity: 1; }
   z-index: 2500;
   display: grid;
   gap: .6rem;
-  justify-items: end;
+  justify-items: center;
 }
 
 /* קישורי הגשה — אותו כפתור בדיוק, רק בצבע המג'נטה שמבדיל אותו */
@@ -1538,58 +1568,38 @@ body.light-theme .fab-git:hover,
 body.light-theme .fab-git:focus-visible { color: var(--text); }
 .fab-git svg { width: 22px; height: 22px; flex: none; }
 
-/* כפתור צף: רק האייקון נראה תמיד, ובריחוף הוא נפתח שמאלה ומגלה את הכיתוב.
-   הרוחב מתחיל 3rem — בדיוק כמו הכפתור הסגור — כך שאין קפיצה בפתיחה. */
-.fab {
+/* כפתור צף: עיגול קבוע עם אייקון ממורכז בלבד. אין כיתוב ואין התפשטות —
+   הריחוף משנה רק את הצבע (והמסגרת), כדי שהסרגל יישאר שקט ויציב. */
+.float-stack .fab,
+.float-stack .fab-git {
   display: inline-flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   gap: 0;
   width: 3rem;
   height: 3rem;
-  padding-inline: calc((3rem - 20px) / 2);
+  padding: 0;
   border-radius: 50%;
   border: 1px solid var(--line);
   background: var(--panel);
   color: var(--text-2);
-  font-family: var(--f-body);
-  font-size: .85rem;
-  font-weight: 600;
-  white-space: nowrap;
   cursor: pointer;
   box-shadow: var(--shadow);
-  transition: width .32s cubic-bezier(.22, 1, .36, 1), color .18s,
-              border-color .18s, transform .15s, border-radius .32s ease;
+  transition: color .18s ease, border-color .18s ease, background .18s ease;
 }
 .fab:hover,
 .fab:focus-visible {
-  /* max-content ולא auto: כך הרוחב נכנס ל-transition ומתפתח בהדרגה */
-  width: max-content;
-  border-radius: 999px;
-  padding-inline: 1rem;
   color: var(--cyan);
   border-color: var(--cyan-35);
-  transform: translateY(-2px);
   outline: none;
 }
-.fab svg { width: 20px; height: 20px; flex: none; }
+.float-stack .fab svg,
+.float-stack .fab-git svg { width: 20px; height: 20px; flex: none; }
 a.fab { text-decoration: none; }
 
-/* הכיתוב תמיד תופס את מקומו, ולכן רק הוא נחשף בהדרגה בזמן שהכפתור מתרחב —
-   אחרת הרוחב היה "קופץ" בבת אחת בתחילת הפתיחה. */
-.fab-label {
-  display: block;
-  max-width: 14rem;
-  overflow: hidden;
-  margin-inline-start: .55rem;
-  opacity: 0;
-  transition: opacity .22s ease .04s;
-}
-.fab:hover .fab-label,
-.fab:focus-visible .fab-label {
-  opacity: 1;
-  transition-delay: .12s;
-}
+/* הכיתוב מוסתר לגמרי — הכפתור הוא אייקון בלבד; הכיתוב נשאר ב-title
+   וב-aria-label כדי שיופיע בריחוף ובקורא מסך. */
+.fab-label { display: none; }
 
 /* ============================ הוספת מטלה מהירה ============================
    כרטיס במסך הפתיחה (בלי התחברות) וכפתור צד שפותח את אותו טופס בחלון,
@@ -1603,20 +1613,6 @@ a.fab { text-decoration: none; }
   font-size: .84rem;
   color: var(--text-2);
   line-height: 1.55;
-}
-
-/* הכפתור ההוספה יושב בערימת הכפתורים הצפים ומתנהג בדיוק כמוהם
-   (.fab): סגור — ריבוע עם אייקון בלבד; בריחוף נפתח ומגלה את הכיתוב.
-   כאן רק צבעי הסגול שמבדילים אותו משאר הכפתורים. */
-#quick-add-fab {
-  border-color: var(--violet-35);
-  background: var(--violet-12);
-  color: var(--violet);
-}
-#quick-add-fab:hover,
-#quick-add-fab:focus-visible {
-  color: var(--cyan);
-  border-color: var(--cyan-35);
 }
 
 /* שם הקובץ שנבחר בטופס המהיר */
@@ -1674,6 +1670,7 @@ footer.site span { color: var(--violet); font-weight: 700; }
   /* רשימת המטלות — שתי עמודות בלבד, כמו בסקיצה */
   .assignment-card { padding: .85rem 1rem; }
   .assignment-card-header { flex-wrap: wrap; }
+  .assignment-actions { width: 100%; justify-content: flex-end; }
 
   /* מערכת השעות נשארת שש עמודות, רק מצטמצמת — בדיוק כמו בסקיצה */
   .schedule-scroll { gap: .3rem; }
@@ -1683,8 +1680,6 @@ footer.site span { color: var(--violet); font-weight: 700; }
 
   .weekly-calendar-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .stats-grid > * { padding: 1.1rem 1.15rem; }
-  .fab-git span { display: none; }
-  .fab-git { padding-inline: .8rem; }
 }
 
 /* ============================ ניגודיות גבוהה (מצב בהיר) ============================ */
@@ -1696,18 +1691,6 @@ html[data-theme="light"] .complete-checkbox::after,
 body.light-theme .complete-checkbox::after { border-color: #fff; }
 
 /* ============================ הפחתת תנועה ============================ */
-/* במסך צר אין מקום לפתיחה — נשארים עיגול עם האייקון בלבד */
-@media (max-width: 600px) {
-  .float-stack .fab:hover,
-  .float-stack .fab:focus-visible {
-    width: 3rem;
-    border-radius: 50%;
-    padding-inline: calc((3rem - 20px) / 2);
-  }
-  .float-stack .fab:hover .fab-label,
-  .float-stack .fab:focus-visible .fab-label { opacity: 0; }
-}
-
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: .001ms !important;

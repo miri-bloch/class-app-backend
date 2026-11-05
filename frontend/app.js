@@ -1274,14 +1274,16 @@ function renderAssignmentAttachments(assignment) {
     const viewLink = f.drive_web_view_link || `https://drive.google.com/file/d/${f.drive_file_id}/view`;
     const fileArg = f.id ? String(Number(f.id)) : 'null';
     return `
-      <a href="${viewLink}" target="_blank" rel="noopener" class="neon-btn outline" style="width:auto; padding:5px 9px; font-size:0.78rem; text-decoration:none;">📎 ${normalizeAttachmentName(f.original_name)}</a>
-      <a href="https://drive.google.com/uc?export=download&id=${f.drive_file_id}" target="_blank" rel="noopener" class="neon-btn outline" style="width:auto; padding:5px 9px; font-size:0.78rem; text-decoration:none;">הורדה</a>
-      <button onclick="sendAssignmentToEmail(${assignment.id}, ${fileArg})" class="neon-btn outline" style="width:auto; padding:5px 9px; font-size:0.78rem;">שלחי למייל 📧</button>`;
+      <div class="assignment-file-item">
+        <a href="${viewLink}" target="_blank" rel="noopener" class="assignment-file-name" title="פתיחת הקובץ">📎 ${normalizeAttachmentName(f.original_name)}</a>
+        <div class="assignment-file-actions">
+          <a href="https://drive.google.com/uc?export=download&id=${f.drive_file_id}" target="_blank" rel="noopener" class="assignment-file-btn" title="הורדה">הורדה</a>
+          <button type="button" onclick="sendAssignmentToEmail(${assignment.id}, ${fileArg})" class="assignment-file-btn" title="שליחת הקובץ למייל">שלחי למייל</button>
+        </div>
+      </div>`;
   }).join('');
 
-  return `<div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
-    ${fileLinks}
-  </div>`;
+  return `<div class="assignment-files">${fileLinks}</div>`;
 }
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -1357,19 +1359,23 @@ async function loadAssignments() {
       // מטלה שבוצעה ומסתירים אותה נעלמת אחרי 48 שעות מסימון הביצוע.
       const eyeButton = !state.gone
         ? (state.hidden
-            ? `<button onclick="toggleAssignmentHidden(${a.id}, false)" class="assignment-eye is-hidden" data-vanish-in="${parseInt(a.vanish_in_seconds) || 0}" title="החזירי את המטלה לרשימה" aria-label="החזירי את המטלה לרשימה">🙈</button>`
-            : `<button onclick="toggleAssignmentHidden(${a.id}, true)" class="assignment-eye" title="הסתירי את המטלה מהרשימה — אפשר להחזיר בכל רגע" aria-label="הסתירי את המטלה מהרשימה">👁</button>`)
+            ? `<button type="button" onclick="toggleAssignmentHidden(${a.id}, false)" class="assignment-icon-btn assignment-eye is-hidden" data-vanish-in="${parseInt(a.vanish_in_seconds) || 0}" title="החזירי את המטלה לרשימה" aria-label="החזירי את המטלה לרשימה"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.6"/><path d="M4 4l16 16"/></svg></button>`
+            : `<button type="button" onclick="toggleAssignmentHidden(${a.id}, true)" class="assignment-icon-btn assignment-eye" title="הסתירי את המטלה מהרשימה — אפשר להחזיר בכל רגע" aria-label="הסתירי את המטלה מהרשימה"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.6"/></svg></button>`)
         : '';
 
       // כפתור ההסרה האישית — מוצג רק במטלה שאינה נעלמה כבר
       const dismissButton = state.gone
-        ? `<button onclick="restoreAssignmentForMe(${a.id})" class="assignment-restore-personal" title="החזירי את המטלה לרשימה שלי" aria-label="החזירי את המטלה אליי">↩ החזירי</button>`
-        : `<button onclick="removeAssignmentForMe(${a.id})" class="assignment-remove-personal" title="הסירי מהרשימה שלי בלבד — אצל כולן היא תישאר" aria-label="הסירי מהרשימה שלי בלבד">📍 רק אצלי</button>`;
+        ? `<button type="button" onclick="restoreAssignmentForMe(${a.id})" class="assignment-icon-btn assignment-restore-personal" title="החזירי את המטלה לרשימה שלי" aria-label="החזירי את המטלה אליי"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button>`
+        : `<button type="button" onclick="removeAssignmentForMe(${a.id})" class="assignment-icon-btn assignment-remove-personal" title="הסירי מהרשימה שלי בלבד — אצל כולן היא תישאר" aria-label="הסירי מהרשימה שלי בלבד"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4.5h6V7"/><path d="M6.5 7l.9 12.2A1.8 1.8 0 0 0 9.2 21h5.6a1.8 1.8 0 0 0 1.8-1.8L17.5 7"/></svg></button>`;
+
+      const editButton = state.gone ? '' : `<button type="button" onclick="openEditAssignmentModal(${a.id})" class="assignment-icon-btn assignment-edit" title="עריכת המטלה — כותרת, פירוט, תאריך וקבצים" aria-label="עריכת המטלה"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4Z"/><path d="m14 6 4 4"/></svg></button>`;
+
+      const deleteButton = `<button type="button" onclick="deleteAssignment(${a.id})" class="assignment-icon-btn assignment-delete" title="מחיקה לכולן — מי שביצעה לא תראה אותה יותר; מי שלא ביצעה תמשיך לראות" aria-label="מחיקה לכולן"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4.5h6V7"/><path d="M6.5 7l.9 12.2A1.8 1.8 0 0 0 9.2 21h5.6a1.8 1.8 0 0 0 1.8-1.8L17.5 7"/><path d="M10 11v6M14 11v6"/></svg></button>`;
 
       list.innerHTML += `
         <div class="assignment-card assignment-item ${isDue ? 'assignment-old' : ''} ${state.gone ? 'assignment-gone' : ''}" id="assignment-${a.id}">
           <div class="assignment-card-header">
-            <div>
+            <div class="assignment-card-main">
               <div class="assignment-subject-row">
                 <div class="assignment-subject">${a.subject}</div>
                 ${isDueTomorrow ? '<span class="assignment-tomorrow-badge">למחר!</span>' : ''}
@@ -1379,11 +1385,11 @@ async function loadAssignments() {
               </div>
               <div class="assignment-title">${a.title}</div>
             </div>
-            <div class="assignment-actions">
+            <div class="assignment-actions" role="group" aria-label="פעולות על המטלה">
               ${dismissButton}
               ${eyeButton}
-              ${state.gone ? '' : `<button onclick="openEditAssignmentModal(${a.id})" class="assignment-edit" title="עריכת המטלה — כותרת, פירוט, תאריך וקבצים" aria-label="עריכת המטלה">✏️ עריכה</button>`}
-              <button onclick="deleteAssignment(${a.id})" class="assignment-delete" title="מחיקה לכולן — מי שביצעה לא תראה אותה יותר; מי שלא ביצעה תמשיך לראות" aria-label="מחיקה לכולן">🗑 מחקי לכולן</button>
+              ${editButton}
+              ${deleteButton}
             </div>
           </div>
           <div class="assignment-date">הגשה: ${gregorianDate} ${hebrewDate ? '(' + hebrewDate + ')' : ''}</div>
@@ -2172,11 +2178,10 @@ async function loadWeeklyCalendar() {
     }
   } catch (err) {}
 
-  const todayStr = getDateKey(getLogicalToday());
-
-  // תאריך האתמול-הלוגי: בין חצות ל-4:00 לפנות בוקר שני התאים מסומנים "היום",
-  // כדי שהמעבר יתבצע רק ב-4:00 לפנות בוקר ולא בחצות.
-  const yesterdayStr = getDateKey(new Date(parseLocalDate(todayStr).getTime() - 86400000));
+  // סימון "היום" בלוח — תמיד לפי התאריך האמיתי של היום, ותא אחד בלבד.
+  // (הערה: getLogicalToday שימש כאן בעבר וסימן שני תאים בין חצות ל-4:00 —
+  // זו טעות; הכללים של "עבר/מחר" רשאים להזיז את היום, הלוח לא.)
+  const todayStr = getDateKey(new Date());
 
   weekDays.forEach(day => {
     const dateString = getDateKey(day);
@@ -2198,7 +2203,7 @@ async function loadWeeklyCalendar() {
       return String(a.due_date).slice(0, 10) === dateString;
     });
 
-    const isToday = (dateString === todayStr || dateString === yesterdayStr);
+    const isToday = dateString === todayStr;
 
     const cardStyle = isToday 
       ? 'background: rgba(0,0,0,0.5); border: 2px solid var(--neon-cyan); box-shadow: 0 0 15px rgba(34,211,238,0.4); border-radius: 10px; padding: 14px; min-height: 220px; display: flex; flex-direction: column;'
