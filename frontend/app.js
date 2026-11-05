@@ -936,6 +936,7 @@ window.openEditAssignmentModal = async function openEditAssignmentModal(assignme
   const newFilesBox = document.getElementById('edit-assignment-new-files');
 
   try {
+    if (!currentUserId) throw new Error('כדי לערוך מטלה יש להתחבר קודם');
     const res = await authFetch(`${API_URL}/assignments`);
     if (!res.ok) throw new Error('שגיאה בטעינת המטלה');
     const assignments = await res.json();
@@ -958,6 +959,7 @@ window.openEditAssignmentModal = async function openEditAssignmentModal(assignme
 
   // מילויים של השדות — אילו קיימים בדף
   const subjectSelect = document.getElementById('edit-assignment-subject');
+  fillSubjectSelect(subjectSelect);
   if (subjectSelect) {
     const subject = a.subject || '';
     // אם המקצוע לא קיים ברשימה — מוסיפים אותו כערך זמני כדי שלא יאבד

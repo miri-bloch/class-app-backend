@@ -1241,8 +1241,10 @@ body.light-theme .assignment-personal-note-input {
 .overlay.is-open,
 #quick-add-modal.is-open,
 #feedback-modal.is-open,
-#accessibility-modal.is-open {
-  display: flex;
+#accessibility-modal.is-open,
+#edit-assignment-modal.is-open,
+#file-choice-modal.is-open {
+  display: flex !important;
 }
 
 body.has-open-overlay .float-stack {
