@@ -5,7 +5,7 @@ const router = express.Router();
 const { auth } = require('../middleware/auth');
 
 // כתובת היעד של הדיווחים (ניתן לדרוס דרך משתני הסביבה)
-const FEEDBACK_RECIPIENT = process.env.FEEDBACK_EMAIL || 'm9740628@gmail.com';
+const FEEDBACK_RECIPIENT = process.env.FEEDBACK_EMAIL || 'mr56793061@gmail.com';
 
 const TYPE_LABELS = {
   bug: '🐞 דיווח על תקלה',

@@ -69,6 +69,26 @@
         </div>
       </section>
 
+      <!-- הוספה מהירה בלי התחברות: המטלה נכנסת ישר לרשימה המשותפת של הכיתה -->
+      <section id="quick-add-anon-card" class="glass-card" style="width: 100%; max-width: 450px; margin: 30px auto 0;">
+        <h2 style="font-size: 1.15rem;">⚡ הוספת מטלה מהירה</h2>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: -8px;">בלי התחברות — המטלה תופיע אצל כולן בלוח המטלות.</p>
+        <form id="quick-add-anon-form">
+          <div class="input-group">
+            <select id="quick-add-anon-subject" required aria-label="מקצוע">
+              <option value="" disabled selected>בחרי מקצוע מהרשימה...</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <input type="text" id="quick-add-anon-title" placeholder="כותרת המטלה" maxlength="200" required>
+          </div>
+          <div class="input-group">
+            <input type="date" id="quick-add-anon-date" aria-label="תאריך הגשה" required>
+          </div>
+          <button type="submit" class="neon-btn">⚡ הוסיפי מטלה</button>
+        </form>
+      </section>
+
       <section id="register-section" class="glass-card" style="width: 100%; max-width: 450px; margin: 0 auto; display: none;">
         <h2>הרשמה למערכת</h2>
         <form id="register-form">
@@ -107,6 +127,7 @@
         <button class="tab-btn" data-tab="tab-notices" role="tab">📢 מודעות</button>
         <button class="tab-btn" data-tab="tab-milk" role="tab">🥛 תורנות חלב</button>
         <button class="tab-btn" data-tab="tab-schedule" role="tab">🗓️ מערכת שעות</button>
+        <button class="tab-btn" data-tab="tab-files-by-subject" role="tab">📂 קבצים לפי מקצוע</button>
         <button class="tab-btn" data-tab="tab-files" role="tab">📁 הקבצים שלי</button>
         <button class="tab-btn" data-tab="tab-calendar" role="tab">📅 לוח שנה</button>
       </nav>
@@ -277,6 +298,23 @@
         </div>
       </section><!-- /tab-files -->
 
+      <!-- כרטיסייה: קבצים לפי מקצוע -->
+      <section class="tab-panel" id="tab-files-by-subject">
+        <section class="glass-card full-width">
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;">
+            <h2 style="margin: 0; border: none;">📂 קבצים לפי מקצוע</h2>
+            <span id="files-by-subject-summary" style="color: var(--text-muted); font-size: 0.85rem;"></span>
+          </div>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: -4px;">כל קבצי המטלות, מסודרים לפי מקצוע. אפשר לפתוח קובץ או לשלוח אותו למייל.</p>
+          <div class="input-group" style="margin-bottom: 16px;">
+            <label for="files-by-subject-search" style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;">חיפוש</label>
+            <input type="search" id="files-by-subject-search" placeholder="חיפוש לפי מקצוע, מטלה או שם קובץ..." aria-label="חיפוש קבצים לפי מקצוע" style="width: 100%;">
+          </div>
+          <div id="files-by-subject-list" class="assignments-grid"></div>
+          <p id="files-by-subject-empty" class="empty-state" hidden>לא נמצאו קבצים.</p>
+        </section>
+      </section><!-- /tab-files-by-subject -->
+
       <!-- כרטיסייה: לוח שנה -->
       <section class="tab-panel" id="tab-calendar">
         <section class="glass-card full-width">
@@ -303,33 +341,130 @@
     </div>
   </main>
 
-  <!-- כפתור הוספת קישורים לגיטהאב -->
-  <a href="https://docs.google.com/spreadsheets/d/18AV2drnRZ6d_g6Ll0CD-0wdwmq5HmmAyg9cOAH85A8M/edit?usp=sharing"
-     target="_blank" rel="noopener"
-     id="github-links-btn"
-     title="הוספת קישורים לגיטהאב"
-     style="position: fixed; bottom: 20px; right: 20px; z-index: 1000; background: var(--glass-bg); border: 1px solid rgba(255,255,255,0.1); color: var(--neon-cyan); height: 45px; border-radius: 24px; cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 0 16px; font-size: 0.85rem; font-weight: bold; text-decoration: none; box-shadow: 0 0 15px rgba(0,0,0,0.5); transition: all 0.3s;"
-     onmouseover="this.style.borderColor='var(--neon-cyan)'; this.style.transform='translateY(-2px)'"
-     onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.transform='translateY(0)'">
-    <svg viewBox="0 0 16 16" width="22" height="22" fill="currentColor" aria-hidden="true" style="flex-shrink:0;">
-      <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/>
-    </svg>
-    <span>הוספת קישורים</span>
-  </a>
-
-  <!-- אייקונים קבועים בצד המסך: דיווח על תקלות מעל הגדרות נגישות -->
-  <div style="position: fixed; bottom: 20px; left: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 10px; align-items: center;">
-    <button onclick="toggleFeedbackMenu()" title="דיווח על תקלות והוספת פיצ'רים" aria-label="דיווח על תקלות והוספת פיצ'רים" style="background: var(--glass-bg); border: 1px solid rgba(255,255,255,0.1); color: var(--neon-cyan); width: 45px; height: 45px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; box-shadow: 0 0 15px rgba(0,0,0,0.5); transition: all 0.3s;" onmouseover="this.style.borderColor='var(--neon-cyan)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'">
-      🐞
+  <!-- ==================== כפתורי צד ====================
+       עמודה אחת בצד ימין, אחידה בכל הכפתורים: סגור — רק האייקון;
+       בריחוף/מיקוד הכפתור נפתח שמאלה ומגלה את הכיתוב.
+       מלמעלה למטה: הוספת מטלה ← באגים ← הגדרות ← קישורים. -->
+  <div class="float-stack">
+    <button type="button" id="quick-add-fab" class="float-action float-action--quick" onclick="openQuickAddModal()" title="הוספת מטלה מהירה (בלי התחברות)" aria-label="הוספת מטלה מהירה" aria-haspopup="dialog">
+      <span class="float-action-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+          <path d="M13 2.5 4.5 13.5H11l-1 8 8.5-11H12Z"/>
+        </svg>
+      </span>
+      <span class="float-action-label">הוספת מטלה</span>
     </button>
 
-    <button onclick="toggleAccessibilityMenu()" title="תפריט נגישות וניהול" aria-label="תפריט נגישות וניהול" style="background: var(--glass-bg); border: 1px solid rgba(255,255,255,0.1); color: var(--neon-cyan); width: 45px; height: 45px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; box-shadow: 0 0 15px rgba(0,0,0,0.5); transition: all 0.3s;" onmouseover="this.style.borderColor='var(--neon-cyan)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'">
-      ⚙️
+    <button type="button" class="float-action" onclick="toggleFeedbackMenu()" title="דיווח על באגים ותקלות" aria-label="דיווח על באגים ותקלות" aria-haspopup="dialog">
+      <span class="float-action-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+          <path d="M8 9a4 4 0 0 1 8 0v5a4 4 0 0 1-8 0Z"/>
+          <path d="M8 11H5M16 11h3M8 14H5.5M16 14h2.5M8.5 7 6.5 5M15.5 7l2-2M9 18.5 7.5 21M15 18.5 16.5 21"/>
+        </svg>
+      </span>
+      <span class="float-action-label">דיווח על באגים ותקלות</span>
     </button>
+
+    <button type="button" class="float-action" onclick="toggleAccessibilityMenu()" title="הגדרות נגישות" aria-label="הגדרות נגישות" aria-haspopup="dialog">
+      <span class="float-action-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+          <circle cx="12" cy="5" r="1.6"/>
+          <path d="M5 9.2c2.3.6 4.6.9 7 .9s4.7-.3 7-.9M12 10.1V15m0 0-2.6 5.4M12 15l2.6 5.4"/>
+        </svg>
+      </span>
+      <span class="float-action-label">הגדרות</span>
+    </button>
+
+    <a href="https://docs.google.com/spreadsheets/d/18AV2drnRZ6d_g6Ll0CD-0wdwmq5HmmAyg9cOAH85A8M/edit?usp=sharing"
+       target="_blank" rel="noopener"
+       id="github-links-btn"
+       class="float-action"
+       title="קישורי הגשה"
+       aria-label="קישורי הגשה">
+      <span class="float-action-icon" aria-hidden="true">
+        <svg viewBox="0 0 16 16" width="22" height="22" fill="currentColor" aria-hidden="true" focusable="false">
+          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/>
+        </svg>
+      </span>
+      <span class="float-action-label">קישורי הגשה</span>
+    </a>
+  </div>
+
+  <div id="quick-add-modal" class="overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5,5,8,0.85); backdrop-filter: blur(5px); z-index: 2000; justify-content: center; align-items: center; overflow-y: auto; padding: 30px 0;" role="dialog" aria-modal="true" aria-labelledby="quick-add-modal-title">
+    <div class="glass-card" style="width: 100%; max-width: 450px; text-align: right; border: 1px solid var(--neon-cyan); position: relative; margin: auto;">
+      <button onclick="closeQuickAddModal()" aria-label="סגירה" style="position: absolute; top: 15px; left: 15px; background: none; border: none; color: #f43f5e; cursor: pointer; font-size: 1rem;">✕</button>
+      <h2 id="quick-add-modal-title" style="color: var(--neon-cyan); margin-top: 0; font-size: 1.2rem;">⚡ הוספת מטלה מהירה</h2>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: -6px;">בלי התחברות — המטלה תופיע אצל כולן בלוח המטלות.</p>
+      <form id="quick-add-modal-form">
+        <div class="input-group">
+          <select id="quick-add-modal-subject" required aria-label="מקצוע">
+            <option value="" disabled selected>בחרי מקצוע מהרשימה...</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <input type="text" id="quick-add-modal-title" placeholder="כותרת המטלה" maxlength="200" required>
+        </div>
+        <div class="input-group">
+          <input type="date" id="quick-add-modal-date" aria-label="תאריך הגשה" required>
+        </div>
+        <div class="input-group">
+          <label for="quick-add-modal-file" style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;">📎 קובץ מצורף (לא חובה)</label>
+          <input type="file" id="quick-add-modal-file" aria-describedby="quick-add-modal-file-hint" style="width: 100%; color: var(--text-muted); font-size: 0.85rem;">
+          <small id="quick-add-modal-file-hint" class="quick-add-file-hint" hidden></small>
+        </div>
+        <button type="submit" class="neon-btn">⚡ הוסיפי מטלה</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ממשק עריכת מטלה (לכל משתמשת מחוברת) -->
+  <div id="edit-assignment-modal" class="overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5,5,8,0.85); backdrop-filter: blur(5px); z-index: 2000; justify-content: center; align-items: center; overflow-y: auto; padding: 30px 0;" role="dialog" aria-modal="true" aria-labelledby="edit-assignment-modal-title">
+    <div class="glass-card" style="width: 100%; max-width: 480px; text-align: right; border: 1px solid var(--neon-cyan); position: relative; max-height: 90vh; overflow-y: auto; margin: auto;">
+      <button type="button" onclick="closeEditAssignmentModal()" aria-label="סגירה" style="position: absolute; top: 15px; left: 15px; background: none; border: none; color: #f43f5e; cursor: pointer; font-size: 1rem;">✕</button>
+      <h2 id="edit-assignment-modal-title" style="color: var(--neon-cyan); margin-top: 0; font-size: 1.2rem; border: none;">✏️ עריכת מטלה</h2>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: -6px;">השינויים יופיעו אצל כל המשתמשות.</p>
+      <form id="edit-assignment-form">
+        <div class="input-group">
+          <select id="edit-assignment-subject" required aria-label="מקצוע">
+            <option value="" disabled selected>בחרי מקצוע מהרשימה...</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <input type="text" id="edit-assignment-title" placeholder="כותרת המטלה" maxlength="200" required>
+        </div>
+        <div class="input-group">
+          <label for="edit-assignment-description" style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;">תיאור (לא חובה)</label>
+          <textarea id="edit-assignment-description" rows="3" maxlength="2000" style="width: 100%;"></textarea>
+        </div>
+        <div class="input-group">
+          <input type="date" id="edit-assignment-due-date" aria-label="תאריך הגשה" required>
+        </div>
+        <div class="input-group">
+          <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;">📎 קבצים קיימים</label>
+          <div id="edit-assignment-files" class="edit-assignment-files"></div>
+        </div>
+        <div class="input-group">
+          <label for="edit-assignment-new-files" style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;">הוספת קבצים (לא חובה)</label>
+          <input type="file" id="edit-assignment-new-files" multiple style="width: 100%; color: var(--text-muted); font-size: 0.85rem;">
+        </div>
+        <button type="submit" class="neon-btn">💾 שמירת השינויים</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- בחירת קובץ לשליחה במייל -->
+  <div id="file-choice-modal" class="overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5,5,8,0.85); backdrop-filter: blur(5px); z-index: 2000; justify-content: center; align-items: center; overflow-y: auto; padding: 30px 0;" role="dialog" aria-modal="true" aria-labelledby="file-choice-modal-title">
+    <div class="glass-card" style="width: 100%; max-width: 450px; text-align: right; border: 1px solid var(--neon-cyan); position: relative; margin: auto;">
+      <button type="button" data-file-choice-cancel aria-label="סגירה" style="position: absolute; top: 15px; left: 15px; background: none; border: none; color: #f43f5e; cursor: pointer; font-size: 1rem;">✕</button>
+      <h2 id="file-choice-modal-title" style="color: var(--neon-cyan); margin-top: 0; font-size: 1.2rem; border: none;">📧 איזה קובץ לשלוח?</h2>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: -6px;">נשלח מייל נפרד לכל קובץ — בחרי את הקובץ הרצוי.</p>
+      <div id="file-choice-list" class="file-choice-list"></div>
+      <button type="button" data-file-choice-cancel class="neon-btn outline" style="width: 100%;">ביטול</button>
+    </div>
   </div>
 
   <!-- ממשק דיווח על תקלות ובקשות פיצ'רים -->
-  <div id="feedback-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5,5,8,0.85); backdrop-filter: blur(5px); z-index: 2000; justify-content: center; align-items: center; overflow-y: auto; padding: 30px 0;">
+  <div id="feedback-modal" class="overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5,5,8,0.85); backdrop-filter: blur(5px); z-index: 2000; justify-content: center; align-items: center; overflow-y: auto; padding: 30px 0;">
     <div class="glass-card" style="width: 100%; max-width: 480px; text-align: right; border: 1px solid var(--neon-cyan); position: relative; max-height: 90vh; overflow-y: auto; margin: auto;">
       <button onclick="toggleFeedbackMenu()" aria-label="סגירה" style="position: absolute; top: 15px; left: 15px; background: none; border: none; color: #f43f5e; cursor: pointer; font-size: 1rem;">✕</button>
 
@@ -362,7 +497,7 @@
   </div>
 
   <!-- תפריט נגישות וניהול מאובטח -->
-  <div id="accessibility-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5,5,8,0.85); backdrop-filter: blur(5px); z-index: 2000; justify-content: center; align-items: center; overflow-y: auto; padding: 30px 0;">
+  <div id="accessibility-modal" class="overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5,5,8,0.85); backdrop-filter: blur(5px); z-index: 2000; justify-content: center; align-items: center; overflow-y: auto; padding: 30px 0;">
     <div class="glass-card" style="width: 100%; max-width: 420px; text-align: center; border: 1px solid var(--neon-cyan); position: relative; max-height: 90vh; overflow-y: auto; margin: auto;">
       <button onclick="toggleAccessibilityMenu()" style="position: absolute; top: 15px; left: 15px; background: none; border: none; color: #f43f5e; cursor: pointer; font-size: 1rem;">✕</button>
       

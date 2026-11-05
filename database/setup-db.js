@@ -15,6 +15,10 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- התחברות אינה רגישה לאותיות: אין שתי משתמשות שאותיות המייל שלהן שונות
+-- רק ברישיות. אם כבר קיימות כאלה, יצירת האינדקס תיכשל — יש לאחד אותן קודם.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_lower ON users (LOWER(email));
+
 ALTER TABLE users ADD COLUMN IF NOT EXISTS email_notifications BOOLEAN DEFAULT TRUE;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS notification_time TIME DEFAULT '20:00';
 ALTER TABLE users ADD COLUMN IF NOT EXISTS is_student BOOLEAN DEFAULT FALSE;
@@ -27,12 +31,17 @@ CREATE TABLE IF NOT EXISTS assignments (
   description TEXT,
   due_date DATE NOT NULL,
   difficulty_level INT CHECK (difficulty_level BETWEEN 1 AND 5),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  deleted_at TIMESTAMP
 );
 
 ALTER TABLE assignments ADD COLUMN IF NOT EXISTS drive_file_id VARCHAR(255);
 ALTER TABLE assignments ADD COLUMN IF NOT EXISTS drive_web_view_link TEXT;
 ALTER TABLE assignments ADD COLUMN IF NOT EXISTS attachment_name VARCHAR(255);
+-- מטלה שהוספה בלי התחברות ("הוספה מהירה")
+ALTER TABLE assignments ADD COLUMN IF NOT EXISTS as_quick BOOLEAN DEFAULT FALSE;
+-- מחיקה לכולן היא מחיקה רכה: מי שלא ביצעה ממשיכה לראות את המטלה
+ALTER TABLE assignments ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP;
 
 CREATE TABLE IF NOT EXISTS private_notes (
   id SERIAL PRIMARY KEY,
@@ -41,12 +50,32 @@ CREATE TABLE IF NOT EXISTS private_notes (
   note_text TEXT,
   is_completed BOOLEAN DEFAULT FALSE,
   is_hidden BOOLEAN DEFAULT FALSE,
+  is_dismissed BOOLEAN DEFAULT FALSE,
+  completed_at TIMESTAMP,
+  vanished_at TIMESTAMP,
+  hide_until TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   UNIQUE(user_id, assignment_id)
 );
 
 -- הסרה אישית של מטלה: המשתמשת מורידה אותה מהרשימה שלה בלבד
 ALTER TABLE private_notes ADD COLUMN IF NOT EXISTS is_hidden BOOLEAN DEFAULT FALSE;
+
+-- שתי דרכים נפרדות להעלים מטלה אצל משתמשת אחת בלבד:
+--   • is_hidden    — הסתרה אחרי שסימנה "בוצע". אחרי 48 שעות הרשומה שלה נמחקת.
+--   • is_dismissed — מחיקה עצמאית (בלי קשר לביצוע). נשארת עד שהיא מחזירה.
+ALTER TABLE private_notes ADD COLUMN IF NOT EXISTS is_dismissed BOOLEAN DEFAULT FALSE;
+ALTER TABLE private_notes ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP;
+ALTER TABLE private_notes ADD COLUMN IF NOT EXISTS vanished_at TIMESTAMP;
+-- מועד הסתרה שנקבע ידנית (מסך המנהלת/בדיקה) מתגבר על חישוב ה-48 שעות
+ALTER TABLE private_notes ADD COLUMN IF NOT EXISTS hide_until TIMESTAMP;
+
+-- התאמת נתונים קיימים: V שסומן בעבר מקבל completed_at, והסתרה בלי מועד
+-- מקבלת מועד — כדי שמטלות ותיקות לא יימחקו בבת אחת ברגע השדרוג.
+UPDATE private_notes SET completed_at = updated_at
+ WHERE is_completed = TRUE AND completed_at IS NULL;
+UPDATE private_notes SET hide_until = updated_at + INTERVAL '48 hours'
+ WHERE is_hidden = TRUE AND hide_until IS NULL;
 
 CREATE TABLE IF NOT EXISTS milk_duty (
   id SERIAL PRIMARY KEY,

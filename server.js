@@ -68,12 +68,29 @@ pool.query(`
   ALTER TABLE users ADD COLUMN IF NOT EXISTS notification_time TIME DEFAULT '20:00';
   ALTER TABLE users ADD COLUMN IF NOT EXISTS is_student BOOLEAN DEFAULT FALSE;
   ALTER TABLE users ADD COLUMN IF NOT EXISTS last_seen TIMESTAMP;
+  -- התחברות אינה רגישה לאותיות: אין שתי משתמשות שאותיות המייל שלהן שונות רק ברישיות
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_lower ON users (LOWER(email));
   ALTER TABLE assignments ADD COLUMN IF NOT EXISTS drive_file_id VARCHAR(255);
   ALTER TABLE assignments ADD COLUMN IF NOT EXISTS drive_web_view_link TEXT;
   ALTER TABLE assignments ADD COLUMN IF NOT EXISTS attachment_name VARCHAR(255);
   ALTER TABLE notice_board ADD COLUMN IF NOT EXISTS drive_file_id VARCHAR(255);
   ALTER TABLE notice_board ADD COLUMN IF NOT EXISTS drive_web_view_link TEXT;
   ALTER TABLE notice_board ADD COLUMN IF NOT EXISTS attachment_name VARCHAR(255);
+  -- מטלות שהוספו בלי התחברות ("הוספה מהירה")
+  ALTER TABLE assignments ADD COLUMN IF NOT EXISTS as_quick BOOLEAN DEFAULT FALSE;
+  -- מחיקה לכולן היא מחיקה רכה, כדי שמי שלא ביצעה תמשיך לראות את המטלה —
+  -- ראו routes/assignments.js
+  ALTER TABLE assignments ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP;
+  -- העלמה אישית של מטלה: הסתרה אחרי "בוצע" (נעלמת אחרי 48 שעות)
+  -- ומחיקה עצמאית אצל המשתמשת בלבד — ראו routes/assignments.js
+  ALTER TABLE private_notes ADD COLUMN IF NOT EXISTS is_dismissed BOOLEAN DEFAULT FALSE;
+  ALTER TABLE private_notes ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP;
+  ALTER TABLE private_notes ADD COLUMN IF NOT EXISTS vanished_at TIMESTAMP;
+  ALTER TABLE private_notes ADD COLUMN IF NOT EXISTS hide_until TIMESTAMP;
+  UPDATE private_notes SET completed_at = updated_at
+   WHERE is_completed = TRUE AND completed_at IS NULL;
+  UPDATE private_notes SET hide_until = updated_at + INTERVAL '48 hours'
+   WHERE is_hidden = TRUE AND hide_until IS NULL;
   CREATE TABLE IF NOT EXISTS shared_events (
     id SERIAL PRIMARY KEY,
     title VARCHAR(200) NOT NULL,

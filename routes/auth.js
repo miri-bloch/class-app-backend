@@ -83,9 +83,14 @@ router.patch('/notification-settings/:userId', optionalAuth, async (req, res) =>
 
 // הרשמה למערכת
 router.post('/register', async (req, res) => {
-  const { full_name, email, password } = req.body;
+  const { full_name, password } = req.body;
+  // כתובות מייל נשמרות ומשוותות באותיות קטנות — התחברות אינה רגישה לאותיות
+  const email = String(req.body.email || '').trim().toLowerCase();
+  if (!email) {
+    return res.status(400).json({ error: 'נא למלא כתובת מייל' });
+  }
   try {
-    const existing = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    const existing = await pool.query('SELECT id FROM users WHERE LOWER(email) = $1', [email]);
     if (existing.rows.length > 0) {
       return res.status(400).json({ error: 'כתובת המייל כבר קיימת במערכת' });
     }
@@ -109,9 +114,10 @@ router.post('/register', async (req, res) => {
 
 // התחברות למערכת
 router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
+  const { password } = req.body;
+  const email = String(req.body.email || '').trim().toLowerCase();
   try {
-    const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    const result = await pool.query('SELECT * FROM users WHERE LOWER(email) = $1', [email]);
     if (result.rows.length === 0) {
       return res.status(400).json({ error: 'שם משתמש או סיסמה שגויים' });
     }
@@ -158,9 +164,9 @@ router.delete('/users/:id', async (req, res) => {
 
 // שכחתי סיסמה - שליחת המייל המעוצב
 router.post('/forgot-password', async (req, res) => {
-  const { email } = req.body;
+  const email = String(req.body.email || '').trim().toLowerCase();
   try {
-    const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    const result = await pool.query('SELECT * FROM users WHERE LOWER(email) = $1', [email]);
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'כתובת המייל אינה קיימת במערכת' });
     }
@@ -175,7 +181,7 @@ router.post('/forgot-password', async (req, res) => {
     await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [hashedCode, user.id]);
 
     // שליחת הקוד (4 ספרות) במייל האיפוס החדש
-    await sendPasswordResetEmail(email, user.full_name, resetCode);
+    await sendPasswordResetEmail(user.email, user.full_name, resetCode);
 
     res.json({ message: 'קוד איפוס חדש נשלח בהצלחה לכתובת המייל שלך!' });
   } catch (err) {

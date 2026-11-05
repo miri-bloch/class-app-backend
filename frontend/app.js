@@ -181,7 +181,8 @@ function normalizeSubjectName(subject) {
 document.getElementById('register-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const full_name = document.getElementById('reg-name').value;
-  const email = document.getElementById('reg-email').value;
+  // המייל נשלח באותיות קטנות — ההתחברות אינה רגישה לאותיות
+  const email = document.getElementById('reg-email').value.trim().toLowerCase();
   const password = document.getElementById('reg-password').value;
   const msg = document.getElementById('register-message');
 
@@ -208,7 +209,7 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
 
 document.getElementById('login-form').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const email = document.getElementById('email').value;
+  const email = document.getElementById('email').value.trim().toLowerCase();
   const password = document.getElementById('password').value;
   const msg = document.getElementById('login-message');
 
@@ -269,6 +270,9 @@ function initTabs() {
       // טעינת הנתונים של הלשונית שנפתחה
       if (target === 'tab-files' && typeof window.loadPersonalFiles === 'function') {
         window.loadPersonalFiles();
+      }
+      if (target === 'tab-files-by-subject' && typeof window.loadFilesBySubject === 'function') {
+        window.loadFilesBySubject();
       }
       // ללא גלילה — המעבר משאיר את התצוגה במקומה הנוכחי
     });
@@ -547,6 +551,105 @@ document.getElementById('personal-files-filter').addEventListener('change', () =
   window.loadPersonalFiles();
 });
 
+// ===== טאב "קבצים לפי מקצוע" =====
+// מרכז את כל קבצי המטלות לפי מקצוע (כולל מטלות שנמחקו לכולן),
+// עם חיפוש ושליחה למייל של כל קובץ בנפרד.
+let filesBySubjectCache = [];
+
+window.loadFilesBySubject = async function loadFilesBySubject() {
+  const list = document.getElementById('files-by-subject-list');
+  const empty = document.getElementById('files-by-subject-empty');
+  const summary = document.getElementById('files-by-subject-summary');
+  if (!list) return;
+
+  try {
+    const res = await authFetch(`${API_URL}/assignments/files-by-subject`);
+    if (!res.ok) throw new Error('שגיאה בטעינת הקבצים');
+    filesBySubjectCache = await res.json();
+    if (!Array.isArray(filesBySubjectCache)) filesBySubjectCache = [];
+    renderFilesBySubject();
+  } catch (err) {
+    list.innerHTML = '<div class="empty-state">שגיאה בטעינת הקבצים</div>';
+    if (empty) empty.hidden = true;
+    if (summary) summary.textContent = '';
+  }
+};
+
+function renderFilesBySubject() {
+  const list = document.getElementById('files-by-subject-list');
+  const empty = document.getElementById('files-by-subject-empty');
+  const summary = document.getElementById('files-by-subject-summary');
+  const search = document.getElementById('files-by-subject-search');
+  if (!list) return;
+
+  const query = normalizeSubjectName(search ? search.value : '');
+  const groups = filesBySubjectCache
+    .map(group => {
+      const files = (group.files || []).filter(f =>
+        !query ||
+        normalizeSubjectName(f.originalName).includes(query) ||
+        normalizeSubjectName(f.assignmentTitle).includes(query) ||
+        normalizeSubjectName(group.subject).includes(query)
+      );
+      return { ...group, files };
+    })
+    .filter(group => group.files.length > 0);
+
+  const totalFiles = groups.reduce((sum, g) => sum + g.files.length, 0);
+  if (summary) {
+    summary.textContent = totalFiles
+      ? `${totalFiles} קבצים ב-${groups.length} מקצועות`
+      : '';
+  }
+
+  if (!totalFiles) {
+    list.innerHTML = '';
+    if (empty) empty.hidden = false;
+    return;
+  }
+  if (empty) empty.hidden = true;
+
+  list.innerHTML = groups.map(group => {
+    const rows = group.files.map(f => {
+      const name = escapeHtml(normalizeAttachmentName(f.originalName));
+      const title = escapeHtml(f.assignmentTitle || '');
+      const date = f.dueDate ? parseLocalDate(f.dueDate).toLocaleDateString('he-IL') : '';
+      const openLink = f.webViewLink
+        ? `<a href="${escapeHtml(f.webViewLink)}" target="_blank" rel="noopener" class="neon-btn outline subject-file-btn" style="text-decoration:none;">פתיחה 🔗</a>`
+        : '';
+      return `
+        <div class="subject-file-row">
+          <div class="subject-file-info">
+            <div class="subject-file-name">📎 ${name}</div>
+            <div class="subject-file-meta">
+              ${title}${date ? ' · הגשה: ' + escapeHtml(date) : ''}
+              ${f.isDeleted ? ' · <span class="assignment-deleted-badge">נמחקה אצל כולן</span>' : ''}
+            </div>
+          </div>
+          <div class="subject-file-actions">
+            ${openLink}
+            <button onclick="sendAssignmentToEmail(${Number(f.assignmentId)}, ${Number(f.fileId)})" class="neon-btn outline subject-file-btn">שלחי למייל 📧</button>
+          </div>
+        </div>`;
+    }).join('');
+
+    return `
+      <div class="assignment-card subject-file-group">
+        <div class="assignment-subject-row">
+          <div class="assignment-subject">${escapeHtml(group.subject || 'כללי')}</div>
+          <span class="subject-file-count">${group.files.length} קבצים</span>
+        </div>
+        <div class="subject-file-list">${rows}</div>
+      </div>`;
+  }).join('');
+}
+
+// חיפוש חי בטאב הקבצים
+(() => {
+  const search = document.getElementById('files-by-subject-search');
+  if (search) search.addEventListener('input', renderFilesBySubject);
+})();
+
 // הורדה דרך בקשה מאומתת — הקובץ עצמו אינו נגיש בקישור ציבורי
 window.downloadPersonalFile = async function downloadPersonalFile(fileId) {
   try {
@@ -598,11 +701,419 @@ window.deletePersonalFile = async function deletePersonalFile(fileId) {
   }
 };
 
+// ==================== הוספת מטלה מהירה בלי התחברות ====================
+// זמין בכל מצב: מהמסך הראשי (כרטיס "הוספה מהירה"), מהכפתור הצדדי בכל עמוד,
+// ומהמסך המחובר — כדי שהמטלה תופיע מיד ברשימה בלי רענון.
+// המטלה נשמרת בשרת ומופיעה אצל כולן, כי רשימת המטלות משותפת לכיתה.
+
+// רשימת המקצועות מגיעה מהתפריט של טופס ההוספה שבכרטיס המטלות
+function getSubjectOptions() {
+  const source = document.getElementById('new-assignment-subject');
+  const options = source ? Array.from(source.options).filter(o => o.value) : [];
+  return options.map(o => ({ value: o.value, label: o.textContent.trim() }));
+}
+
+// ממלא כל תפריט מקצוע ריק (שומר על מה שנבחר, למילוי חוזר)
+function fillSubjectSelect(select) {
+  if (!select || select.dataset.filled === 'true') return;
+  getSubjectOptions().forEach(({ value, label }) => {
+    const option = document.createElement('option');
+    option.value = value;
+    option.textContent = label;
+    select.appendChild(option);
+  });
+  select.dataset.filled = 'true';
+}
+
+function localTodayKey() {
+  const now = new Date();
+  return getDateKey(now);
+}
+
+function initQuickAdd() {
+  ['quick-add-anon-subject', 'quick-add-modal-subject'].forEach(id => fillSubjectSelect(document.getElementById(id)));
+
+  ['quick-add-anon-date', 'quick-add-modal-date'].forEach(id => {
+    const input = document.getElementById(id);
+    if (!input) return;
+    // ברירת מחדל: מחר — שדה התאריך נשאר חובה כדי שכולם ידעו מתי להגיש
+    if (!input.value) {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      input.value = getDateKey(tomorrow);
+    }
+    input.min = localTodayKey();
+  });
+
+  const anonForm = document.getElementById('quick-add-anon-form');
+  if (anonForm) {
+    anonForm.addEventListener('submit', e => submitQuickAdd(
+      e.currentTarget,
+      'quick-add-anon-subject',
+      'quick-add-anon-title',
+      'quick-add-anon-date'
+    ));
+  }
+
+  const modalForm = document.getElementById('quick-add-modal-form');
+  if (modalForm) {
+    modalForm.addEventListener('submit', e => submitQuickAdd(
+      e.currentTarget,
+      'quick-add-modal-subject',
+      'quick-add-modal-title',
+      'quick-add-modal-date',
+      () => closeQuickAddModal()
+    ));
+    initQuickAddFileHint(modalForm);
+  }
+}
+
+// מציג ליד שדה הקובץ את שם הקובץ שנבחר וגודלו, ומאפס את הרמז
+// כשמנקים את השדה (למשל אחרי שליחה מוצלחת או בחירת "ביטול").
+function initQuickAddFileHint(form) {
+  const input = form.querySelector('input[type="file"]');
+  const hint = form.querySelector('.quick-add-file-hint');
+  if (!input || !hint) return;
+
+  input.addEventListener('change', () => {
+    const file = input.files && input.files[0];
+    hint.hidden = !file;
+    hint.classList.toggle('is-error', !!file && file.size > QUICK_ADD_MAX_FILE_BYTES);
+    hint.textContent = file
+      ? describeQuickAddFile(file) + (file.size > QUICK_ADD_MAX_FILE_BYTES ? ' — גדול מדי, עד 10MB' : '')
+      : '';
+  });
+
+  form.addEventListener('reset', () => {
+    hint.hidden = true;
+    hint.textContent = '';
+    hint.classList.remove('is-error');
+  });
+}
+
+// קובץ מצורף בודד (אופציונלי) מתוך טופס — null אם לא נבחר קובץ
+const QUICK_ADD_MAX_FILE_BYTES = 10 * 1024 * 1024;
+
+function getQuickAddAttachment(form) {
+  const input = form.querySelector('input[type="file"]');
+  if (!input || !input.files || !input.files.length) return null;
+  return input.files[0];
+}
+
+// שם קובץ בר-הצגה לרמז מתחת לשדה הקובץ
+function describeQuickAddFile(file) {
+  if (!file) return '';
+  const mb = (file.size / (1024 * 1024)).toFixed(1);
+  return `${file.name} (${mb}MB)`;
+}
+
+async function submitQuickAdd(form, subjectId, titleId, dateId, onSuccess) {
+  const subject = document.getElementById(subjectId).value;
+  const title = document.getElementById(titleId).value.trim();
+  const due_date = document.getElementById(dateId).value;
+  const file = getQuickAddAttachment(form);
+
+  if (file && file.size > QUICK_ADD_MAX_FILE_BYTES) {
+    showToast('הקובץ גדול מדי — עד 10MB', true);
+    return;
+  }
+
+  const restoreButton = setButtonLoading(form.querySelector('button[type="submit"]'), 'שולחת...');
+
+  try {
+    // FormData בשני המקרים: כשאין קובץ זה פשוט אותו שדות טקסט,
+    // וכשיש — הקובץ עובר בשרת דרך multer ונשמר ב-Google Drive.
+    const body = new FormData();
+    body.append('subject', subject);
+    body.append('title', title);
+    body.append('due_date', due_date);
+    if (file) body.append('attachments', file, file.name);
+
+    // בלי כותרת Content-Type — הדפדפן מוסיף בעצמו את ה-boundary של FormData
+    const res = await authFetch(`${API_URL}/assignments/quick`, {
+      method: 'POST',
+      body
+    });
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      showToast(data.error || 'שגיאה בהוספת המטלה', true);
+      return;
+    }
+
+    form.reset();
+    // אחרי reset ברירת המחדל של התאריך מתאפסת — מחזירים אותה
+    const dateInput = document.getElementById(dateId);
+    if (dateInput) {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      dateInput.value = getDateKey(tomorrow);
+    }
+
+    if (typeof onSuccess === 'function') onSuccess();
+    // אם השרת קיבל את המטלה אבל הקובץ לא נשמר — אומרים את זה במפורש
+    if (file && Array.isArray(data.files) && !data.files.length) {
+      showToast('המטלה נוספה, אבל הקובץ לא נשמר 😕', true);
+    } else {
+      showToast(file ? 'המטלה והקובץ נוספו לכולן! ✨' : 'המטלה נוספה לכולן! ✨');
+    }
+
+    // מרועננת רק אם המשתמשת מחוברת ויש לוח מטלות בזיכרון
+    if (currentUserId && typeof loadAssignments === 'function') {
+      loadAssignments();
+      loadAssignmentStats();
+      loadWeeklyCalendar();
+      loadShvabimSchedule();
+    }
+  } catch (err) {
+    showToast('תקלת תקשורת מול השרת', true);
+  } finally {
+    restoreButton();
+  }
+}
+
+// ───────── פתיחה/סגירה של חלונות דרך מחלקות ─────────
+// מדיניות האבטחה של האתר (CSP) חוסמת שינוי סגנון ישירות מהסקריפט
+// (style.display = 'flex' נחסם), ולכן החלון נפתח ע"י מחלקת .is-open,
+// שהסגנון שלה יושב בגיליון ה-CSS המורשה.
+function setOverlayOpen(modal, open) {
+  if (!modal) return;
+  modal.classList.toggle('is-open', open);
+  // כפתורי הצד מוסתרים רק כשבאמת נשאר חלון פתוח —
+  // למשל כשעוברים מחלון אחד לאחר (דיווח שגיאה ← הגדרות).
+  document.body.classList.toggle(
+    'has-open-overlay',
+    !!document.querySelector('.overlay.is-open')
+  );
+}
+
+function isOverlayOpen(modal) {
+  return !!modal && modal.classList.contains('is-open');
+}
+
+window.openQuickAddModal = function openQuickAddModal() {
+  const modal = document.getElementById('quick-add-modal');
+  if (!modal) return;
+  setOverlayOpen(modal, true);
+  const firstField = modal.querySelector('select, input');
+  if (firstField) firstField.focus();
+};
+
+window.closeQuickAddModal = function closeQuickAddModal() {
+  setOverlayOpen(document.getElementById('quick-add-modal'), false);
+};
+
+// Esc סוגר את החלון; לחיצה על הרקע שמחוץ לכרטיס גם היא סוגרת
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (isOverlayOpen(document.getElementById('quick-add-modal'))) {
+    window.closeQuickAddModal();
+  }
+});
+
+const quickAddModal = document.getElementById('quick-add-modal');
+if (quickAddModal) {
+  quickAddModal.addEventListener('click', e => {
+    if (e.target === quickAddModal) window.closeQuickAddModal();
+  });
+}
+
+initQuickAdd();
+
+// ───────────────────── עריכת מטלה קיימת ─────────────────────
+// פתוחה לכל משתמשת מחוברת: כותרת, פירוט, תאריך, מקצוע, והוספה/הסרה של קבצים.
+let editingAssignment = null;
+
+window.openEditAssignmentModal = async function openEditAssignmentModal(assignmentId) {
+  const modal = document.getElementById('edit-assignment-modal');
+  if (!modal) {
+    showToast('חלון העריכה לא נמצא', true);
+    return;
+  }
+
+  const form = document.getElementById('edit-assignment-form');
+  const filesBox = document.getElementById('edit-assignment-files');
+  const newFilesBox = document.getElementById('edit-assignment-new-files');
+
+  try {
+    const res = await authFetch(`${API_URL}/assignments`);
+    if (!res.ok) throw new Error('שגיאה בטעינת המטלה');
+    const assignments = await res.json();
+    editingAssignment = Array.isArray(assignments)
+      ? assignments.find(a => Number(a.id) === Number(assignmentId))
+      : null;
+  } catch (err) {
+    showToast(err.message || 'שגיאה בטעינת המטלה', true);
+    return;
+  }
+
+  if (!editingAssignment) {
+    showToast('המטלה לא נמצאה', true);
+    return;
+  }
+
+  const a = editingAssignment;
+  form.dataset.assignmentId = String(a.id);
+  form.reset();
+
+  // מילויים של השדות — אילו קיימים בדף
+  const subjectSelect = document.getElementById('edit-assignment-subject');
+  if (subjectSelect) {
+    const subject = a.subject || '';
+    // אם המקצוע לא קיים ברשימה — מוסיפים אותו כערך זמני כדי שלא יאבד
+    if (![...subjectSelect.options].some(opt => opt.value === subject)) {
+      const opt = document.createElement('option');
+      opt.value = subject;
+      opt.textContent = subject;
+      subjectSelect.appendChild(opt);
+    }
+    subjectSelect.value = subject;
+  }
+  const titleInput = document.getElementById('edit-assignment-title');
+  if (titleInput) titleInput.value = a.title || '';
+  const descInput = document.getElementById('edit-assignment-description');
+  if (descInput) descInput.value = a.description || '';
+  const dateInput = document.getElementById('edit-assignment-due-date');
+  if (dateInput) dateInput.value = a.due_date ? getDateKey(parseLocalDate(a.due_date)) : '';
+  if (newFilesBox) newFilesBox.value = '';
+
+  if (filesBox) {
+    const files = Array.isArray(a.files) && a.files.length
+      ? a.files
+      : (a.drive_file_id ? [{ id: null, original_name: a.attachment_name, drive_file_id: a.drive_file_id }] : []);
+
+    if (!files.length) {
+      filesBox.innerHTML = '<div class="edit-assignment-no-files">אין קבצים מצורפים למטלה.</div>';
+    } else {
+      filesBox.innerHTML = files.map(f => {
+        const name = escapeHtml(normalizeAttachmentName(f.original_name || 'קובץ'));
+        // קובץ מהשדות הישנים (בלי רשומה בטבלת הקבצים) — לא ניתן להסיר אותו מכאן
+        const removeBtn = f.id
+          ? `<button type="button" class="edit-assignment-file-remove" data-file-id="${Number(f.id)}" title="הסרת הקובץ מהמטלה">הסרה ✕</button>`
+          : '<span class="edit-assignment-file-legacy">קובץ מקורי</span>';
+        return `<div class="edit-assignment-file-row"><span>📎 ${name}</span>${removeBtn}</div>`;
+      }).join('');
+    }
+  }
+
+  setOverlayOpen(modal, true);
+  if (titleInput) titleInput.focus();
+};
+
+window.closeEditAssignmentModal = function closeEditAssignmentModal() {
+  setOverlayOpen(document.getElementById('edit-assignment-modal'), false);
+};
+
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (isOverlayOpen(document.getElementById('edit-assignment-modal'))) {
+    window.closeEditAssignmentModal();
+  }
+});
+
+(() => {
+  const modal = document.getElementById('edit-assignment-modal');
+  if (modal) {
+    modal.addEventListener('click', e => {
+      if (e.target === modal) window.closeEditAssignmentModal();
+    });
+  }
+
+  // הסרת קובץ מהמטלה — נשמרת מיד
+  const filesBox = document.getElementById('edit-assignment-files');
+  if (filesBox) {
+    filesBox.addEventListener('click', async e => {
+      const btn = e.target.closest('[data-file-id]');
+      if (!btn) return;
+      const assignmentId = document.getElementById('edit-assignment-form')?.dataset.assignmentId;
+      if (!assignmentId) return;
+
+      if (!await showCustomConfirm(
+        'הסרת קובץ',
+        'הקובץ יוסר מהמטלה אצל כולן. להמשיך?',
+        'הסירי',
+        'ביטול'
+      )) return;
+
+      const restore = setButtonLoading(btn, 'מסירה...');
+      try {
+        const res = await authFetch(`${API_URL}/assignments/${assignmentId}/files/${btn.dataset.fileId}`, {
+          method: 'DELETE'
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          showToast(data.error || 'שגיאה בהסרת הקובץ', true);
+          return;
+        }
+        showToast('הקובץ הוסר מהמטלה');
+        await window.openEditAssignmentModal(assignmentId);
+        loadAssignments();
+        loadWeeklyCalendar();
+      } catch (err) {
+        showToast('תקלת תקשורת מול השרת', true);
+      } finally {
+        restore();
+      }
+    });
+  }
+
+  const form = document.getElementById('edit-assignment-form');
+  if (form) form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const assignmentId = form.dataset.assignmentId;
+    if (!assignmentId) return;
+
+    const subject = document.getElementById('edit-assignment-subject')?.value || '';
+    const title = (document.getElementById('edit-assignment-title')?.value || '').trim();
+    const description = document.getElementById('edit-assignment-description')?.value || '';
+    const dueDate = document.getElementById('edit-assignment-due-date')?.value || '';
+    const newFiles = document.getElementById('edit-assignment-new-files');
+
+    if (!subject) { showToast('נא לבחור מקצוע', true); return; }
+    if (!title) { showToast('נא למלא כותרת למטלה', true); return; }
+    if (!dueDate) { showToast('נא לבחור תאריך הגשה', true); return; }
+
+    const restoreButton = setButtonLoading(form.querySelector('button[type="submit"]'), 'שומרת...');
+    try {
+      const body = new FormData();
+      body.append('subject', subject);
+      body.append('title', title);
+      body.append('description', description);
+      body.append('due_date', dueDate);
+      if (newFiles && newFiles.files) {
+        Array.from(newFiles.files).forEach(file => body.append('attachments', file));
+      }
+
+      const res = await authFetch(`${API_URL}/assignments/${assignmentId}`, {
+        method: 'PUT',
+        body
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast(data.error || 'שגיאה בשמירת המטלה', true);
+        return;
+      }
+
+      window.closeEditAssignmentModal();
+      showToast('המטלה עודכנה אצל כולן! ✨');
+      loadAssignments();
+      loadAssignmentStats();
+      loadWeeklyCalendar();
+      loadShvabimSchedule();
+      if (typeof window.loadFilesBySubject === 'function') window.loadFilesBySubject();
+    } catch (err) {
+      showToast('תקלת תקשורת מול השרת', true);
+    } finally {
+      restoreButton();
+    }
+  });
+})();
+
 // ───────────────────── דיווח על תקלות ובקשות פיצ'רים ─────────────────────
 window.toggleFeedbackMenu = function toggleFeedbackMenu() {
   const modal = document.getElementById('feedback-modal');
   if (!modal) return;
-  modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+  setOverlayOpen(modal, !isOverlayOpen(modal));
 };
 
 const feedbackForm = document.getElementById('feedback-form');
@@ -641,7 +1152,7 @@ if (feedbackForm) feedbackForm.addEventListener('submit', async (e) => {
     showToast('הפנייה נשלחה בהצלחה! תודה על העדכון 🙏');
     feedbackForm.reset();
     if (screenshotInput) screenshotInput.value = '';
-    if (modal) modal.style.display = 'none';
+    setOverlayOpen(modal, false);
   } catch (err) {
     showToast(err.message || 'שגיאה בשליחת הפנייה', true);
   } finally {
@@ -652,7 +1163,7 @@ if (feedbackForm) feedbackForm.addEventListener('submit', async (e) => {
 // סגירה בלחיצה על הרקע שמחוץ לטופס
 const feedbackModal = document.getElementById('feedback-modal');
 if (feedbackModal) feedbackModal.addEventListener('click', (e) => {
-  if (e.target === e.currentTarget) e.currentTarget.style.display = 'none';
+  if (e.target === e.currentTarget) setOverlayOpen(e.currentTarget, false);
 });
 
 // מרכיב את קישורי הקבצים של המודעה — כל הקבצים, עם נפילה חזרה לשדה הבודד הישן.
@@ -757,57 +1268,82 @@ function renderAssignmentAttachments(assignment) {
 
   if (!files.length) return '';
 
+  // לכל קובץ כפתור "שלחי למייל" משלו — כדי שבמטלה עם כמה קבצים
+  // יישארו נשלח הקובץ שהמשתמשת בחרה, ולא רק הקובץ הראשון
   const fileLinks = files.map(f => {
     const viewLink = f.drive_web_view_link || `https://drive.google.com/file/d/${f.drive_file_id}/view`;
+    const fileArg = f.id ? String(Number(f.id)) : 'null';
     return `
       <a href="${viewLink}" target="_blank" rel="noopener" class="neon-btn outline" style="width:auto; padding:5px 9px; font-size:0.78rem; text-decoration:none;">📎 ${normalizeAttachmentName(f.original_name)}</a>
-      <a href="https://drive.google.com/uc?export=download&id=${f.drive_file_id}" target="_blank" rel="noopener" class="neon-btn outline" style="width:auto; padding:5px 9px; font-size:0.78rem; text-decoration:none;">הורדה</a>`;
+      <a href="https://drive.google.com/uc?export=download&id=${f.drive_file_id}" target="_blank" rel="noopener" class="neon-btn outline" style="width:auto; padding:5px 9px; font-size:0.78rem; text-decoration:none;">הורדה</a>
+      <button onclick="sendAssignmentToEmail(${assignment.id}, ${fileArg})" class="neon-btn outline" style="width:auto; padding:5px 9px; font-size:0.78rem;">שלחי למייל 📧</button>`;
   }).join('');
 
   return `<div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
     ${fileLinks}
-    <button onclick="sendAssignmentToEmail(${assignment.id})" class="neon-btn outline" style="width:auto; padding:5px 9px; font-size:0.78rem;">שלחי לי למייל 📧</button>
   </div>`;
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// מצב המטלה אצל המשתמשת הנוכחית (הלוגיקה המלאה בשרת — routes/assignments.js):
+//   • מוצגת רגיל — כל עוד היא לא הסירה/הסתירה אותה אצלה.
+//   • מוסתרת (עין) — בוצעה, והמשתמשת הסתירה אותה; אפשר להחזיר עד 48 שעות
+//     מסימון הביצוע, ואז היא נעלמת אצלה (has_vanished).
+//   • הוסרה אצלי (is_dismissed) / נעלמה (has_vanished) — מוצגות רק במצב
+//     "הציגי את מה שהוסר אצלי", עם כפתור החזרה.
+//   • נמחקה אצל כולן (is_deleted) — רק מי שלא ביצעה אותה רואה אותה, עם ציון.
+// ───────────────────────────────────────────────────────────────────────────
+function isTrueFlag(value) {
+  return value === true || value === 'true';
+}
+
+function assignmentUiState(a) {
+  const completed = isTrueFlag(a.is_completed);
+  const hidden = isTrueFlag(a.is_hidden);
+  const dismissed = isTrueFlag(a.is_dismissed);
+  const vanished = isTrueFlag(a.has_vanished);
+  const deletedEverywhere = isTrueFlag(a.is_deleted);
+
+  // נעלמה מהרשימה: מחיקה לכולן (אחרי ביצוע), הסרה עצמאית או התפוגגות ה-48 שעות
+  const gone = dismissed || vanished || deletedEverywhere;
+  return { completed, hidden, dismissed, vanished, deletedEverywhere, gone };
 }
 
 async function loadAssignments() {
   const list = document.getElementById('assignments-list');
   const summary = document.getElementById('assignments-summary');
   const showHiddenButton = document.getElementById('show-hidden-assignments');
-  // ההסתרה שמורה בשרת (private_notes.is_hidden) כדי שתישמר בכל מכשיר.
-  const isHidden = (a) => a.is_hidden === true || a.is_hidden === 'true';
-  let showHidden = false;
+  let showRemoved = false;
 
   const renderAssignments = (assignments) => {
     const today = parseLocalDate(getDateKey(getLogicalToday()));
-    const visibleAssignments = assignments.filter(a => showHidden || !isHidden(a));
+    const removedCount = assignments.filter(a => assignmentUiState(a).gone).length;
+    const visibleAssignments = assignments.filter(a => showRemoved || !assignmentUiState(a).gone);
 
     if (summary) summary.textContent = `${visibleAssignments.length} מטלות מוצגות`;
     if (showHiddenButton) {
-      const hiddenCount = assignments.filter(isHidden).length;
-      showHiddenButton.style.display = hiddenCount > 0 ? 'inline-flex' : 'none';
-      showHiddenButton.textContent = showHidden
-        ? 'החזירי את הרשימה הרגילה'
-        : `הציגי ${hiddenCount} מטלות שהוסרו אצלי`;
+      showHiddenButton.style.display = removedCount > 0 ? 'inline-flex' : 'none';
+      showHiddenButton.textContent = showRemoved
+        ? 'חזרי לרשימה הרגילה'
+        : `הציגי ${removedCount} מטלות שהוסרו אצלי`;
     }
     list.innerHTML = visibleAssignments.length ? '' : '<div class="empty-state">אין מטלות להצגה.</div>';
 
     visibleAssignments.forEach(a => {
-      const isChecked = a.is_completed ? 'checked' : '';
+      const state = assignmentUiState(a);
+      const isChecked = state.completed ? 'checked' : '';
       const compCount = parseInt(a.completed_count) || 0;
       const totUsers = parseInt(a.total_users) || 1;
       const classPct = Math.round((compCount / totUsers) * 100);
-      const meIsStudent = a.me_is_student === true || a.me_is_student === 'true';
+      const meIsStudent = isTrueFlag(a.me_is_student);
       const dateObj = parseLocalDate(a.due_date);
       const gregorianDate = dateObj.toLocaleDateString('he-IL');
       // "למחר" מחושב מול היום הלוגי (מתחלף ב-4:00 לפנות בוקר)
       const tomorrow = new Date(getLogicalToday());
       tomorrow.setDate(tomorrow.getDate() + 1);
       const isDueTomorrow = getDateKey(dateObj) === getDateKey(tomorrow);
-      // הגדרת תנאים נפרדים: ההסתרה זמינה ברגע שבוצעה (סימון V), והצביעה ה"ישנה"
-      // נשארת קשורה לעברת זמן ההגשה כדי לשמר את האפקט של "מטלה שעברה זמנה".
+      // הצביעה ה"ישנה" נשארת קשורה לעברת זמן ההגשה (מטלה שעברה זמנה)
       const isDue = dateObj < today;
-      const hidden = isHidden(a);
       let hebrewDate = '';
 
       try {
@@ -817,21 +1353,37 @@ async function loadAssignments() {
         hebrewDate = '';
       }
 
+      // כפתור העין — הסתרה/החזרה של המטלה. זמין גם בלי סימון "בוצע";
+      // מטלה שבוצעה ומסתירים אותה נעלמת אחרי 48 שעות מסימון הביצוע.
+      const eyeButton = !state.gone
+        ? (state.hidden
+            ? `<button onclick="toggleAssignmentHidden(${a.id}, false)" class="assignment-eye is-hidden" data-vanish-in="${parseInt(a.vanish_in_seconds) || 0}" title="החזירי את המטלה לרשימה" aria-label="החזירי את המטלה לרשימה">🙈</button>`
+            : `<button onclick="toggleAssignmentHidden(${a.id}, true)" class="assignment-eye" title="הסתירי את המטלה מהרשימה — אפשר להחזיר בכל רגע" aria-label="הסתירי את המטלה מהרשימה">👁</button>`)
+        : '';
+
+      // כפתור ההסרה האישית — מוצג רק במטלה שאינה נעלמה כבר
+      const dismissButton = state.gone
+        ? `<button onclick="restoreAssignmentForMe(${a.id})" class="assignment-restore-personal" title="החזירי את המטלה לרשימה שלי" aria-label="החזירי את המטלה אליי">↩ החזירי</button>`
+        : `<button onclick="removeAssignmentForMe(${a.id})" class="assignment-remove-personal" title="הסירי מהרשימה שלי בלבד — אצל כולן היא תישאר" aria-label="הסירי מהרשימה שלי בלבד">📍 רק אצלי</button>`;
+
       list.innerHTML += `
-        <div class="assignment-card assignment-item ${isDue ? 'assignment-old' : ''}" id="assignment-${a.id}">
+        <div class="assignment-card assignment-item ${isDue ? 'assignment-old' : ''} ${state.gone ? 'assignment-gone' : ''}" id="assignment-${a.id}">
           <div class="assignment-card-header">
             <div>
               <div class="assignment-subject-row">
                 <div class="assignment-subject">${a.subject}</div>
                 ${isDueTomorrow ? '<span class="assignment-tomorrow-badge">למחר!</span>' : ''}
+                ${state.deletedEverywhere ? '<span class="assignment-deleted-badge" title="המטלה נמחקה אצל כולן — את רואה אותה כי עוד לא סימנת אותה כבוצעה">נמחקה אצל כולן</span>' : ''}
+                ${state.dismissed ? '<span class="assignment-removed-badge">הוסרה אצלי</span>' : ''}
+                ${state.vanished ? '<span class="assignment-removed-badge">עברו 48 שעות מהביצוע</span>' : ''}
               </div>
               <div class="assignment-title">${a.title}</div>
             </div>
             <div class="assignment-actions">
-              ${hidden
-                ? `<button onclick="restoreAssignmentForMe(${a.id})" class="assignment-restore-personal" title="החזירי את המטלה לרשימה שלי" aria-label="החזירי את המטלה אליי">↩ החזירי</button>`
-                : `<button onclick="removeAssignmentForMe(${a.id})" class="assignment-remove-personal" title="הסירי מהרשימה שלי בלבד — אצל כולן היא תישאר" aria-label="הסירי מהרשימה שלי בלבד">📍 רק אצלי</button>`}
-              <button onclick="deleteAssignment(${a.id})" class="assignment-delete" title="מחיקה לכולן — המטלה תיעלם אצל כל המשתמשות" aria-label="מחיקה לכולן">🗑 מחקי לכולן</button>
+              ${dismissButton}
+              ${eyeButton}
+              ${state.gone ? '' : `<button onclick="openEditAssignmentModal(${a.id})" class="assignment-edit" title="עריכת המטלה — כותרת, פירוט, תאריך וקבצים" aria-label="עריכת המטלה">✏️ עריכה</button>`}
+              <button onclick="deleteAssignment(${a.id})" class="assignment-delete" title="מחיקה לכולן — מי שביצעה לא תראה אותה יותר; מי שלא ביצעה תמשיך לראות" aria-label="מחיקה לכולן">🗑 מחקי לכולן</button>
             </div>
           </div>
           <div class="assignment-date">הגשה: ${gregorianDate} ${hebrewDate ? '(' + hebrewDate + ')' : ''}</div>
@@ -862,11 +1414,34 @@ async function loadAssignments() {
     renderAssignments(assignments);
     if (showHiddenButton) {
       showHiddenButton.onclick = () => {
-        showHidden = !showHidden;
+        showRemoved = !showRemoved;
         renderAssignments(assignments);
       };
     }
   } catch (err) { list.innerHTML = '<div class="empty-state">שגיאה בטעינת מטלות</div>'; }
+}
+
+// הסתרת מטלה שבוצעה (עין) או החזרתה. ההסתרה מתפוגגת 48 שעות מסימון הביצוע.
+async function toggleAssignmentHidden(assignmentId, hidden) {
+  try {
+    const res = await authFetch(`${API_URL}/assignments/${assignmentId}/toggle-hidden`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ hidden })
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      showToast(data.error || 'שגיאה בעדכון ההסתרה', true);
+      return;
+    }
+    showToast(hidden
+      ? 'המטלה הוסתרה — אפשר להחזיר אותה בלחיצה על העין'
+      : 'המטלה הוחזרה לרשימה');
+    loadAssignments();
+    loadWeeklyCalendar();
+  } catch (err) {
+    showToast('תקלת תקשורת מול השרת', true);
+  }
 }
 
 // הסרה אישית: המטלה נעלמת מהרשימה של המשתמשת בלבד ונשארת אצל כל השאר.
@@ -907,11 +1482,12 @@ async function restoreAssignmentForMe(assignmentId) {
   }
 }
 
-// מחיקה לכולן: המטלה נמחקת מהמערכת עבור כל המשתמשות. אין דרך חזרה.
+// מחיקה לכולן: מי שכבר ביצעה — המטלה נעלמת אצלה; מי שעוד לא ביצעה — ממשיכה
+// לראות אותה עם ציון "נמחקה אצל כולן". הפעולה אינה ניתנת לביטול.
 async function deleteAssignment(assignmentId) {
   if (!await showCustomConfirm(
     'מחיקה לכולן',
-    'המטלה תימחק מהמערכת עבור כל המשתמשות — לא רק אצלך. הפעולה אינה ניתנת לביטול.',
+    'המטלה תימחק אצל כולן: מי שכבר סימנה אותה כבוצעה לא תראה אותה יותר, ומי שעוד לא ביצעה תמשיך לראות אותה עם ציון "נמחקה אצל כולן". הפעולה אינה ניתנת לביטול.',
     'מחקי לכולן',
     'ביטול',
     'רוצה להעלים אותה רק אצלך? סגרי חלון זה ולחצי על "📍 רק אצלי".'
@@ -923,6 +1499,7 @@ async function deleteAssignment(assignmentId) {
       showToast('המטלה נמחקה אצל כולן');
       loadAssignments();
       loadWeeklyCalendar();
+      if (typeof loadAssignmentStats === 'function') loadAssignmentStats();
     } else {
       showToast('שגיאה במחיקת המטלה', true);
     }
@@ -1028,21 +1605,83 @@ async function savePersonalNote(id) {
   }
 }
 
-async function sendAssignmentToEmail(assignmentId) {
+// שליחת קובץ מצורף של מטלה למייל. fileId אופציונלי: כשמטלה כוללת כמה
+// קבצים, השרת מבקש לבחור — ואז מוצגת רשימת הבחירה ונשלחת הבחירה בלבד.
+async function sendAssignmentToEmail(assignmentId, fileId) {
+  const url = `${API_URL}/assignments/${assignmentId}/send-to-email`;
+  const payload = fileId ? { fileId } : {};
+
+  let res;
   try {
-    const res = await authFetch(`${API_URL}/assignments/${assignmentId}/send-to-email`, {
+    res = await authFetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
     });
-    if (!res.ok) {
-      await handleFileResponseError(res, 'שגיאה בשליחת הקובץ');
-      return;
-    }
-    const data = await res.json().catch(() => ({}));
-    showToast(data.message || 'הקובץ נשלח בהצלחה למייל שלך!');
   } catch (err) {
     showToast('תקלת תקשורת מול השרת', true);
+    return;
   }
+
+  // למטלה עם כמה קבצים — בחירת הקובץ המבוקש
+  if (res.status === 400) {
+    const data = await res.json().catch(() => ({}));
+    if (data.needsFileChoice && Array.isArray(data.files) && data.files.length > 0) {
+      const chosenId = await chooseAssignmentFile(data.files);
+      if (!chosenId) return;
+      return sendAssignmentToEmail(assignmentId, chosenId);
+    }
+    showToast(data.error || 'שגיאה בשליחת הקובץ', true);
+    return;
+  }
+
+  if (!res.ok) {
+    await handleFileResponseError(res, 'שגיאה בשליחת הקובץ');
+    return;
+  }
+  const data = await res.json().catch(() => ({}));
+  showToast(data.message || 'הקובץ נשלח בהצלחה למייל שלך!');
+}
+
+// בורר קובץ פשוט עבור "שלחי למייל" — מחזיר את מזהה הקובץ שנבחר, או null
+function chooseAssignmentFile(files) {
+  return new Promise(resolve => {
+    const overlay = document.getElementById('file-choice-modal');
+    const list = document.getElementById('file-choice-list');
+    // הגנה: בלעדיו יכול להישלח קובץ שלא נבחר במפורש
+    if (!overlay || !list) {
+      showToast('לא ניתן להציג את רשימת הקבצים', true);
+      resolve(null);
+      return;
+    }
+
+    list.innerHTML = files.map(f => {
+      const name = escapeHtml(normalizeAttachmentName(f.originalName || 'קובץ'));
+      return `<button type="button" class="file-choice-item" data-file-id="${Number(f.id)}">📎 ${name}</button>`;
+    }).join('');
+
+    let settled = false;
+    const finish = (value) => {
+      if (settled) return;
+      settled = true;
+      setOverlayOpen(overlay, false);
+      list.onclick = null;
+      document.removeEventListener('keydown', onKey);
+      resolve(value);
+    };
+    const onKey = (e) => { if (e.key === 'Escape') finish(null); };
+
+    list.onclick = (e) => {
+      const btn = e.target.closest('[data-file-id]');
+      if (btn) finish(Number(btn.dataset.fileId));
+    };
+    overlay.querySelectorAll('[data-file-choice-cancel]').forEach(b => {
+      b.onclick = () => finish(null);
+    });
+    document.addEventListener('keydown', onKey);
+
+    setOverlayOpen(overlay, true);
+  });
 }
 
 // שליחת קובץ מהאזור האישי למייל של המשתמשת עצמה (לפי ההגדרות שלה)
@@ -1194,8 +1833,8 @@ async function showSubjectAssignments(subjectName) {
     const subjectAssignments = assignments.filter(a => {
       if (!a.subject || !a.due_date) return false;
       if (normalizeSubjectName(a.subject) !== normalizeSubjectName(subjectName)) return false;
-      // מטלה שהוסרה אישית לא מוצגת גם בחלון המקצוע
-      if (a.is_hidden === true || a.is_hidden === 'true') return false;
+      // מטלה שהוסרה/הסתרה/נעלמה אצל המשתמשת לא מוצגת גם בחלון המקצוע
+      if (assignmentUiState(a).gone) return false;
       return true;
     });
 
@@ -1742,11 +2381,8 @@ async function deletePersonalEvent(id) {
 
 function toggleAccessibilityMenu() {
   const modal = document.getElementById('accessibility-modal');
-  if (modal.style.display === 'flex') {
-    modal.style.display = 'none';
-  } else {
-    modal.style.display = 'flex';
-  }
+  if (!modal) return;
+  setOverlayOpen(modal, !isOverlayOpen(modal));
 }
 
 let currentZoom = 1;
@@ -2030,7 +2666,7 @@ document.addEventListener('click', async (e) => {
           const res = await authFetch(`${API_URL}/auth/forgot-password`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email })
+            body: JSON.stringify({ email: String(email).trim().toLowerCase() })
           });
           const data = await res.json();
           if (res.ok) {

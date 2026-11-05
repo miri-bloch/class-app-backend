@@ -85,6 +85,27 @@
           <button id="show-login-btn" class="btn btn-ghost btn-block">חזרה להתחברות</button>
         </section>
       </div>
+
+      <!-- הוספה מהירה בלי התחברות: המטלה נכנסת ישר לרשימה המשותפת של הכיתה -->
+      <section id="quick-add-anon-card" class="card quick-add-card">
+        <span class="card-kicker">// הוספה מהירה</span>
+        <h2 class="card-title">⚡ הוספת מטלה מהירה</h2>
+        <p class="card-note">בלי התחברות — המטלה תופיע אצל כולן ברשימת המטלות, ותוסר אוטומטית אחרי יום ההגשה.</p>
+        <form id="quick-add-anon-form">
+          <div class="input-group">
+            <select id="quick-add-anon-subject" required aria-label="מקצוע">
+              <option value="" disabled selected>בחרי מקצוע מהרשימה...</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <input type="text" id="quick-add-anon-title" placeholder="כותרת המטלה" maxlength="200" required>
+          </div>
+          <div class="input-group">
+            <input type="date" id="quick-add-anon-date" aria-label="תאריך הגשה" required>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">⚡ הוסיפי מטלה</button>
+        </form>
+      </section>
     </div>
 
     <!-- ==================== לוח הבקרה ==================== -->
@@ -117,6 +138,10 @@
         <button class="tab-btn" data-tab="tab-schedule" role="tab">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17"/><path d="M8 3v4"/><path d="M16 3v4"/><path d="M8 14h3"/><path d="M8 17.5h6"/></svg>
           מערכת שעות
+        </button>
+        <button class="tab-btn" data-tab="tab-files-by-subject" role="tab">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h4l2 2.2h7A1.5 1.5 0 0 1 19 9.7v8.3a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 3 18Z"/><path d="M3 10.5h16"/></svg>
+          <span>קבצים לפי מקצוע</span>
         </button>
         <button class="tab-btn" data-tab="tab-files" role="tab">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 7A1.5 1.5 0 0 1 5 5.5h4l2 2.5h8A1.5 1.5 0 0 1 20.5 9.5v8A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5Z"/></svg>
@@ -303,6 +328,23 @@
         </div>
       </section><!-- /tab-files -->
 
+      <!-- ========== כרטיסייה: קבצים לפי מקצוע ========== -->
+      <section class="tab-panel" id="tab-files-by-subject">
+        <section class="card stagger">
+          <div class="card-head">
+            <h2 class="card-title">📂 קבצים לפי מקצוע</h2>
+            <span id="files-by-subject-summary" class="tnum"></span>
+          </div>
+          <p class="modal-sub">כל קבצי המטלות, מסודרים לפי מקצוע. אפשר לפתוח קובץ או לשלוח אותו למייל.</p>
+          <div class="input-group">
+            <label for="files-by-subject-search" class="field-label">חיפוש</label>
+            <input type="search" id="files-by-subject-search" placeholder="חיפוש לפי מקצוע, מטלה או שם קובץ..." aria-label="חיפוש קבצים לפי מקצוע">
+          </div>
+          <div id="files-by-subject-list" class="assignments-grid"></div>
+          <p id="files-by-subject-empty" class="empty-state" hidden>לא נמצאו קבצים.</p>
+        </section>
+      </section><!-- /tab-files-by-subject -->
+
       <!-- ========== כרטיסייה: לוח שנה ========== -->
       <section class="tab-panel" id="tab-calendar">
         <section class="card stagger">
@@ -329,27 +371,117 @@
     </div>
   </main>
 
-  <!-- ==================== כפתור קישורי הגשה ==================== -->
-  <a href="https://docs.google.com/spreadsheets/d/18AV2drnRZ6d_g6Ll0CD-0wdwmq5HmmAyg9cOAH85A8M/edit?usp=sharing"
-     target="_blank" rel="noopener"
-     id="github-links-btn"
-     class="fab-git"
-     title="קישורי הגשה — מעבר לגיליון המשותף (גוגל שיטס)"
-     aria-label="קישורי הגשה — מעבר לגיליון המשותף בגוגל שיטס">
-    <svg viewBox="0 0 16 16" width="22" height="22" fill="currentColor" aria-hidden="true">
-      <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/>
-    </svg>
-    <span>קישורי הגשה</span>
-  </a>
-
-  <!-- ==================== כפתורים צפים ==================== -->
+  <!-- ==================== כפתורי צד ====================
+       עמודה אחת בצד ימין. כל הכפתורים אחידים: סגור — רק האייקון;
+       בריחוף/מיקוד נפתח שמאלה ומגלה את הכיתוב.
+       מלמעלה למטה: הוספת מטלה ← באגים ← הגדרות ← קישורים. -->
   <div class="float-stack">
-    <button onclick="toggleFeedbackMenu()" class="fab" title="דיווח על תקלות והוספת פיצ'רים" aria-label="דיווח על תקלות והוספת פיצ'רים">
+    <button type="button" id="quick-add-fab" class="fab" onclick="openQuickAddModal()" title="הוספת מטלה מהירה (בלי התחברות)" aria-label="הוספת מטלה מהירה" aria-haspopup="dialog">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2.5 4.5 13.5H11l-1 8 8.5-11H12Z"/></svg>
+      <span class="quick-add-fab-label fab-label">הוספת מטלה</span>
+    </button>
+    <button type="button" onclick="toggleFeedbackMenu()" class="fab" title="דיווח על באגים ותקלות" aria-label="דיווח על באגים ותקלות">
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="5.5"/><path d="M9 8.5 7.5 6"/><path d="M15 8.5 16.5 6"/><path d="M6.5 12H3.5"/><path d="M20.5 12h-3"/><path d="M6.5 16.5 3.8 18"/><path d="M17.5 16.5 20.2 18"/></svg>
+      <span class="fab-label">דיווח על באגים ותקלות</span>
     </button>
-    <button onclick="toggleAccessibilityMenu()" class="fab" title="תפריט נגישות וניהול" aria-label="תפריט נגישות וניהול">
+    <button type="button" onclick="toggleAccessibilityMenu()" class="fab" title="הגדרות נגישות" aria-label="הגדרות נגישות">
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 3.5v2.2"/><path d="M12 18.3v2.2"/><path d="M3.5 12h2.2"/><path d="M18.3 12h2.2"/><path d="M6 6l1.6 1.6"/><path d="M16.4 16.4 18 18"/><path d="M18 6l-1.6 1.6"/><path d="M7.6 16.4 6 18"/></svg>
+      <span class="fab-label">הגדרות</span>
     </button>
+    <a href="https://docs.google.com/spreadsheets/d/18AV2drnRZ6d_g6Ll0CD-0wdwmq5HmmAyg9cOAH85A8M/edit?usp=sharing"
+       target="_blank" rel="noopener"
+       id="github-links-btn"
+       class="fab fab-git"
+       title="קישורי הגשה"
+       aria-label="קישורי הגשה">
+      <svg viewBox="0 0 16 16" width="22" height="22" fill="currentColor" aria-hidden="true">
+        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/>
+      </svg>
+      <span class="fab-label">קישורי הגשה</span>
+    </a>
+  </div>
+
+  <!-- ==================== חלון הוספת מטלה מהירה ==================== -->
+  <div id="quick-add-modal" class="overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="quick-add-modal-title">
+    <div class="card modal-card">
+      <button type="button" onclick="closeQuickAddModal()" class="modal-x" aria-label="סגירה">✕</button>
+      <span class="card-kicker">// בלי התחברות</span>
+      <h2 id="quick-add-modal-title" class="card-title">⚡ הוספת מטלה מהירה</h2>
+      <p class="modal-sub">ממלאים שלושה שדות — המטלה נוספת לרשימה של כולן.</p>
+      <form id="quick-add-modal-form">
+        <div class="input-group">
+          <label for="quick-add-modal-subject" class="field-label">מקצוע</label>
+          <select id="quick-add-modal-subject" required aria-label="מקצוע">
+            <option value="" disabled selected>בחרי מקצוע מהרשימה...</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label for="quick-add-modal-title" class="field-label">כותרת המטלה</label>
+          <input type="text" id="quick-add-modal-title" placeholder="כותרת המטלה" maxlength="200" required>
+        </div>
+        <div class="input-group">
+          <label for="quick-add-modal-date" class="field-label">תאריך הגשה</label>
+          <input type="date" id="quick-add-modal-date" required>
+        </div>
+        <div class="input-group">
+          <label for="quick-add-modal-file" class="field-label">📎 קובץ מצורף (לא חובה)</label>
+          <input type="file" id="quick-add-modal-file" aria-describedby="quick-add-modal-file-hint">
+          <small id="quick-add-modal-file-hint" class="quick-add-file-hint" hidden></small>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">⚡ הוסיפי מטלה</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== חלון עריכת מטלה ==================== -->
+  <div id="edit-assignment-modal" class="overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="edit-assignment-modal-title">
+    <div class="card modal-card">
+      <button type="button" onclick="closeEditAssignmentModal()" class="modal-x" aria-label="סגירה">✕</button>
+      <span class="card-kicker">// עריכה לכולן</span>
+      <h2 id="edit-assignment-modal-title" class="card-title">✏️ עריכת מטלה</h2>
+      <p class="modal-sub">השינויים יופיעו אצל כל המשתמשות.</p>
+      <form id="edit-assignment-form">
+        <div class="input-group">
+          <label for="edit-assignment-subject" class="field-label">מקצוע</label>
+          <select id="edit-assignment-subject" required aria-label="מקצוע">
+            <option value="" disabled selected>בחרי מקצוע מהרשימה...</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label for="edit-assignment-title" class="field-label">כותרת המטלה</label>
+          <input type="text" id="edit-assignment-title" placeholder="כותרת המטלה" maxlength="200" required>
+        </div>
+        <div class="input-group">
+          <label for="edit-assignment-description" class="field-label">פירוט (לא חובה)</label>
+          <textarea id="edit-assignment-description" rows="3" maxlength="2000" placeholder="פירוט המטלה..."></textarea>
+        </div>
+        <div class="input-group">
+          <label for="edit-assignment-due-date" class="field-label">תאריך הגשה</label>
+          <input type="date" id="edit-assignment-due-date" required>
+        </div>
+        <div class="input-group">
+          <label class="field-label">קבצים קיימים</label>
+          <div id="edit-assignment-files" class="edit-assignment-files"></div>
+        </div>
+        <div class="input-group">
+          <label for="edit-assignment-new-files" class="field-label">📎 הוספת קבצים (לא חובה)</label>
+          <input type="file" id="edit-assignment-new-files" multiple>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">💾 שמירת השינויים</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== בחירת קובץ לשליחה במייל ==================== -->
+  <div id="file-choice-modal" class="overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="file-choice-modal-title">
+    <div class="card modal-card">
+      <button type="button" data-file-choice-cancel class="modal-x" aria-label="סגירה">✕</button>
+      <span class="card-kicker">// למטלה יש כמה קבצים</span>
+      <h2 id="file-choice-modal-title" class="card-title">📧 איזה קובץ לשלוח?</h2>
+      <p class="modal-sub">נשלח מייל נפרד לכל קובץ — בחרי את הקובץ הרצוי.</p>
+      <div id="file-choice-list" class="file-choice-list"></div>
+      <button type="button" data-file-choice-cancel class="btn btn-ghost btn-block">ביטול</button>
+    </div>
   </div>
 
   <!-- ==================== חלון דיווח ==================== -->

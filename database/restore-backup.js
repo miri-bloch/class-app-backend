@@ -33,7 +33,9 @@ CREATE TABLE IF NOT EXISTS assignments (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   drive_file_id VARCHAR(255),
   drive_web_view_link TEXT,
-  attachment_name VARCHAR(255)
+  attachment_name VARCHAR(255),
+  as_quick BOOLEAN DEFAULT FALSE,
+  deleted_at TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS private_notes (
@@ -43,6 +45,10 @@ CREATE TABLE IF NOT EXISTS private_notes (
   note_text TEXT,
   is_completed BOOLEAN DEFAULT FALSE,
   is_hidden BOOLEAN DEFAULT FALSE,
+  is_dismissed BOOLEAN DEFAULT FALSE,
+  completed_at TIMESTAMP,
+  vanished_at TIMESTAMP,
+  hide_until TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   UNIQUE(user_id, assignment_id)
 );
