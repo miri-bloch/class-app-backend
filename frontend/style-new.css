@@ -581,7 +581,7 @@ input[type="file"]::file-selector-button:hover { background: var(--violet-12); b
 .auth-card .input-group { text-align: start; }
 .auth-row { display: flex; justify-content: flex-start; margin: -.3rem 0 .9rem; font-size: .85rem; }
 .auth-divider { height: 1px; background: var(--line-soft); margin: 1.1rem 0; }
-
+/* כפתור "התחברות באמצעות גוגל" — לבן ומזוהה, עם הלוגו בצד */
 /* ============================ ברכה ותזכורת ============================ */
 .greet {
   padding: 1.15rem 1.35rem;
@@ -1295,6 +1295,152 @@ body.light-theme .assignment-personal-note-save { color: #0E7490; }
   color: var(--cyan);
 }
 .stats-grid span { color: var(--text-2); font-size: .9rem; margin-block-start: .25rem; }
+
+/* ============================ מבצע שינה ============================ */
+.sleep-root { display: grid; gap: 1rem; }
+
+/* ארבע אריחי סיכום — אותו שפה חזותית של .stats-grid, בקנה מידה קטן יותר */
+.sleep-hero {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: .7rem;
+}
+.sleep-tile {
+  padding: 1.1rem 1.2rem;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, var(--panel-2), var(--panel) 60%);
+  box-shadow: var(--shadow);
+}
+.sleep-tile > strong {
+  display: block;
+  font-family: var(--f-mono);
+  font-weight: 800;
+  font-size: clamp(1.7rem, 4vw, 2.3rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--cyan);
+}
+.sleep-tile-label {
+  display: block;
+  color: var(--text-3);
+  font-size: .78rem;
+  margin-block-end: .2rem;
+}
+.sleep-streak { color: var(--gold) !important; }
+.sleep-trend {
+  display: inline-block;
+  margin-block-start: .4rem;
+  font-size: .78rem;
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  background: var(--lime-12);
+  color: var(--lime);
+}
+
+/* תגי סטטוס */
+.sleep-badge {
+  display: inline-block;
+  font-size: .72rem;
+  padding: 2px 9px;
+  border-radius: var(--r-pill);
+  border: 1px solid transparent;
+  margin-inline-start: .35rem;
+  vertical-align: middle;
+}
+.sleep-badge.on-time { background: var(--lime-12); color: var(--lime); border-color: var(--lime-35); }
+.sleep-badge.late { background: var(--magenta-12); color: var(--magenta); border-color: var(--magenta-35); }
+
+/* כרטיס הסימון */
+.sleep-target, .sleep-tonight, .sleep-note, .sleep-earliest { color: var(--text-2); font-size: .88rem; margin-block: .35rem; }
+.sleep-note { color: var(--text-3); font-size: .8rem; }
+.sleep-mark-card .form-row { margin-block: .7rem; }
+.sleep-mark-card input[type="time"] {
+  flex: 0 1 150px;
+  direction: ltr;
+  font-family: var(--f-mono);
+  font-size: 1.05rem;
+}
+
+/* גרף עמודות ל-14 לילות */
+.sleep-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: .45rem;
+  height: 170px;
+  padding-block-start: .5rem;
+  overflow-x: auto;
+}
+.sleep-bar-col {
+  flex: 1 1 0;
+  min-width: 30px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: .3rem;
+}
+.sleep-bar {
+  width: 100%;
+  border-radius: 6px 6px 3px 3px;
+  min-height: 6px;
+  transition: height .25s ease;
+}
+.sleep-bar.sleep-time-on { background: linear-gradient(180deg, var(--cyan), var(--violet)); box-shadow: var(--glow-cyan); }
+.sleep-bar.sleep-time-late { background: linear-gradient(180deg, var(--magenta-35), var(--magenta)); }
+.sleep-bar-label {
+  font-family: var(--f-mono);
+  font-size: .68rem;
+  color: var(--text-3);
+  direction: ltr;
+}
+
+/* כרטיס הקו */
+.sleep-phone-steps { margin: .5rem 0 0; padding-inline-start: 1.2rem; color: var(--text-2); font-size: .88rem; }
+.sleep-phone-steps li { margin-block: .25rem; }
+.sleep-sub-title { font-family: var(--f-head); font-size: .92rem; margin: 1rem 0 .4rem; color: var(--text); }
+.sleep-guest-link { display: flex; gap: .5rem; flex-wrap: wrap; }
+.sleep-guest-link input {
+  flex: 1 1 240px;
+  direction: ltr;
+  font-family: var(--f-mono);
+  font-size: .78rem;
+}
+
+/* עמוד הטופס האישי (sleep.html) — דף עצמאי, בלי הסרגל העליון */
+.sleep-guest-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem 1rem;
+  box-sizing: border-box;
+}
+.sleep-guest-card { width: 100%; max-width: 420px; }
+.sleep-guest-brand { display: flex; align-items: center; gap: .55rem; margin-bottom: .9rem; }
+.sleep-guest-mark {
+  display: inline-block;
+  background: linear-gradient(135deg, var(--cyan), var(--violet));
+  color: var(--void);
+  font-weight: 900;
+  font-size: .8rem;
+  padding: 6px 6px 4px;
+  border-radius: 7px;
+}
+.sleep-guest-tag { color: var(--text-3); font-size: .7rem; letter-spacing: 2px; font-weight: 700; }
+.sleep-guest-title { font-family: var(--f-head); font-size: 1.4rem; margin: 0 0 .6rem; }
+.sleep-guest-name { font-weight: 700; color: var(--cyan); margin-block: .2rem .5rem; }
+.sleep-guest-status { color: var(--text-2); font-size: .9rem; }
+.sleep-guest-status.is-error { color: var(--magenta); }
+.sleep-guest-feedback { min-height: 1.2em; color: var(--lime); font-size: .9rem; margin-block-start: .6rem; }
+.sleep-guest-card .form-well { display: grid; gap: .45rem; margin-block-start: .8rem; }
+.sleep-guest-card input[type="time"] {
+  direction: ltr;
+  font-family: var(--f-mono);
+  font-size: 1.2rem;
+  padding: .6rem .8rem;
+}
+.sleep-guest-card .neon-btn { width: 100%; }
 
 /* ============================ לוח שנה ============================ */
 .week-nav { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }

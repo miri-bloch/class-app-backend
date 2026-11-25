@@ -45,6 +45,7 @@ const summaryRoutes = require('./routes/summaries');
 const eventRoutes = require('./routes/events');
 const personalFileRoutes = require('./routes/personalFiles');
 const feedbackRoutes = require('./routes/feedback');
+const sleepRoutes = require('./routes/sleep');
 
 // חיבור כל הנתיבים (Routes) לקידומת ה-API שלהם
 app.use('/api/auth', authRoutes);
@@ -55,6 +56,7 @@ app.use('/api/summaries', summaryRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/personal-files', personalFileRoutes);
 app.use('/api/feedback', feedbackRoutes);
+app.use('/api/sleep', sleepRoutes);
 
 // בדיקת בריאות השרת
 app.get('/api/health', (req, res) => {
@@ -165,6 +167,50 @@ pool.query(`
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
   CREATE INDEX IF NOT EXISTS idx_notice_files_notice ON notice_files(notice_id);
+
+  -- ===== מבצע שינה מוקדם =====
+  -- יעד אישי, השתתפות במבצע, טוקן לטופס אורח ומספר טלפון לקו
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS sleep_target_time TIME DEFAULT '22:30';
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS sleep_opt_in BOOLEAN DEFAULT TRUE;
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS sleep_guest_token VARCHAR(64);
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_number VARCHAR(20);
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_users_sleep_guest_token
+    ON users (sleep_guest_token) WHERE sleep_guest_token IS NOT NULL;
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_users_phone_number
+    ON users (phone_number) WHERE phone_number IS NOT NULL;
+
+  -- דיווח שינה אחד ללילה לוגי (sleep_date). הדיווח האחרון באותו לילה דורס.
+  CREATE TABLE IF NOT EXISTS sleep_logs (
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    sleep_date DATE NOT NULL,
+    bedtime TIME NOT NULL,
+    reported_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    source VARCHAR(10) NOT NULL DEFAULT 'web',
+    status VARCHAR(10) NOT NULL DEFAULT 'on_time',
+    note VARCHAR(300),
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (user_id, sleep_date),
+    CONSTRAINT sleep_logs_source_check CHECK (source IN ('web','guest','phone','admin')),
+    CONSTRAINT sleep_logs_status_check CHECK (status IN ('on_time','late'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_sleep_logs_date ON sleep_logs(sleep_date, bedtime);
+  CREATE INDEX IF NOT EXISTS idx_sleep_logs_user_date ON sleep_logs(user_id, sleep_date DESC);
+
+  -- שיחות שהגיעו מקו ימות המשיח. call_id = ApiCallId (מזהה ייחודי לכל שיחה).
+  -- נשמרת התשובה שנשלחה כדי שקריאה חוזרת של ימות תקבל את אותה תשובה בדיוק.
+  CREATE TABLE IF NOT EXISTS sleep_phone_calls (
+    call_id VARCHAR(64) PRIMARY KEY,
+    phone VARCHAR(20),
+    user_id INT REFERENCES users(id) ON DELETE SET NULL,
+    sleep_date DATE,
+    response TEXT,
+    step VARCHAR(20) NOT NULL DEFAULT 'start',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE INDEX IF NOT EXISTS idx_sleep_phone_calls_phone ON sleep_phone_calls(phone, created_at DESC);
+
   -- סימון 11 התלמידות הפעילות (היתר — מורה/אורחות — נשארות מסומנות FALSE)
   UPDATE users SET is_student = TRUE WHERE id IN (8, 12, 14, 13, 15, 16, 11, 20, 9, 17, 10);
 `).catch(err => console.error('שגיאה בעדכון עמודות קבצי המטלות:', err));

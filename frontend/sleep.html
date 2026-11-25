@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>סימון שעת שינה</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;500;700;900&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style-new.css">
+</head>
+<body>
+  <!--
+    טופס אורח לסימון שעת השינה.
+    הקישור מגיע עם ?t=<טוקן אישי> — כל טוקן מזהה משתמשת אחת, בלי התחברות.
+    הדף לא טוען שום סקריפט חיצוני, וכל הטקסט שמגיע מהשרת מוזרק עם textContent.
+  -->
+  <main class="sleep-guest-page">
+    <section class="card sleep-guest-card">
+      <div class="sleep-guest-brand">
+        <span class="sleep-guest-mark">HC</span>
+        <span class="sleep-guest-tag">SLEEP CAMPAIGN</span>
+      </div>
+
+      <h1 class="sleep-guest-title">סימון שעת שינה</h1>
+
+      <p id="guest-status" class="sleep-guest-status" role="status">טוען...</p>
+
+      <div id="guest-panel" hidden>
+        <p id="guest-name" class="sleep-guest-name"></p>
+        <p class="sleep-target">שעת היעד: <strong id="guest-target">—</strong></p>
+        <p id="guest-tonight" class="sleep-tonight"></p>
+        <p id="guest-streak" class="sleep-target"></p>
+
+        <form id="guest-form" class="form-well">
+          <label class="field-label" for="guest-bedtime">שעת השינה שלך</label>
+          <input type="time" id="guest-bedtime" required>
+          <button type="submit" class="neon-btn" id="guest-submit">סימון</button>
+        </form>
+
+        <p class="sleep-note">הקישור הזה אישי. אין להעביר אותו לאחרות.</p>
+      </div>
+
+      <p id="guest-feedback" class="sleep-guest-feedback" role="status" aria-live="polite"></p>
+    </section>
+  </main>
+
+  <script>
+    // הקישור מגיע מהשרת עם ?t=<טוקן>. בלי טוקן אין מה להציג.
+    const params = new URLSearchParams(window.location.search);
+    const token = (params.get('t') || '').trim();
+    const apiBase = `${window.location.origin}/api/sleep/guest/${encodeURIComponent(token)}`;
+
+    const els = {
+      status: document.getElementById('guest-status'),
+      panel: document.getElementById('guest-panel'),
+      name: document.getElementById('guest-name'),
+      target: document.getElementById('guest-target'),
+      tonight: document.getElementById('guest-tonight'),
+      streak: document.getElementById('guest-streak'),
+      form: document.getElementById('guest-form'),
+      input: document.getElementById('guest-bedtime'),
+      submit: document.getElementById('guest-submit'),
+      feedback: document.getElementById('guest-feedback'),
+    };
+
+    function setStatus(text, isError) {
+      els.status.textContent = text;
+      els.status.hidden = !text;
+      els.status.classList.toggle('is-error', Boolean(isError));
+    }
+
+    function describeTonight(tonight) {
+      if (!tonight || !tonight.bedtime) return 'הלילה עוד לא סומן.';
+      return `הלילה סומן: ${tonight.bedtime}`;
+    }
+
+    function render(data) {
+      els.name.textContent = data.full_name || '';
+      els.target.textContent = data.sleep_target_time || '—';
+      els.tonight.textContent = describeTonight(data.tonight);
+      els.streak.textContent = Number(data.streak) > 0
+        ? `רצף נוכחי: ${Number(data.streak)} לילות`
+        : 'הרצף מתחיל בלילה הזה.';
+      els.panel.hidden = false;
+    }
+
+    async function load() {
+      if (!/^[a-f0-9]{32,64}$/i.test(token)) {
+        setStatus('הקישור אינו תקין. יש לפנות למנהלת לקבלת קישור חדש.', true);
+        return;
+      }
+      try {
+        const res = await fetch(apiBase, { headers: { Accept: 'application/json' } });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          setStatus(data.error || 'הקישור אינו תקין.', true);
+          return;
+        }
+        setStatus('');
+        render(data);
+      } catch (err) {
+        setStatus('לא הצלחנו להתחבר לשרת. נסי שוב בעוד רגע.', true);
+      }
+    }
+
+    els.form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const value = els.input.value;
+      if (!value) {
+        els.feedback.textContent = 'יש לבחור שעה.';
+        return;
+      }
+      els.submit.disabled = true;
+      els.feedback.textContent = 'שולח...';
+      try {
+        const res = await fetch(apiBase, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({ bedtime: value }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          els.feedback.textContent = data.error || 'לא הצלחנו לרשום את השינה.';
+          return;
+        }
+        els.feedback.textContent = 'נרשם! לילה טוב.';
+        els.tonight.textContent = describeTonight(data.log);
+        if (Number.isFinite(Number(data.streak))) {
+          els.streak.textContent = Number(data.streak) > 0
+            ? `רצף נוכחי: ${Number(data.streak)} לילות`
+            : '';
+        }
+      } catch (err) {
+        els.feedback.textContent = 'לא הצלחנו להתחבר לשרת. נסי שוב בעוד רגע.';
+      } finally {
+        els.submit.disabled = false;
+      }
+    });
+
+    load();
+  </script>
+</body>
+</html>

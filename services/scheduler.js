@@ -1,6 +1,7 @@
 const cron = require('node-cron');
 const pool = require('../db');
-const { sendHomeworkDigest } = require('./emailService');
+const { sendHomeworkDigest, sendSleepEarliestEmail, sendSleepPersonalEmail } = require('./emailService');
+const sleepService = require('./sleepService');
 
 function initScheduler() {
   cron.schedule('5 0 * * *', async () => {
@@ -75,6 +76,64 @@ function initScheduler() {
       }
     } catch (err) {
       console.error('שגיאה בהרצת מתזמן המיילים:', err);
+    }
+  }, { timezone: 'Asia/Jerusalem' });
+
+  // ===== מבצע השינה המוקדמת =====
+
+  // 06:30 — מייל "מי נרדמה הכי מוקדם" על הלילה שלפני
+  cron.schedule('30 6 * * *', async () => {
+    try {
+      const overview = await sleepService.getOverview();
+      if (!overview.earliest) {
+        console.log('אין דיווחי שינה ללילה האחרון — לא נשלח מייל');
+        return;
+      }
+      const recipients = await pool.query(
+        `SELECT email FROM users
+          WHERE is_student = TRUE AND COALESCE(sleep_opt_in, TRUE) = TRUE AND email IS NOT NULL`
+      );
+      for (const { email } of recipients.rows) {
+        try {
+          await sendSleepEarliestEmail(email, {
+            earliestName: overview.earliest.name,
+            earliestBedtime: overview.earliest.bedtime,
+            reportedCount: overview.reportedCount,
+            participants: overview.participants,
+          });
+        } catch (err) {
+          console.error(`שגיאה בשליחת מייל שינה ל-${email}:`, err.message);
+        }
+      }
+    } catch (err) {
+      console.error('שגיאה במייל השינה היומי:', err);
+    }
+  }, { timezone: 'Asia/Jerusalem' });
+
+  // 07:00 ביום שישי — סיכום אישי שבועי (רצף + שיפור)
+  cron.schedule('0 7 * * 5', async () => {
+    try {
+      const users = await pool.query(
+        `SELECT id, full_name, email FROM users
+          WHERE is_student = TRUE AND COALESCE(sleep_opt_in, TRUE) = TRUE AND email IS NOT NULL`
+      );
+      for (const user of users.rows) {
+        try {
+          const stats = await sleepService.getUserStats(user.id, 14);
+          if (!stats.lastNight) continue;
+          await sendSleepPersonalEmail(user.email, {
+            name: user.full_name,
+            bedtime: stats.lastNight.bedtime,
+            status: stats.lastNight.status,
+            streak: stats.streak,
+            improvementMinutes: stats.improvementMinutes,
+          });
+        } catch (err) {
+          console.error(`שגיאה בסיכום שינה שבועי ל-${user.email}:`, err.message);
+        }
+      }
+    } catch (err) {
+      console.error('שגיאה בסיכום השינה השבועי:', err);
     }
   }, { timezone: 'Asia/Jerusalem' });
 }

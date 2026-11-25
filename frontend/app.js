@@ -274,6 +274,9 @@ function initTabs() {
       if (target === 'tab-files-by-subject' && typeof window.loadFilesBySubject === 'function') {
         window.loadFilesBySubject();
       }
+      if (target === 'tab-sleep' && typeof window.loadSleep === 'function') {
+        window.loadSleep();
+      }
       // ללא גלילה — המעבר משאיר את התצוגה במקומה הנוכחי
     });
   });
@@ -418,6 +421,221 @@ function escapeHtml(value) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+// ==================== מבצע שינה ==================== //
+// התוכן נבנה כאן; הנתונים מגיעים מ-/api/sleep — ראו routes/sleep.js.
+// כל מספרי הסטטיסטיקה מגיעים מחושבים מהשרת (services/sleepService.js),
+// והדפדפן רק מצייר אותם — כדי שלא יהיו שני חישובים שיכולים לסתור זה את זה.
+
+const SLEEP_SOURCE_LABELS = {
+  web: 'מהאתר',
+  guest: 'מהטופס האישי',
+  phone: 'מהקו',
+  admin: 'מנהלת',
+};
+
+// שעת שינה "מנורמלת" לגרף: 00:30 הופך ל-1470 כדי שיהיה מאוחר מ-22:30
+function sleepComparableMinutes(time) {
+  const match = String(time || '').match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return null;
+  const minutes = Number(match[1]) * 60 + Number(match[2]);
+  return minutes < 16 * 60 ? minutes + 24 * 60 : minutes;
+}
+
+function sleepFormatAverage(minutes) {
+  if (!Number.isFinite(minutes)) return '—';
+  const normalized = ((Math.round(minutes) % 1440) + 1440) % 1440;
+  const h = String(Math.floor(normalized / 60)).padStart(2, '0');
+  const m = String(normalized % 60).padStart(2, '0');
+  return `${h}:${m}`;
+}
+
+// גובה עמודה: 20:00 → 100%, 01:00 → 0% (השעות המוקדמות גבוהות יותר)
+function sleepBarHeight(time) {
+  const minutes = sleepComparableMinutes(time);
+  if (minutes === null) return 8;
+  const from = 20 * 60;
+  const span = 5 * 60;
+  return Math.max(8, Math.min(100, Math.round(((from + span - minutes) / span) * 100)));
+}
+
+function sleepStamp(status) {
+  return status === 'on_time'
+    ? '<span class="sleep-badge on-time">בזמן</span>'
+    : '<span class="sleep-badge late">מאוחר</span>';
+}
+
+function sleepRenderHistory(rows) {
+  if (!rows || !rows.length) {
+    return '<p class="empty-state">עדיין לא נרשמו לילות.</p>';
+  }
+  const bars = rows
+    .slice(-14)
+    .map((row) => {
+      const height = sleepBarHeight(row.bedtime);
+      const tone = row.status === 'on_time' ? 'sleep-time-on' : 'sleep-time-late';
+      const label = escapeHtml(row.bedtime);
+      return `
+        <div class="sleep-bar-col" title="${escapeHtml(row.sleep_date)} · ${label}">
+          <div class="sleep-bar ${tone}" style="height:${height}%"></div>
+          <span class="sleep-bar-label">${label}</span>
+        </div>`;
+    })
+    .join('');
+  return `<div class="sleep-bars">${bars}</div>`;
+}
+
+window.loadSleep = async function loadSleep() {
+  const root = document.getElementById('sleep-root');
+  if (!root || !currentUserId) return;
+
+  root.innerHTML = '<p class="empty-state">טוען נתוני שינה...</p>';
+
+  try {
+    const [meRes, overRes, linkRes] = await Promise.all([
+      authFetch(`${API_URL}/sleep/me`),
+      authFetch(`${API_URL}/sleep/overview`),
+      authFetch(`${API_URL}/sleep/me/guest-link`),
+    ]);
+
+    if (!meRes.ok) {
+      root.innerHTML = '<p class="empty-state">לא הצלחנו לטעון את נתוני השינה.</p>';
+      return;
+    }
+
+    const { settings, stats } = await meRes.json();
+    const over = overRes.ok ? await overRes.json() : null;
+    const guestLink = linkRes.ok ? (await linkRes.json()).url : '';
+
+    const lastNight = stats.lastNight;
+    const improvement = Number(stats.improvementMinutes);
+    const improvementHtml = Number.isFinite(improvement) && improvement > 0
+      ? `<span class="sleep-trend up">שיפור של ${improvement} דקות</span>`
+      : '';
+    const tonightHtml = stats.tonight
+      ? `<p class="sleep-tonight">הלילה סומן: <strong>${escapeHtml(stats.tonight.bedtime)}</strong> ${sleepStamp(stats.tonight.status)}</p>`
+      : '<p class="sleep-tonight">הלילה עוד לא סומן.</p>';
+
+    root.innerHTML = `
+      <div class="sleep-hero">
+        <div class="sleep-tile">
+          <span class="sleep-tile-label">הלילה הקודם</span>
+          <strong>${lastNight ? escapeHtml(lastNight.bedtime) : '—'}</strong>
+          ${lastNight ? sleepStamp(lastNight.status) : ''}
+        </div>
+        <div class="sleep-tile">
+          <span class="sleep-tile-label">רצף</span>
+          <strong class="sleep-streak">${Number(stats.streak) || 0}</strong>
+          <span class="sleep-tile-label">לילות ברצף</span>
+        </div>
+        <div class="sleep-tile">
+          <span class="sleep-tile-label">ממוצע שבועי</span>
+          <strong>${sleepFormatAverage(stats.avgLast7Minutes)}</strong>
+          ${improvementHtml}
+        </div>
+        <div class="sleep-tile">
+          <span class="sleep-tile-label">עמידה ביעד</span>
+          <strong>${Number(stats.onTimeRate) || 0}%</strong>
+          <span class="sleep-tile-label">${Number(stats.onTimeNights) || 0} מתוך ${Number(stats.totalNights) || 0} לילות</span>
+        </div>
+      </div>
+
+      <section class="card sleep-mark-card">
+        <h3 class="card-title">סימון שעת השינה</h3>
+        <p class="sleep-target">שעת היעד שלך: <strong>${escapeHtml(settings.sleep_target_time || '—')}</strong></p>
+        ${tonightHtml}
+        <form id="sleep-mark-form" class="form-well form-row">
+          <label class="field-label" for="sleep-bedtime">שעת שינה</label>
+          <input type="time" id="sleep-bedtime" required>
+          <button type="submit" class="neon-btn">סימון שעת השינה</button>
+        </form>
+        <p class="sleep-note">מומלץ לסמן דרך הקו — ראו הוראות למטה.</p>
+      </section>
+
+      <section class="card sleep-history">
+        <h3 class="card-title">14 הלילות האחרונים</h3>
+        ${sleepRenderHistory(stats.history || [])}
+      </section>
+
+      <section class="card sleep-phone-card">
+        <h3 class="card-title">סימון מהקו</h3>
+        <ol class="sleep-phone-steps">
+          <li>מתקשרים למספר הקו של הכיתה.</li>
+          <li>מקישים את שעת השינה בארבע ספרות — למשל 2130 עבור 21:30.</li>
+          <li>מאשרים ומסיימים את השיחה.</li>
+        </ol>
+        <p class="sleep-note">
+          ${settings.phone_number
+            ? `המספר המשויך לחשבון שלך: <strong>${escapeHtml(settings.phone_number)}</strong>`
+            : 'עוד לא הוגדר מספר טלפון לחשבון שלך — עדכני אותו אצל המנהלת.'}
+        </p>
+        ${guestLink ? `
+          <h4 class="sleep-sub-title">קישור אישי לסימון מהטלפון בלי התחברות</h4>
+          <div class="sleep-guest-link">
+            <input type="text" readonly value="${escapeHtml(guestLink)}" onclick="this.select()">
+            <button type="button" class="neon-btn outline" id="sleep-copy-link">העתקה</button>
+          </div>
+          <p class="sleep-note">הקישור אישי — אין להעביר אותו לאחרות.</p>` : ''}
+      </section>
+
+      ${over ? `
+        <section class="card sleep-overview">
+          <h3 class="card-title">הכיתה בלילה של ${escapeHtml(over.sleepDate)}</h3>
+          <p class="sleep-earliest">הכי מוקדמת:
+            <strong>${escapeHtml(over.earliest ? over.earliest.name : '—')}</strong>
+            ${over.earliest ? `<span class="sleep-badge on-time">${escapeHtml(over.earliest.bedtime)}</span>` : ''}
+          </p>
+          <p class="sleep-target">דיווחו ${Number(over.reportedCount) || 0} מתוך ${Number(over.participants) || 0}</p>
+        </section>` : ''}
+    `;
+
+    const form = document.getElementById('sleep-mark-form');
+    if (form) {
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        sleepSubmitMark();
+      });
+    }
+
+    const copyBtn = document.getElementById('sleep-copy-link');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(guestLink);
+          showToast('הקישור הועתק');
+        } catch (_) {
+          showToast('לא הצלחנו להעתיק — אפשר לסמן את הקישור ולהעתיק ידנית', true);
+        }
+      });
+    }
+  } catch (err) {
+    console.error('שגיאה בטעינת שינה:', err);
+    root.innerHTML = '<p class="empty-state">לא הצלחנו לטעון את נתוני השינה.</p>';
+  }
+};
+
+async function sleepSubmitMark() {
+  const input = document.getElementById('sleep-bedtime');
+  const value = input ? input.value : '';
+  if (!value) {
+    showToast('יש לבחור שעה לפני השמירה', true);
+    return;
+  }
+
+  try {
+    const response = await authFetch(`${API_URL}/sleep/me`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bedtime: value }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'שגיאה ברישום השינה');
+    showToast('השינה נרשמה, כל הכבוד!');
+    await window.loadSleep();
+  } catch (err) {
+    showToast(err.message || 'לא הצלחנו לרשום את השינה', true);
+  }
 }
 
 window.loadPersonalFiles = async function loadPersonalFiles() {

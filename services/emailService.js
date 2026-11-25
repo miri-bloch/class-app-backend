@@ -197,10 +197,72 @@ async function sendMilkDutyEmail(toEmail, userName) {
   );
 }
 
+// ---------- מבצע השינה המוקדמת ----------
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+// "הכי מוקדמת של אתמול" — מייל יומי לכיתה
+async function sendSleepEarliestEmail(toEmail, { earliestName, earliestBedtime, reportedCount, participants }) {
+  const content = `
+    <div style="font-size: 20px; font-weight: bold; color: #c084fc; margin-bottom: 15px;">
+      🌙 מי נרדמה הכי מוקדם?
+    </div>
+    <div style="background: rgba(34,211,238,0.10); border-right: 4px solid #22d3ee; border-radius: 10px; padding: 18px; text-align: right; color: #e2e8f0;">
+      <div style="font-size: 26px; font-weight: bold; color: #22d3ee;">${escapeHtml(earliestName)}</div>
+      <div style="font-size: 16px; color: #cbd5e1; margin-top: 6px;">שעת שינה: ${escapeHtml(earliestBedtime)}</div>
+    </div>
+    <div style="font-size: 14px; color: #94a3b8; margin-top: 18px;">
+      דיווחו בלילה האחרון: ${Number(reportedCount) || 0} מתוך ${Number(participants) || 0}
+    </div>
+  `;
+  await sendBrevoEmail(
+    toEmail,
+    '🌙 מבצע השינה — מי נרדמה הכי מוקדם',
+    getBaseEmailTemplate('SLEEP CAMPAIGN', content)
+  );
+}
+
+// סיכום אישי: אחרי לילה עם דיווח, במיוחד כשמדובר ברצף או בשיפור
+async function sendSleepPersonalEmail(toEmail, { name, bedtime, status, streak, improvementMinutes }) {
+  const statusText = status === 'on_time' ? 'בזמן ✅' : 'מאוחר ⏰';
+  const streakHtml = streak > 1
+    ? `<div style="font-size: 16px; color: #c084fc; margin-top: 10px;">🔥 רצף של ${streak} לילות</div>`
+    : '';
+  const improvementHtml = Number.isFinite(improvementMinutes) && improvementMinutes > 0
+    ? `<div style="font-size: 14px; color: #22d3ee; margin-top: 10px;">📈 שיפור של ${improvementMinutes} דקות השבוע</div>`
+    : '';
+
+  const content = `
+    <div style="font-size: 20px; font-weight: bold; color: #22d3ee; margin-bottom: 15px;">
+      שלום ${escapeHtml(name)}, נרשמה שעת השינה שלך
+    </div>
+    <div style="background: rgba(192,132,252,0.10); border-right: 4px solid #c084fc; border-radius: 10px; padding: 16px; text-align: right; color: #e2e8f0;">
+      <div style="font-size: 24px; font-weight: bold;">${escapeHtml(bedtime)}</div>
+      <div style="font-size: 14px; color: #cbd5e1;">${statusText}</div>
+    </div>
+    ${streakHtml}
+    ${improvementHtml}
+  `;
+  await sendBrevoEmail(
+    toEmail,
+    '🌙 סיכום השינה שלך',
+    getBaseEmailTemplate('SLEEP REPORT', content)
+  );
+}
+
 module.exports = {
   sendPasswordResetEmail,
   sendHomeworkDigest,
   sendMilkDutyEmail,
+  sendSleepEarliestEmail,
+  sendSleepPersonalEmail,
   sendEmail,
   sendBrandedEmail,
   sendBrandedEmailWithAttachment,
