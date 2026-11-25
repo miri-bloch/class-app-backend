@@ -5,6 +5,7 @@ const { sendPasswordResetEmail, sendBrandedEmail } = require('../services/emailS
 const { signToken } = require('../services/tokenService');
 const { hashPassword, comparePassword } = require('../services/passwordService');
 const { optionalAuth } = require('../middleware/auth');
+const googleAuth = require('../services/googleAuthService');
 
 // ניהול משתמשות מחוברות בזמן אמת (Heartbeat)
 const activeUsers = new Map();
@@ -187,6 +188,97 @@ router.post('/forgot-password', async (req, res) => {
   } catch (err) {
     console.error('שגיאה בשחזור סיסמה:', err);
     res.status(500).json({ error: 'שגיאת שרת בתהליך שחזור הסיסמה' });
+  }
+});
+
+// ================= התחברות באמצעות גוגל =================
+
+// האם ההתחברות עם גוגל מוגדרת — ה-frontend משתמש בזה כדי להציג את הכפתור
+router.get('/google/status', (req, res) => {
+  res.json({ enabled: googleAuth.isConfigured() });
+});
+
+// צעד 1: הפניה למסך ההסכמה של גוגל
+router.get('/google', async (req, res) => {
+  if (!googleAuth.isConfigured()) {
+    return res.status(503).send('התחברות עם גוגל אינה מוגדרת בשרת');
+  }
+  try {
+    const authRequest = await googleAuth.createAuthRequest();
+    res.redirect(googleAuth.buildAuthUrl(req, authRequest));
+  } catch (err) {
+    console.error('שגיאה בפתיחת התחברות גוגל:', err);
+    res.status(500).send('שגיאה בפתיחת התחברות עם גוגל');
+  }
+});
+
+// צעד 2: חזרה מגוגל. מזהה את המשתמשת לפי המייל,
+// ואם אין כזו — יוצרת חשבון חדש בלי סיסמה (password_hash ריק).
+router.get('/google/callback', async (req, res) => {
+  const frontendError = (message) =>
+    res.redirect(`/?auth_error=${encodeURIComponent(message)}`);
+
+  try {
+    if (req.query.error) {
+      return frontendError('ההתחברות עם גוגל בוטלה');
+    }
+    const { code, state } = req.query;
+    if (typeof code !== 'string' || typeof state !== 'string') {
+      return frontendError('תשובה לא תקינה מגוגל');
+    }
+
+    const codeVerifier = await googleAuth.consumeState(state);
+    if (!codeVerifier) {
+      return frontendError('פג תוקף ניסיון ההתחברות — נסי שוב');
+    }
+
+    const googleUser = await googleAuth.exchangeCodeForUser(req, code, codeVerifier);
+
+    // גוגל מחזירה "sub" — מזהה חשבון קבוע, גם אם המייל משתנה
+    let result = await pool.query(
+      `UPDATE users
+          SET last_seen = CURRENT_TIMESTAMP
+        WHERE LOWER(email) = $1
+        RETURNING id, full_name, email`,
+      [googleUser.email]
+    );
+
+    // משתמשת חדשה — נוצרת עם סיסמה ריקה: ניתן להתחבר רק דרך גוגל
+    // (comparePassword של ערך ריק לעולם לא יתאים לסיסמה אמיתית)
+    if (result.rows.length === 0) {
+      const inserted = await pool.query(
+        `INSERT INTO users (full_name, email, password_hash, google_id, is_student)
+         VALUES ($1, $2, '', $3, FALSE)
+         ON CONFLICT (email) DO NOTHING
+         RETURNING id, full_name, email`,
+        [googleUser.full_name || googleUser.email.split('@')[0], googleUser.email, googleUser.sub]
+      );
+      // אם מישהי נרשמה בדרך הרגילה בין השורות — משתמשים ברשומה שלה
+      result = inserted.rows.length > 0
+        ? inserted
+        : await pool.query(
+            'SELECT id, full_name, email FROM users WHERE LOWER(email) = $1',
+            [googleUser.email]
+          );
+    }
+
+    if (result.rows.length === 0) {
+      throw new Error('לא הצלחנו ליצור את החשבון');
+    }
+
+    const savedUser = result.rows[0];
+    const token = signToken(savedUser);
+
+    // הטוקן מועבר ל-frontend בפרמטר של הכתובת, שם הוא נשמר ב-localStorage
+    // ואז מוסר מהכתובת. אין כאן סוד נוסף מלבד הטוקן עצמו.
+    const params = new URLSearchParams({
+      google_token: token,
+      google_user: JSON.stringify(savedUser)
+    });
+    res.redirect(`/?${params.toString()}`);
+  } catch (err) {
+    console.error('שגיאה בהתחברות עם גוגל:', err);
+    frontendError('התחברות עם גוגל נכשלה — נסי שוב');
   }
 });
 

@@ -16,7 +16,62 @@ const registerSection = document.getElementById('register-section');
 const authContainer = document.getElementById('auth-container');
 const dashboardApp = document.getElementById('dashboard-app');
 
+// ===== התחברות באמצעות גוגל =====
+// השרת מחזיר לכתובת הראשית עם google_token ו-google_user — כאן שומרים
+// את הסשן ומנקים את הפרמטרים מהכתובת, כדי שהטוקן לא יישאר בהיסטוריה.
+function handleGoogleAuthReturn() {
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('google_token');
+  const rawUser = params.get('google_user');
+  const error = params.get('auth_error');
+
+  if (!token && !rawUser && !error) return false;
+
+  params.delete('google_token');
+  params.delete('google_user');
+  params.delete('auth_error');
+  const cleanUrl = window.location.pathname + (params.toString() ? `?${params}` : '');
+  // replaceState — כדי שהטוקן לא יישאר בלחיצה על "אחורה"
+  window.history.replaceState({}, '', cleanUrl);
+
+  if (error) {
+    const msg = document.getElementById('login-message');
+    if (msg) {
+      msg.textContent = error;
+      msg.style.color = '#f43f5e';
+    }
+    return false;
+  }
+
+  try {
+    const user = JSON.parse(rawUser);
+    if (user && token) {
+      saveSession(user, token);
+      return true;
+    }
+  } catch (e) {
+    console.error('פרטי ההתחברות מגוגל אינם תקינים', e);
+  }
+  return false;
+}
+
+// מציג את כפתור גוגל רק אם השרת מוגדר עם מפתחות גוגל
+async function initGoogleLoginButton() {
+  const box = document.getElementById('google-login-box');
+  if (!box) return;
+  try {
+    const res = await fetch(`${API_URL}/auth/google/status`);
+    const data = await res.json();
+    box.style.display = data.enabled ? 'block' : 'none';
+  } catch (e) {
+    box.style.display = 'none';
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  initGoogleLoginButton();
+  if (handleGoogleAuthReturn()) return;
+
   const savedUser = localStorage.getItem('class_app_user');
   const savedTime = localStorage.getItem('class_app_time');
   

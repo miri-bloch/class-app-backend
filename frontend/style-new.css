@@ -582,6 +582,19 @@ input[type="file"]::file-selector-button:hover { background: var(--violet-12); b
 .auth-row { display: flex; justify-content: flex-start; margin: -.3rem 0 .9rem; font-size: .85rem; }
 .auth-divider { height: 1px; background: var(--line-soft); margin: 1.1rem 0; }
 /* כפתור "התחברות באמצעות גוגל" — לבן ומזוהה, עם הלוגו בצד */
+.btn-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .6rem;
+  background: #fff;
+  color: #1f1f1f;
+  border: 1px solid var(--line-soft);
+  text-decoration: none;
+}
+.btn-google:hover { background: #f4f4f4; color: #1f1f1f; }
+.btn-google .google-icon { width: 1.15rem; height: 1.15rem; flex: none; }
+
 /* ============================ ברכה ותזכורת ============================ */
 .greet {
   padding: 1.15rem 1.35rem;

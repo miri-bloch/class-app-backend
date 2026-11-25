@@ -7,6 +7,10 @@ const path = require('path');
 dotenv.config();
 
 const app = express();
+// ב-Render (ומאחורי כל פרוקסי אחר) הבקשה מגיעה כ-HTTP פנימי. בלי זה
+// req.protocol מחזיר "http" וכתובת ההחזרה של גוגל יוצאת "http://..." — מה שלא
+// מתאים ל-"https://..." שרשום ב-Google Cloud Console (redirect_uri_mismatch).
+app.set('trust proxy', 1);
 app.use(cors());
 // ברירת המחדל של express.json() היא 100kb — קטן מדי לצילום מסך ב-base64.
 app.use(express.json({ limit: '8mb' }));
@@ -70,6 +74,20 @@ pool.query(`
   ALTER TABLE users ADD COLUMN IF NOT EXISTS notification_time TIME DEFAULT '20:00';
   ALTER TABLE users ADD COLUMN IF NOT EXISTS is_student BOOLEAN DEFAULT FALSE;
   ALTER TABLE users ADD COLUMN IF NOT EXISTS last_seen TIMESTAMP;
+  -- התחברות באמצעות גוגל: מזהה חשבון גוגל (sub) של המשתמשת
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id VARCHAR(64);
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id
+    ON users (google_id) WHERE google_id IS NOT NULL;
+  -- משתמשת שנוצרה בהתחברות גוגל מקבלת password_hash ריק, ולכן אינה
+  -- יכולה להתחבר עם סיסמה. איפוס סיסמה ("שכחתי סיסמה") עדיין יעניק לה סיסמה.
+  ALTER TABLE users ALTER COLUMN password_hash SET DEFAULT '';
+  -- בקשות התחברות גוגל ממתינות: state חד-פעמי ו-code_verifier ל-PKCE
+  CREATE TABLE IF NOT EXISTS oauth_states (
+    state VARCHAR(128) PRIMARY KEY,
+    code_verifier VARCHAR(128) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE INDEX IF NOT EXISTS idx_oauth_states_created ON oauth_states(created_at);
   -- התחברות אינה רגישה לאותיות: אין שתי משתמשות שאותיות המייל שלהן שונות רק ברישיות
   CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_lower ON users (LOWER(email));
   ALTER TABLE assignments ADD COLUMN IF NOT EXISTS drive_file_id VARCHAR(255);
