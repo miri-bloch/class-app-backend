@@ -1,6 +1,6 @@
 const cron = require('node-cron');
 const pool = require('../db');
-const { sendHomeworkDigest, sendSleepEarliestEmail, sendSleepPersonalEmail } = require('./emailService');
+const { sendHomeworkDigest, sendSleepWeeklyEmail } = require('./emailService');
 const sleepService = require('./sleepService');
 
 function initScheduler() {
@@ -80,53 +80,32 @@ function initScheduler() {
   }, { timezone: 'Asia/Jerusalem' });
 
   // ===== מבצע השינה המוקדמת =====
+  //
+  // אין מייל יומי: הדיווח היחיד הוא בקו הטלפון והמקום האישי מוצג באתר בלבד.
+  // המייל היחיד הוא סיכום שבועי כיתתי ביום שישי — בלי שמות של בנות.
 
-  // 06:30 — מייל "מי נרדמה הכי מוקדם" על הלילה שלפני
-  cron.schedule('30 6 * * *', async () => {
-    try {
-      const overview = await sleepService.getOverview();
-      if (!overview.earliest) {
-        console.log('אין דיווחי שינה ללילה האחרון — לא נשלח מייל');
-        return;
-      }
-      const recipients = await pool.query(
-        `SELECT email FROM users
-          WHERE is_student = TRUE AND COALESCE(sleep_opt_in, TRUE) = TRUE AND email IS NOT NULL`
-      );
-      for (const { email } of recipients.rows) {
-        try {
-          await sendSleepEarliestEmail(email, {
-            earliestName: overview.earliest.name,
-            earliestBedtime: overview.earliest.bedtime,
-            reportedCount: overview.reportedCount,
-            participants: overview.participants,
-          });
-        } catch (err) {
-          console.error(`שגיאה בשליחת מייל שינה ל-${email}:`, err.message);
-        }
-      }
-    } catch (err) {
-      console.error('שגיאה במייל השינה היומי:', err);
-    }
-  }, { timezone: 'Asia/Jerusalem' });
-
-  // 07:00 ביום שישי — סיכום אישי שבועי (רצף + שיפור)
+  // 07:00 ביום שישי — סיכום שבועי אחד לכל משתתפת, עם אותם מספרים לכולן
   cron.schedule('0 7 * * 5', async () => {
     try {
+      const summary = await sleepService.getWeeklyClassSummary(7);
+      if (!summary.reported) {
+        console.log('אין דיווחי שינה בשבוע האחרון — לא נשלח סיכום שבועי');
+        return;
+      }
       const users = await pool.query(
-        `SELECT id, full_name, email FROM users
+        `SELECT full_name, email FROM users
           WHERE is_student = TRUE AND COALESCE(sleep_opt_in, TRUE) = TRUE AND email IS NOT NULL`
       );
       for (const user of users.rows) {
         try {
-          const stats = await sleepService.getUserStats(user.id, 14);
-          if (!stats.lastNight) continue;
-          await sendSleepPersonalEmail(user.email, {
-            name: user.full_name,
-            bedtime: stats.lastNight.bedtime,
-            status: stats.lastNight.status,
-            streak: stats.streak,
-            improvementMinutes: stats.improvementMinutes,
+          await sendSleepWeeklyEmail(user.email, {
+            name: user.full_name.split(' ')[0],
+            reported: summary.reported,
+            onTime: summary.onTime,
+            totalNights: 7,
+            averageBedtime: summary.averageBedtime,
+            bestNight: summary.bestNight,
+            improvementMinutes: summary.improvementMinutes,
           });
         } catch (err) {
           console.error(`שגיאה בסיכום שינה שבועי ל-${user.email}:`, err.message);

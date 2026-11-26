@@ -484,11 +484,39 @@ function escapeHtml(value) {
 // והדפדפן רק מצייר אותם — כדי שלא יהיו שני חישובים שיכולים לסתור זה את זה.
 
 const SLEEP_SOURCE_LABELS = {
-  web: 'מהאתר',
-  guest: 'מהטופס האישי',
   phone: 'מהקו',
   admin: 'מנהלת',
 };
+
+// משפטי מוטיבציה — נבחרים לפי המצב שלה, כדי שהמשפט יהיה רלוונטי ולא הצהרה כללית
+const SLEEP_MOTIVATION = {
+  beforeReport: [
+    'הלילה עוד לפנינו — שיחה קצרה לקו והוא נרשם.',
+    'יעד אחד קטן להיום: לסגור את היום בזמן.',
+    'עוד לא דיווחת על הלילה. אפשר לתקן את זה בשיחה אחת.',
+  ],
+  early: [
+    'מקום כזה לא מגיע במקרה — את בונה לעצמך הרגל טוב.',
+    'שעת שינה כזו היא השקעה שמחזירה את עצמה כל היום.',
+    'כל הכבוד! עוד לילה כזה ואת כבר לא זוכרת איך זה היה אחרת.',
+  ],
+  late: [
+    'לילה אחד לא קובע כלום — הלילה מתחילים מחדש.',
+    'הגוף יודע להחזיר את השגרה, גם אחרי לילה ארוך.',
+    'הדבר היחיד שנשאר הוא להתקשר הלילה בזמן.',
+  ],
+  streak: [
+    'הרצף שלך ראוי לתשומת לב — תשמרי עליו.',
+    'ככה נראית התמדה אמיתית.',
+    'הרצף הזה הוא שלך לגמרי. את שומרת עליו.',
+  ],
+};
+
+// משפט אקראי מתוך רשימה — משתמשים ב-Math.random ולא בערך קבוע,
+// כדי שהמשפט לא יהיה אותו דבר בכל טעינה.
+function sleepPickSentence(list) {
+  return list[Math.floor(Math.random() * list.length)];
+}
 
 // שעת שינה "מנורמלת" לגרף: 00:30 הופך ל-1470 כדי שיהיה מאוחר מ-22:30
 function sleepComparableMinutes(time) {
@@ -541,6 +569,52 @@ function sleepRenderHistory(rows) {
   return `<div class="sleep-bars">${bars}</div>`;
 }
 
+// כרטיס המיקום האישי — המספרים בלבד. אין שום שם של בת אחרת בתשובת השרת,
+// ולכן גם לא במסך: רק "מקום X מתוך Y" והיחס שלה ליתר הכיתה.
+function sleepRenderRanking(night) {
+  if (!night) return '';
+  const r = night.ranking || {};
+
+  if (!r.reported) {
+    return `
+      <div class="sleep-rank sleep-rank-muted">
+        <div class="sleep-rank-main">עוד לא דיווחת על הלילה של ${escapeHtml(night.sleepDate)}</div>
+        <p class="sleep-note">דיווחו עד כה ${Number(night.reportedCount) || 0} מתוך ${Number(night.participants) || 0} בנות.</p>
+      </div>`;
+  }
+
+  if (!r.counted) {
+    return `
+      <div class="sleep-rank sleep-rank-late">
+        <div class="sleep-rank-main">הלילה נרשמת ב-${escapeHtml(night.myBedtime)} — מחוץ ליעד</div>
+        <p class="sleep-note">הדירוג כולל רק מי שנרדמה עד שעת היעד. הלילה הבא הוא הזדמנות חדשה.</p>
+      </div>`;
+  }
+
+  const ahead = Number(r.aheadOfMe) || 0;
+  const relation = ahead === 0
+    ? 'את הראשונה הלילה!'
+    : `רק ${ahead} ${ahead === 1 ? 'בת' : 'בנות'} נרדמו מוקדם ממך`;
+
+  return `
+    <div class="sleep-rank">
+      <div class="sleep-rank-place">
+        <span class="sleep-rank-num">${Number(r.rank) || '—'}</span>
+        <span class="sleep-rank-of">מתוך ${Number(r.total) || 0}</span>
+      </div>
+      <div class="sleep-rank-main">המקום שלך הלילה</div>
+      <p class="sleep-rank-relation">${relation}</p>
+      <p class="sleep-note">שעת השינה שלך: <strong>${escapeHtml(night.myBedtime)}</strong></p>
+    </div>`;
+}
+
+// בוחר את סוג המשפט לפי המצב: לפני דיווח / בזמן / מאוחר / רצף ארוך
+function sleepMotivationKind(night, stats) {
+  if (Number(stats.streak) >= 3) return 'streak';
+  if (!night || !night.myBedtime) return 'beforeReport';
+  return night.myStatus === 'on_time' ? 'early' : 'late';
+}
+
 window.loadSleep = async function loadSleep() {
   const root = document.getElementById('sleep-root');
   if (!root || !currentUserId) return;
@@ -548,31 +622,24 @@ window.loadSleep = async function loadSleep() {
   root.innerHTML = '<p class="empty-state">טוען נתוני שינה...</p>';
 
   try {
-    const [meRes, overRes, linkRes] = await Promise.all([
-      authFetch(`${API_URL}/sleep/me`),
-      authFetch(`${API_URL}/sleep/overview`),
-      authFetch(`${API_URL}/sleep/me/guest-link`),
-    ]);
-
+    const meRes = await authFetch(`${API_URL}/sleep/me`);
     if (!meRes.ok) {
       root.innerHTML = '<p class="empty-state">לא הצלחנו לטעון את נתוני השינה.</p>';
       return;
     }
 
-    const { settings, stats } = await meRes.json();
-    const over = overRes.ok ? await overRes.json() : null;
-    const guestLink = linkRes.ok ? (await linkRes.json()).url : '';
+    const { settings, stats, night } = await meRes.json();
 
     const lastNight = stats.lastNight;
     const improvement = Number(stats.improvementMinutes);
     const improvementHtml = Number.isFinite(improvement) && improvement > 0
       ? `<span class="sleep-trend up">שיפור של ${improvement} דקות</span>`
       : '';
-    const tonightHtml = stats.tonight
-      ? `<p class="sleep-tonight">הלילה סומן: <strong>${escapeHtml(stats.tonight.bedtime)}</strong> ${sleepStamp(stats.tonight.status)}</p>`
-      : '<p class="sleep-tonight">הלילה עוד לא סומן.</p>';
+    const motivation = sleepPickSentence(SLEEP_MOTIVATION[sleepMotivationKind(night, stats)]);
 
     root.innerHTML = `
+      <div class="sleep-motivation">${escapeHtml(motivation)}</div>
+
       <div class="sleep-hero">
         <div class="sleep-tile">
           <span class="sleep-tile-label">הלילה הקודם</span>
@@ -596,72 +663,44 @@ window.loadSleep = async function loadSleep() {
         </div>
       </div>
 
-      <section class="card sleep-mark-card">
-        <h3 class="card-title">סימון שעת השינה</h3>
+      <section class="card sleep-rank-card">
+        <h3 class="card-title">המקום שלי בכיתה</h3>
         <p class="sleep-target">שעת היעד שלך: <strong>${escapeHtml(settings.sleep_target_time || '—')}</strong></p>
-        ${tonightHtml}
-        <form id="sleep-mark-form" class="form-well form-row">
-          <label class="field-label" for="sleep-bedtime">שעת שינה</label>
-          <input type="time" id="sleep-bedtime" required>
-          <button type="submit" class="neon-btn">סימון שעת השינה</button>
+        ${sleepRenderRanking(night)}
+      </section>
+
+      <section class="card sleep-phone-card">
+        <h3 class="card-title">הדיווח מתבצע בקו הטלפון</h3>
+        <ol class="sleep-phone-steps">
+          <li>מתקשרים למספר הקו של הכיתה.</li>
+          <li>מקישים את שעת השינה בארבע ספרות — למשל 2130 עבור 21:30.</li>
+          <li>מאשרים ומסיימים את השיחה. הדיווח עולה לאתר אוטומטית.</li>
+        </ol>
+        <p class="sleep-note">
+          ${settings.phone_number
+            ? `המספר המשויך לחשבון שלך: <strong>${escapeHtml(settings.phone_number)}</strong>`
+            : 'עוד לא הוגדר מספר טלפון לחשבון שלך — הקו לא יזהה אותך בלעדיו.'}
+        </p>
+        <form id="sleep-phone-form" class="form-well form-row">
+          <label class="field-label" for="sleep-phone">מספר טלפון לדיווח</label>
+          <input type="tel" id="sleep-phone" inputmode="tel" autocomplete="tel"
+                 placeholder="05xxxxxxxx" value="${escapeHtml(settings.phone_number || '')}">
+          <button type="submit" class="neon-btn">שמירת המספר</button>
         </form>
-        <p class="sleep-note">מומלץ לסמן דרך הקו — ראו הוראות למטה.</p>
+        <p class="sleep-note">יש להזין את המספר שממנו תתבצע השיחה — הקו מזהה אותך לפי המחייג.</p>
       </section>
 
       <section class="card sleep-history">
         <h3 class="card-title">14 הלילות האחרונים</h3>
         ${sleepRenderHistory(stats.history || [])}
       </section>
-
-      <section class="card sleep-phone-card">
-        <h3 class="card-title">סימון מהקו</h3>
-        <ol class="sleep-phone-steps">
-          <li>מתקשרים למספר הקו של הכיתה.</li>
-          <li>מקישים את שעת השינה בארבע ספרות — למשל 2130 עבור 21:30.</li>
-          <li>מאשרים ומסיימים את השיחה.</li>
-        </ol>
-        <p class="sleep-note">
-          ${settings.phone_number
-            ? `המספר המשויך לחשבון שלך: <strong>${escapeHtml(settings.phone_number)}</strong>`
-            : 'עוד לא הוגדר מספר טלפון לחשבון שלך — עדכני אותו אצל המנהלת.'}
-        </p>
-        ${guestLink ? `
-          <h4 class="sleep-sub-title">קישור אישי לסימון מהטלפון בלי התחברות</h4>
-          <div class="sleep-guest-link">
-            <input type="text" readonly value="${escapeHtml(guestLink)}" onclick="this.select()">
-            <button type="button" class="neon-btn outline" id="sleep-copy-link">העתקה</button>
-          </div>
-          <p class="sleep-note">הקישור אישי — אין להעביר אותו לאחרות.</p>` : ''}
-      </section>
-
-      ${over ? `
-        <section class="card sleep-overview">
-          <h3 class="card-title">הכיתה בלילה של ${escapeHtml(over.sleepDate)}</h3>
-          <p class="sleep-earliest">הכי מוקדמת:
-            <strong>${escapeHtml(over.earliest ? over.earliest.name : '—')}</strong>
-            ${over.earliest ? `<span class="sleep-badge on-time">${escapeHtml(over.earliest.bedtime)}</span>` : ''}
-          </p>
-          <p class="sleep-target">דיווחו ${Number(over.reportedCount) || 0} מתוך ${Number(over.participants) || 0}</p>
-        </section>` : ''}
     `;
 
-    const form = document.getElementById('sleep-mark-form');
-    if (form) {
-      form.addEventListener('submit', (event) => {
+    const phoneForm = document.getElementById('sleep-phone-form');
+    if (phoneForm) {
+      phoneForm.addEventListener('submit', (event) => {
         event.preventDefault();
-        sleepSubmitMark();
-      });
-    }
-
-    const copyBtn = document.getElementById('sleep-copy-link');
-    if (copyBtn) {
-      copyBtn.addEventListener('click', async () => {
-        try {
-          await navigator.clipboard.writeText(guestLink);
-          showToast('הקישור הועתק');
-        } catch (_) {
-          showToast('לא הצלחנו להעתיק — אפשר לסמן את הקישור ולהעתיק ידנית', true);
-        }
+        sleepSavePhone();
       });
     }
   } catch (err) {
@@ -670,26 +709,22 @@ window.loadSleep = async function loadSleep() {
   }
 };
 
-async function sleepSubmitMark() {
-  const input = document.getElementById('sleep-bedtime');
-  const value = input ? input.value : '';
-  if (!value) {
-    showToast('יש לבחור שעה לפני השמירה', true);
-    return;
-  }
+async function sleepSavePhone() {
+  const input = document.getElementById('sleep-phone');
+  const phone = input ? input.value.trim() : '';
 
   try {
-    const response = await authFetch(`${API_URL}/sleep/me`, {
-      method: 'POST',
+    const response = await authFetch(`${API_URL}/sleep/me/settings`, {
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ bedtime: value }),
+      body: JSON.stringify({ phone_number: phone }),
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'שגיאה ברישום השינה');
-    showToast('השינה נרשמה, כל הכבוד!');
+    if (!response.ok) throw new Error(data.error || 'שגיאה בשמירת המספר');
+    showToast('המספר נשמר — מעכשיו הקו יזהה אותך');
     await window.loadSleep();
   } catch (err) {
-    showToast(err.message || 'לא הצלחנו לרשום את השינה', true);
+    showToast(err.message || 'לא הצלחנו לשמור את המספר', true);
   }
 }
 

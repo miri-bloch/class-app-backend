@@ -82,13 +82,21 @@ function logicalSleepDate(date = new Date()) {
 
 // ---------- ולידציה ----------
 
+// שעת שינה חוקית: 16:00 עד 03:59 (כלומר לפני שעת ה-ROLLOVER).
+// הטווח 04:00–15:59 הוא טווח הפער בין שתי "קריאות" של אותו יום, שם כמעט בוודאי
+// הוקשה בוקר במקום לילה. לפני התיקון הבדיקה השתמשה ב-`&&` בין שני תנאים
+// שמתקיימים יחד רק ב-04:00 עצמו, ולכן כמעט כל שעה התקבלה (כולל 23:60 → 00:00).
+function isSleepWindow(minutes) {
+  return minutes >= EARLIEST_MINUTES || minutes < LATEST_MINUTES;
+}
+
 // מחזיר { ok, bedtime, minutes } או { ok:false, error }.
 function validateReport(rawBedtime) {
   const minutes = bedtimeToMinutes(rawBedtime);
   if (minutes === null) {
     return { ok: false, error: 'שעת השינה אינה בפורמט תקין (למשל 22:30)' };
   }
-  if (minutes < EARLIEST_MINUTES && minutes >= LATEST_MINUTES) {
+  if (!isSleepWindow(minutes)) {
     return { ok: false, error: 'נראה שזו שעת בוקר — יש להזין שעת שינה של הערב או הלילה' };
   }
   return { ok: true, bedtime: minutesToTime(minutes), minutes };
@@ -102,9 +110,12 @@ function resolveStatus(bedtimeMinutes, targetMinutes) {
 // ---------- כתיבה ----------
 
 // רושם שינה. אם כבר קיים דיווח לאותו לילה — הוא נדרס (הדיווח האחרון קובע),
-// אבל מקור 'phone' שנקבע בשיחה לא נדרס בשקט ע"י 'web' באותו לילה, כדי
-// שסימון שנעשה בטעות מהמחשב לא ימחק סימון טלפוני אמיתי.
-async function markBedtime({ userId, bedtime, source = 'web', note = null, targetMinutes = null, at = new Date() }) {
+// אבל מקור 'phone' שנקבע בשיחה לא נדרס בשקט ע"י דיווח אחר באותו לילה, כדי
+// שסימון שנעשה בטעות לא ימחק סימון טלפוני אמיתי.
+//
+// הערוץ הרשמי הוא הקו (source='phone'). 'web' / 'guest' / 'admin' נשמרו
+// בסכמה ובבדיקות, אבל ה-API לא חושף דיווח מהאתר — ראו routes/sleep.js.
+async function markBedtime({ userId, bedtime, source = 'phone', note = null, targetMinutes = null, at = new Date() }) {
   const check = validateReport(bedtime);
   if (!check.ok) return { ok: false, error: check.error };
 
@@ -139,7 +150,7 @@ async function markBedtime({ userId, bedtime, source = 'web', note = null, targe
 
 async function getUserSettings(userId) {
   const result = await pool.query(
-    `SELECT id, full_name, phone_number, sleep_opt_in, sleep_guest_token,
+    `SELECT id, full_name, phone_number, sleep_opt_in,
             to_char(sleep_target_time, 'HH24:MI') AS sleep_target_time
        FROM users WHERE id = $1`,
     [userId]
@@ -230,13 +241,17 @@ async function getUserStats(userId, days = 30) {
   };
 }
 
-// סקירה כיתתית ללילה מסוים (ברירת מחדל: אתמול — כדי שלא לחשוף מי טרם דיווחה).
+// אתמול (הלילה הלוגי של אתמול) — ברירת המחדל לסקירה, כדי שלא לחשוף מי טרם דיווחה.
+function yesterdaySleepDate() {
+  const d = new Date(`${logicalSleepDate()}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
+// סקירה כיתתית פנימית: כמה דיווחו, כמה עמדו ביעד ומי המוקדמת ביותר.
+// משמשת את המייל השבועי (שם אין שמות) — לא נשלחת לדפדפן כמו שהיא.
 async function getOverview(sleepDate = null) {
-  const date = sleepDate || (() => {
-    const d = new Date(`${logicalSleepDate()}T00:00:00Z`);
-    d.setUTCDate(d.getUTCDate() - 1);
-    return d.toISOString().slice(0, 10);
-  })();
+  const date = sleepDate || yesterdaySleepDate();
 
   const result = await pool.query(
     `SELECT u.id, u.full_name,
@@ -260,34 +275,137 @@ async function getOverview(sleepDate = null) {
   };
 }
 
+// ---------- המיקום האישי (בלי שמות של בנות אחרות) ----------
+
+// מקום 1 = מי שנרדמה הכי מוקדם. רק דיווחים שנמצאים בזמן היעד נכנסים לדירוג,
+// כך שאין סיכון שמאוחרת "תקבל" מקום טוב כשאין הרבה דיווחים.
+// מחזיר null אם המשתמשת לא דיווחה או שלא עמדה ביעד באותו לילה.
+function personalRanking(rows, userId) {
+  const mine = rows.find((r) => Number(r.id) === Number(userId));
+  if (!mine || !mine.bedtime) {
+    return { reported: false, counted: false, rank: null, total: 0, aheadOfMe: 0 };
+  }
+  // מיון לפי שעה (מוקדם קודם), ואז לפי שם — כדי שהמיקום יהיה דטרמיניסטי
+  const ranked = rows
+    .filter((r) => r.bedtime && r.status === 'on_time')
+    .sort((a, b) => {
+      const diff = comparableMinutes(bedtimeToMinutes(a.bedtime)) - comparableMinutes(bedtimeToMinutes(b.bedtime));
+      return diff !== 0 ? diff : String(a.full_name).localeCompare(String(b.full_name), 'he');
+    });
+
+  const index = ranked.findIndex((r) => Number(r.id) === Number(userId));
+  if (index === -1) {
+    return { reported: true, counted: false, rank: null, total: ranked.length, aheadOfMe: ranked.length };
+  }
+  return {
+    reported: true,
+    counted: true,
+    rank: index + 1,
+    total: ranked.length,
+    // כמה בנות הסתדרו מוקדם ממנה — לנוסח "מקום X מתוך Y"
+    aheadOfMe: index,
+  };
+}
+
+// כל מה שכותרת הלילה מציגה למשתמשת אחת: הדיווח שלה, המקום שלה והמספרים הכלליים.
+async function getPersonalNight(userId, sleepDate = null) {
+  const date = sleepDate || yesterdaySleepDate();
+  const overview = await getOverview(date);
+
+  const mine = overview.participantsList.find((r) => Number(r.id) === Number(userId)) || null;
+  const ranking = personalRanking(overview.participantsList, userId);
+
+  return {
+    sleepDate: date,
+    myBedtime: mine?.bedtime || null,
+    myStatus: mine?.status || null,
+    mySource: mine?.source || null,
+    ranking,
+    reportedCount: overview.reportedCount,
+    participants: overview.participants,
+    onTimeCount: overview.onTimeCount,
+  };
+}
+
+// ---------- סיכום שבועי כיתתי (למייל של יום שישי) ----------
+
+// ממוצע שעת שינה, בניקוד "דקות מדידות" — אותו היפוך של comparableMinutes
+// שמונע מ-00:30 להיראות מוקדם מ-22:30. מחזיר null כשאין דיווחים.
+function averageBedtimeMinutes(rows) {
+  const minutes = rows
+    .filter((r) => r.bedtime)
+    .map((r) => comparableMinutes(bedtimeToMinutes(r.bedtime)));
+  if (!minutes.length) return null;
+  return Math.round(minutes.reduce((sum, m) => sum + m, 0) / minutes.length);
+}
+
+function sleepDateDaysAgo(days) {
+  const d = new Date(`${logicalSleepDate()}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - days);
+  return d.toISOString().slice(0, 10);
+}
+
+// סיכום שבועי למייל של יום שישי: שבעת הלילות האחרונים מול שבעת הקודמים.
+// בלי שמות ובלי מזהים — רק מספרים, כדי שנשלח לכולן את אותו מייל.
+async function getWeeklyClassSummary(days = 7) {
+  const span = Math.max(1, days);
+  const start = sleepDateDaysAgo(span);           // כולל
+  const previousStart = sleepDateDaysAgo(span * 2);
+  const previousEnd = sleepDateDaysAgo(span + 1);
+
+  const [current, previous] = await Promise.all([
+    pool.query(
+      `SELECT l.sleep_date, l.status, to_char(l.bedtime, 'HH24:MI') AS bedtime
+         FROM sleep_logs l
+         JOIN users u ON u.id = l.user_id
+        WHERE u.is_student = TRUE AND COALESCE(u.sleep_opt_in, TRUE) = TRUE
+          AND l.sleep_date BETWEEN $1 AND $2`,
+      [start, sleepDateDaysAgo(1)]
+    ),
+    pool.query(
+      `SELECT to_char(l.bedtime, 'HH24:MI') AS bedtime
+         FROM sleep_logs l
+         JOIN users u ON u.id = l.user_id
+        WHERE u.is_student = TRUE AND COALESCE(u.sleep_opt_in, TRUE) = TRUE
+          AND l.sleep_date BETWEEN $1 AND $2`,
+      [previousStart, previousEnd]
+    ),
+  ]);
+
+  const rows = current.rows.filter((r) => r.bedtime);
+  const avgMinutes = averageBedtimeMinutes(rows);
+  const prevAvgMinutes = averageBedtimeMinutes(previous.rows);
+  const improvement = avgMinutes === null || prevAvgMinutes === null
+    ? null
+    : prevAvgMinutes - avgMinutes;
+
+  // הלילה המוצלח: היום עם מספר הדיווחים בזמן הגבוה ביותר
+  const byDate = new Map();
+  for (const r of rows) {
+    const entry = byDate.get(r.sleep_date) || 0;
+    byDate.set(r.sleep_date, entry + (r.status === 'on_time' ? 1 : 0));
+  }
+  let bestNight = null;
+  let bestCount = 0;
+  for (const [date, count] of byDate) {
+    if (count > bestCount) {
+      bestNight = date;
+      bestCount = count;
+    }
+  }
+
+  return {
+    start,
+    end: sleepDateDaysAgo(1),
+    reported: rows.length,
+    onTime: rows.filter((r) => r.status === 'on_time').length,
+    averageBedtime: avgMinutes === null ? null : minutesToTime(avgMinutes),
+    bestNight,
+    improvementMinutes: improvement,
+  };
+}
+
 // ---------- קו טלפון ----------
-
-// טוקן חד-פעמי-למשתמש לטופס אורח (קישור אישי, לא טוקן התחברות).
-function generateGuestToken() {
-  const crypto = require('crypto');
-  return crypto.randomBytes(24).toString('hex');
-}
-
-async function getOrCreateGuestToken(userId) {
-  const existing = await pool.query('SELECT sleep_guest_token FROM users WHERE id = $1', [userId]);
-  if (existing.rows[0]?.sleep_guest_token) return existing.rows[0].sleep_guest_token;
-  const token = generateGuestToken();
-  const updated = await pool.query(
-    `UPDATE users SET sleep_guest_token = $2 WHERE id = $1 RETURNING sleep_guest_token`,
-    [userId, token]
-  );
-  return updated.rows[0].sleep_guest_token;
-}
-
-async function getUserByGuestToken(token) {
-  if (!token || !/^[a-f0-9]{32,64}$/i.test(token)) return null;
-  const result = await pool.query(
-    `SELECT id, full_name, sleep_opt_in, to_char(sleep_target_time, 'HH24:MI') AS sleep_target_time
-       FROM users WHERE sleep_guest_token = $1`,
-    [token]
-  );
-  return result.rows[0] || null;
-}
 
 module.exports = {
   TIME_ZONE,
@@ -303,7 +421,9 @@ module.exports = {
   getUserByPhone,
   getUserStats,
   getOverview,
+  getPersonalNight,
+  personalRanking,
+  yesterdaySleepDate,
   computeStreak,
-  getOrCreateGuestToken,
-  getUserByGuestToken,
+  getWeeklyClassSummary,
 };

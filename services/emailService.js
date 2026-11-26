@@ -208,26 +208,17 @@ function escapeHtml(value) {
     .replace(/'/g, '&#039;');
 }
 
-// "הכי מוקדמת של אתמול" — מייל יומי לכיתה
-async function sendSleepEarliestEmail(toEmail, { earliestName, earliestBedtime, reportedCount, participants }) {
-  const content = `
-    <div style="font-size: 20px; font-weight: bold; color: #c084fc; margin-bottom: 15px;">
-      🌙 מי נרדמה הכי מוקדם?
+const SLEEP_TILES_HTML = (count, reported) => `
+  <div style="text-align: center;">
+    <div style="display: inline-block; margin: 0 8px 12px;">
+      <div style="font-size: 26px; font-weight: bold; color: #22d3ee;">${Number(reported) || 0}</div>
+      <div style="font-size: 12px; color: #94a3b8;">דיווחו הלילה</div>
     </div>
-    <div style="background: rgba(34,211,238,0.10); border-right: 4px solid #22d3ee; border-radius: 10px; padding: 18px; text-align: right; color: #e2e8f0;">
-      <div style="font-size: 26px; font-weight: bold; color: #22d3ee;">${escapeHtml(earliestName)}</div>
-      <div style="font-size: 16px; color: #cbd5e1; margin-top: 6px;">שעת שינה: ${escapeHtml(earliestBedtime)}</div>
+    <div style="display: inline-block; margin: 0 8px 12px;">
+      <div style="font-size: 26px; font-weight: bold; color: #c084fc;">${Number(count) || 0}</div>
+      <div style="font-size: 12px; color: #94a3b8;">בזמן</div>
     </div>
-    <div style="font-size: 14px; color: #94a3b8; margin-top: 18px;">
-      דיווחו בלילה האחרון: ${Number(reportedCount) || 0} מתוך ${Number(participants) || 0}
-    </div>
-  `;
-  await sendBrevoEmail(
-    toEmail,
-    '🌙 מבצע השינה — מי נרדמה הכי מוקדם',
-    getBaseEmailTemplate('SLEEP CAMPAIGN', content)
-  );
-}
+  </div>`;
 
 // סיכום אישי: אחרי לילה עם דיווח, במיוחד כשמדובר ברצף או בשיפור
 async function sendSleepPersonalEmail(toEmail, { name, bedtime, status, streak, improvementMinutes }) {
@@ -257,12 +248,50 @@ async function sendSleepPersonalEmail(toEmail, { name, bedtime, status, streak, 
   );
 }
 
+// סיכום שבועי כיתתי — בלי שמות של בנות, רק מספרים.
+// הנתונים מחושבים ב-sleepService (getWeeklyClassSummary), כאן רק עיצוב.
+async function sendSleepWeeklyEmail(toEmail, { name, reported, onTime, totalNights, averageBedtime, bestNight, improvementMinutes }) {
+  const improvementHtml = Number.isFinite(improvementMinutes) && improvementMinutes !== 0
+    ? `<div style="font-size: 13px; color: ${improvementMinutes > 0 ? '#22d3ee' : '#c084fc'}; margin-top: 10px;">
+         ${improvementMinutes > 0
+           ? `📈 השבוע נרדמנו בממוצע ${improvementMinutes} דקות מוקדם יותר מהשבוע שעבר`
+           : `📉 השבוע נרדמנו בממוצע ${Math.abs(improvementMinutes)} דקות מאוחר יותר מהשבוע שעבר`}
+       </div>`
+    : '';
+  const bestHtml = bestNight
+    ? `<div style="font-size: 13px; color: #cbd5e1;">הלילה הכי מוקדם נרשם ב-${escapeHtml(bestNight)}</div>`
+    : '';
+
+  const content = `
+    <div style="font-size: 20px; font-weight: bold; color: #c084fc; margin-bottom: 15px;">
+      סיכום שבוע השינה של הכיתה 🌙
+    </div>
+    <div style="font-size: 14px; color: #cbd5e1; margin-bottom: 18px;">
+      שלום ${escapeHtml(name)}, הנה איך עבר השבוע במבצע השינה המוקדמת.
+    </div>
+    ${SLEEP_TILES_HTML(onTime, reported)}
+    <div style="font-size: 14px; color: #cbd5e1; margin-top: 6px;">
+      שעת שינה ממוצעת: <strong style="color: #22d3ee;">${escapeHtml(averageBedtime || '—')}</strong>
+    </div>
+    <div style="font-size: 14px; color: #cbd5e1; margin-top: 6px;">
+      לילות עם דיווח: ${Number(totalNights) || 0}
+    </div>
+    ${bestHtml}
+    ${improvementHtml}
+  `;
+  await sendBrevoEmail(
+    toEmail,
+    '🌙 סיכום שבוע מבצע השינה',
+    getBaseEmailTemplate('SLEEP WEEKLY', content)
+  );
+}
+
 module.exports = {
   sendPasswordResetEmail,
   sendHomeworkDigest,
   sendMilkDutyEmail,
-  sendSleepEarliestEmail,
   sendSleepPersonalEmail,
+  sendSleepWeeklyEmail,
   sendEmail,
   sendBrandedEmail,
   sendBrandedEmailWithAttachment,

@@ -1,11 +1,13 @@
 // מבצע השינה המוקדמת — API.
 //
-// שלושה סוגי נגישות:
-//  1. משתמשת מחוברת (auth) — הסימון שלה, הסטטיסטיקה שלה, היעד שלה, קישור האורח.
-//  2. טופס אורח — ציבורי אך חתום בטוקן אקראי לכל משתמשת (לא טוקן התחברות),
-//     עם הגבלת קצב כדי שלא ינוצל לזיוף.
-//  3. קו ימות המשיח — POST /api/sleep/yemot. התשובה חייבת להיות טקסט פשוט
-//     (לא JSON!), אחרת ימות מחזיר M1607 "אין מענה משרת API".
+// שני סוגי נגישות:
+//  1. משתמשת מחוברת (auth) — צפייה בלבד: הסטטיסטיקה שלה, היעד שלה, המקום שלה
+//     ביחס לכיתה (בלי שמות של בנות אחרות) והמספר לשיחה.
+//  2. קו ימות המשיח — POST /api/sleep/yemot. זה הערוץ היחיד לדיווח שעת שינה.
+//     התשובה חייבת להיות טקסט פשוט (לא JSON!), אחרת ימות מחזיר M1607
+//     "אין מענה משרת API".
+//
+// אין יותר דיווח מהאתר ואין טופס אורח: הדיווח מתבצע אך ורק בשיחה.
 
 const express = require('express');
 const router = express.Router();
@@ -13,44 +15,19 @@ const { auth } = require('../middleware/auth');
 const sleepService = require('../services/sleepService');
 const pool = require('../data/db');
 
-// ---------- הגבלת קצב פשוטה בזיכרון (בלי תלות חיצונית) ----------
-// מספיק לשרת אחד; אם יהיו כמה מופעים — להחליף בטבלה או ב-Redis.
-const buckets = new Map();
-function rateLimit({ windowMs, max, key }) {
-  return (req, res, next) => {
-    const id = key(req);
-    if (!id) return next();
-    const now = Date.now();
-    const entry = buckets.get(id);
-    if (!entry || now - entry.start > windowMs) {
-      buckets.set(id, { start: now, count: 1 });
-      return next();
-    }
-    entry.count += 1;
-    if (entry.count > max) {
-      return res.status(429).json({ error: 'יותר מדי ניסיונות, נסי שוב בעוד מספר דקות' });
-    }
-    next();
-  };
-}
-// ניקוי תקופתי כדי שהמפה לא תגדל בלי גבול
-setInterval(() => {
-  const now = Date.now();
-  for (const [id, entry] of buckets) {
-    if (now - entry.start > 60 * 60 * 1000) buckets.delete(id);
-  }
-}, 10 * 60 * 1000).unref();
-
 const clientIp = (req) => req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || 'unknown';
 
-// ---------- משתמשת מחוברת ----------
+// ---------- משתמשת מחוברת (צפייה בלבד) ----------
 
-// כל מה שמסך השינה צריך בקריאה אחת
+// כל מה שמסך השינה צריך בקריאה אחת — לצפייה בלבד, בלי דיווח
 router.get('/me', auth, async (req, res) => {
   try {
     const settings = await sleepService.getUserSettings(req.user.id);
     if (!settings) return res.status(404).json({ error: 'המשתמשת לא נמצאה' });
-    const stats = await sleepService.getUserStats(req.user.id, 30);
+    const [stats, night] = await Promise.all([
+      sleepService.getUserStats(req.user.id, 30),
+      sleepService.getPersonalNight(req.user.id),
+    ]);
     res.json({
       settings: {
         full_name: settings.full_name,
@@ -59,6 +36,7 @@ router.get('/me', auth, async (req, res) => {
         sleep_target_time: settings.sleep_target_time,
       },
       stats,
+      night,
     });
   } catch (err) {
     console.error('שגיאה בטעינת נתוני השינה:', err);
@@ -75,42 +53,24 @@ router.get('/me/stats', auth, async (req, res) => {
   }
 });
 
-// סימון מהאתר (חלופה לערוץ הטלפון)
-router.post('/me', auth, rateLimit({ windowMs: 60 * 1000, max: 10, key: (req) => `me:${req.user?.id || clientIp(req)}` }), async (req, res) => {
+// הלילה של אתמול מנקודת המבט של המשתמשת: השעה שלה, המקום שלה והמספרים הכלליים.
+// במכוון אין שמות של בנות אחרות בתשובה.
+router.get('/me/night', auth, async (req, res) => {
   try {
-    const settings = await sleepService.getUserSettings(req.user.id);
-    const targetMinutes = settings ? sleepService.bedtimeToMinutes(settings.sleep_target_time) : null;
-    const result = await sleepService.markBedtime({
-      userId: req.user.id,
-      bedtime: req.body?.bedtime,
-      source: 'web',
-      note: req.body?.note,
-      targetMinutes,
-    });
-    if (!result.ok) return res.status(400).json({ error: result.error });
-    res.json({ message: 'השינה נרשמה, כל הכבוד!', log: result.log });
+    res.json(await sleepService.getPersonalNight(req.user.id, req.query.date || null));
   } catch (err) {
-    console.error('שגיאה ברישום שינה:', err);
-    res.status(500).json({ error: 'שגיאה ברישום השינה' });
+    console.error('שגיאה בטעינת הלילה האישי:', err);
+    res.status(500).json({ error: 'שגיאה בטעינת נתוני הלילה' });
   }
 });
 
-// עדכון יעד / השתתפות / מספר טלפון
+// עדכון מספר הטלפון. מספר הטלפון נדרש כדי שהקו יזהה את המשתמשת, ולכן הוא
+// השדה היחיד שהמשתמשת יכולה למלא בעצמה; היעד וההשתתפות נקבעים על ידי המנהלת.
 router.patch('/me/settings', auth, async (req, res) => {
   const updates = [];
   const values = [];
-  const { sleep_target_time, sleep_opt_in, phone_number } = req.body || {};
+  const { phone_number } = req.body || {};
 
-  if (sleep_target_time !== undefined) {
-    const minutes = sleepService.bedtimeToMinutes(sleep_target_time);
-    if (minutes === null) return res.status(400).json({ error: 'שעת היעד אינה תקינה' });
-    values.push(sleepService.minutesToTime(minutes));
-    updates.push(`sleep_target_time = $${values.length}`);
-  }
-  if (sleep_opt_in !== undefined) {
-    values.push(Boolean(sleep_opt_in));
-    updates.push(`sleep_opt_in = $${values.length}`);
-  }
   if (phone_number !== undefined) {
     const digits = String(phone_number).replace(/\D/g, '');
     if (digits && !/^0\d{8,9}$|^972\d{8,9}$/.test(digits)) {
@@ -141,75 +101,6 @@ router.patch('/me/settings', auth, async (req, res) => {
   }
 });
 
-// קישור הטופס האישי (לטלפון בלי התחברות)
-router.get('/me/guest-link', auth, async (req, res) => {
-  try {
-    const token = await sleepService.getOrCreateGuestToken(req.user.id);
-    const base = process.env.PUBLIC_BASE_URL || `${req.protocol}://${req.get('host')}`;
-    res.json({ url: `${base}/sleep.html?t=${token}` });
-  } catch (err) {
-    console.error('שגיאה ביצירת קישור אורח:', err);
-    res.status(500).json({ error: 'שגיאה ביצירת הקישור' });
-  }
-});
-
-// סקירה כיתתית — כולם רואים מי נרדמה הכי מוקדם אתמול
-router.get('/overview', auth, async (req, res) => {
-  try {
-    res.json(await sleepService.getOverview(req.query.date || null));
-  } catch (err) {
-    console.error('שגיאה בסקירת השינה:', err);
-    res.status(500).json({ error: 'שגיאה בטעינת הסקירה' });
-  }
-});
-
-// ---------- טופס אורח (קישור אישי) ----------
-
-router.get(
-  '/guest/:token',
-  rateLimit({ windowMs: 60 * 1000, max: 60, key: clientIp }),
-  async (req, res) => {
-    try {
-      const user = await sleepService.getUserByGuestToken(req.params.token);
-      if (!user) return res.status(404).json({ error: 'הקישור אינו תקין' });
-      const stats = await sleepService.getUserStats(user.id, 30);
-      res.json({
-        full_name: user.full_name,
-        sleep_target_time: user.sleep_target_time,
-        tonight: stats.tonight,
-        streak: stats.streak,
-        lastNight: stats.lastNight,
-      });
-    } catch (err) {
-      console.error('שגיאה בטופס האורח:', err);
-      res.status(500).json({ error: 'שגיאה בטעינת הטופס' });
-    }
-  }
-);
-
-router.post(
-  '/guest/:token',
-  rateLimit({ windowMs: 60 * 1000, max: 10, key: (req) => `guest:${req.params.token}` }),
-  async (req, res) => {
-    try {
-      const user = await sleepService.getUserByGuestToken(req.params.token);
-      if (!user) return res.status(404).json({ error: 'הקישור אינו תקין' });
-      const result = await sleepService.markBedtime({
-        userId: user.id,
-        bedtime: req.body?.bedtime,
-        source: 'guest',
-        targetMinutes: sleepService.bedtimeToMinutes(user.sleep_target_time),
-      });
-      if (!result.ok) return res.status(400).json({ error: result.error });
-      const stats = await sleepService.getUserStats(user.id, 30);
-      res.json({ message: 'נרשם! לילה טוב', log: result.log, streak: stats.streak });
-    } catch (err) {
-      console.error('שגיאה ברישום שינה מטופס אורח:', err);
-      res.status(500).json({ error: 'שגיאה ברישום השינה' });
-    }
-  }
-);
-
 // ---------- קו ימות המשיח ----------
 //
 // תצורת השלוחה (extension) בימות:
@@ -217,9 +108,20 @@ router.post(
 //   api_link=https://<domain>/api/sleep/yemot
 //   api_url_post=yes
 //   api_000=Time,no,Time,4,4,10,yes,yes
-//   api_add_0=<SLEEP_PHONE_SECRET>=<ערך סודי>     (אופציונלי — ראו בדיקת מקור)
+//   api_add_0=secret=<ערך SLEEP_PHONE_SECRET>
 //   api_hangup_send=no
 //   api_end_goto=/<תיקיית סיום>
+//
+// הסבר ל-api_000 (הערכים מופרדים בפסיק, לפי סדר):
+//   Time  - שם הפרמטר שבו יגיעו הספרות. כלומר ההקשה תגיע כ-ApiTime.
+//   no    - לא להשתמש בהקשה קודמת אם קיימת
+//   Time  - סוג הנתון: שעה (משמיע "עשרים ושתיים שלושים" לאישור)
+//   4,4   - מקסימום ומינימום 4 ספרות (חובה לשעה)
+//   10    - המתנה של 10 שניות להקשה
+//   yes   - חסימת מקש כוכבית
+//   yes   - חסימת האפס הבודד
+//   api_add_0 חייב להיות בפורמט <שם>=<ערך> (זה פרמטר לכל בקשה).
+//   api_000_send חייב להישאר דלוק כדי שההקשה תגיע אלינו.
 //
 // הזרימה:
 //   1. שיחה נכנסת → ימות משמיעה את 000.wav ומקישה 4 ספרות (השעה, למשל 2230),
@@ -293,8 +195,11 @@ async function handleYemot(req, res) {
       return yemotText(res, existing.response);
     }
 
-    // שלב 1: אין עדיין ספרות — מבקשים את השעה
-    const digits = params.Api_000 !== undefined ? String(params.Api_000).trim() : '';
+    // שלב 1: אין עדיין ספרות — מבקשים את השעה.
+    // הספרות מגיעות בשם שהוגדר בשדה הראשון של api_000 (בתצורה שלנו: ApiTime).
+    // Api_000 נבדק כגיבוי למקרה שהשדה הראשון הושאר ריק — אז ימות שולחת Api_000.
+    const rawDigits = params.ApiTime !== undefined ? params.ApiTime : params.Api_000;
+    const digits = rawDigits !== undefined && rawDigits !== null ? String(rawDigits).trim() : '';
     if (!digits) {
       // לא אמורים להגיע לכאן כשהשלוחה מוגדרת עם api_000 — ימות משמיעה את
       // 000.wav ומקישה, ושולחת שוב רק בשלב שאחרי ההקשה. כגיבוי: מבקשים שיחה חוזרת.

@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>הגדרת קו ימות המשיח — מדריך שלב אחר שלב</title>
+<style>
+  :root {
+    --void: #060814;
+    --panel: #0D1024;
+    --panel-2: #131731;
+    --line: #262C52;
+    --line-soft: #1B2043;
+    --text: #EEF0FF;
+    --text-2: #A6ACD6;
+    --text-3: #6B7196;
+    --violet: #A855F7;
+    --magenta: #FF3D8B;
+    --cyan: #22D3EE;
+    --lime: #A3E635;
+    --gold: #FFC53D;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--void);
+    color: var(--text);
+    font-family: "Segoe UI", "Arial", system-ui, sans-serif;
+    line-height: 1.7;
+    font-size: 16px;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 2.5rem 1.25rem 4rem; }
+
+  /* ---------- כותרת ---------- */
+  .hero {
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 2rem 1.75rem;
+    background:
+      radial-gradient(120% 140% at 100% 0%, rgba(168, 85, 247, .18), transparent 55%),
+      radial-gradient(120% 140% at 0% 100%, rgba(34, 211, 238, .12), transparent 55%),
+      var(--panel);
+    margin-bottom: 2rem;
+  }
+  .kicker {
+    display: inline-block;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: .8rem;
+    letter-spacing: .08em;
+    color: var(--cyan);
+    margin-bottom: .6rem;
+  }
+  .hero h1 { margin: 0 0 .6rem; font-size: 1.9rem; line-height: 1.3; }
+  .hero p { margin: 0; color: var(--text-2); max-width: 62ch; }
+
+  /* ---------- תוכן עניינים ---------- */
+  .toc {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: .6rem;
+    margin-bottom: 2.25rem;
+  }
+  .toc a {
+    display: flex;
+    align-items: center;
+    gap: .7rem;
+    padding: .75rem .9rem;
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius);
+    background: var(--panel-2);
+    color: var(--text);
+    text-decoration: none;
+    font-size: .94rem;
+    transition: border-color .15s, transform .15s;
+  }
+  .toc a:hover { border-color: var(--violet); transform: translateY(-1px); }
+  .toc .num {
+    width: 1.9rem; height: 1.9rem; flex: none;
+    display: grid; place-items: center;
+    border-radius: 10px;
+    background: rgba(168, 85, 247, .14);
+    color: var(--violet);
+    font-weight: 700;
+    font-size: .9rem;
+  }
+
+  /* ---------- שלב ---------- */
+  .step {
+    position: relative;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: var(--panel);
+    padding: 1.5rem 1.6rem 1.4rem;
+    margin-bottom: 1.35rem;
+    transition: border-color .2s, opacity .2s;
+  }
+  .step.done { border-color: rgba(163, 230, 53, .55); }
+  .step.done > .step-body { opacity: .55; }
+  .step-head { display: flex; align-items: flex-start; gap: 1rem; margin-bottom: .9rem; }
+  .step-num {
+    width: 2.4rem; height: 2.4rem; flex: none;
+    display: grid; place-items: center;
+    border-radius: 12px;
+    font-weight: 800;
+    font-size: 1.05rem;
+    color: #fff;
+    background: linear-gradient(135deg, var(--violet), var(--magenta));
+  }
+  .step-title { margin: 0; font-size: 1.2rem; }
+  .step-sub { margin: .15rem 0 0; color: var(--text-3); font-size: .85rem; }
+  .check {
+    margin-inline-start: auto;
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: .45rem;
+    font-size: .82rem;
+    color: var(--text-3);
+    cursor: pointer;
+    user-select: none;
+  }
+  .check input { accent-color: var(--lime); width: 1.05rem; height: 1.05rem; cursor: pointer; }
+
+  .step-body { padding-inline-start: 3.4rem; }
+  .step-body ol, .step-body ul { margin: .5rem 0; padding-inline-start: 1.3rem; }
+  .step-body li { margin-bottom: .45rem; }
+  .step-body li::marker { color: var(--violet); }
+
+  /* ---------- רכיבי עזר ---------- */
+  code, .mono {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: .88em;
+    direction: ltr;
+    display: inline-block;
+    background: #070A18;
+    border: 1px solid var(--line-soft);
+    border-radius: 6px;
+    padding: .1rem .4rem;
+    color: var(--gold);
+    unicode-bidi: isolate;
+  }
+  .copy-box {
+    display: flex;
+    align-items: stretch;
+    gap: .5rem;
+    margin: .7rem 0;
+  }
+  .copy-box code {
+    flex: 1;
+    padding: .65rem .8rem;
+    text-align: left;
+    overflow-x: auto;
+    white-space: nowrap;
+    color: var(--text);
+    background: #070A18;
+    user-select: all;
+  }
+  .copy-btn {
+    flex: none;
+    border: 1px solid var(--line);
+    background: var(--panel-2);
+    color: var(--text-2);
+    border-radius: 8px;
+    padding: 0 .85rem;
+    font-family: inherit;
+    font-size: .82rem;
+    cursor: pointer;
+  }
+  .copy-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+  .copy-btn.copied { border-color: var(--lime); color: var(--lime); }
+
+  .tip, .warn, .note {
+    border-radius: 12px;
+    padding: .8rem 1rem;
+    margin: .9rem 0;
+    font-size: .92rem;
+    border: 1px solid;
+  }
+  .tip  { background: rgba(34, 211, 238, .07); border-color: rgba(34, 211, 238, .35); }
+  .warn { background: rgba(255, 61, 139, .07); border-color: rgba(255, 61, 139, .4); }
+  .note { background: rgba(255, 197, 61, .07); border-color: rgba(255, 197, 61, .35); }
+  .tip strong, .warn strong, .note strong { display: block; margin-bottom: .2rem; }
+  .tip strong  { color: var(--cyan); }
+  .warn strong { color: var(--magenta); }
+  .note strong { color: var(--gold); }
+
+  .link-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    margin: .35rem .3rem .35rem 0;
+    padding: .55rem .95rem;
+    border-radius: 10px;
+    background: rgba(168, 85, 247, .14);
+    border: 1px solid rgba(168, 85, 247, .4);
+    color: #E9D5FF;
+    text-decoration: none;
+    font-size: .9rem;
+  }
+  .link-btn:hover { background: rgba(168, 85, 247, .25); }
+  .link-btn svg { width: .95rem; height: .95rem; }
+
+  .field {
+    display: grid;
+    grid-template-columns: 11rem 1fr;
+    gap: .5rem;
+    padding: .55rem 0;
+    border-bottom: 1px dashed var(--line-soft);
+    font-size: .93rem;
+  }
+  .field:last-child { border-bottom: none; }
+  .field dt { color: var(--text-2); }
+  .field dd {
+    margin: 0;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: .88rem;
+    color: var(--gold);
+    direction: ltr;
+    text-align: right;
+    word-break: break-word;
+  }
+
+  /* ---------- טבלת פרמטרים ---------- */
+  .params {
+    width: 100%;
+    border-collapse: collapse;
+    margin: .8rem 0;
+    font-size: .88rem;
+  }
+  .params th, .params td {
+    border: 1px solid var(--line-soft);
+    padding: .5rem .65rem;
+    text-align: right;
+    vertical-align: top;
+  }
+  .params th { background: var(--panel-2); color: var(--text-2); font-weight: 600; }
+  .params td code { padding: .05rem .3rem; }
+
+  /* ---------- שדה הסוד ---------- */
+  .secret-box {
+    display: flex;
+    gap: .5rem;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: .9rem;
+    border: 1px dashed rgba(34, 211, 238, .45);
+    border-radius: 12px;
+    background: rgba(34, 211, 238, .05);
+    margin: .8rem 0;
+  }
+  .secret-box input {
+    flex: 1;
+    min-width: 220px;
+    padding: .6rem .75rem;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: #070A18;
+    color: var(--text);
+    font-family: Consolas, "Courier New", monospace;
+    font-size: .9rem;
+    direction: ltr;
+  }
+  .secret-box input:focus { outline: 2px solid var(--cyan); outline-offset: 1px; }
+  .secret-box button {
+    border: 1px solid var(--line);
+    background: var(--panel-2);
+    color: var(--text-2);
+    border-radius: 8px;
+    padding: .55rem .9rem;
+    font-family: inherit;
+    font-size: .85rem;
+    cursor: pointer;
+  }
+  .secret-box button:hover { border-color: var(--violet); color: var(--violet); }
+  .secret-state { font-size: .85rem; color: var(--text-3); width: 100%; }
+
+  /* ---------- סימולציית השיחה ---------- */
+  .flow { margin: .8rem 0; }
+  .flow-row {
+    display: grid;
+    grid-template-columns: 6.5rem 1fr;
+    gap: .8rem;
+    padding: .6rem 0;
+    border-bottom: 1px dashed var(--line-soft);
+    font-size: .92rem;
+  }
+  .flow-row:last-child { border-bottom: none; }
+  .flow-row .who {
+    font-size: .82rem;
+    color: var(--text-3);
+    font-weight: 600;
+  }
+  .flow-row.me .who { color: var(--cyan); }
+  .flow-row.ym .who { color: var(--violet); }
+
+  .progress {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: rgba(6, 8, 20, .92);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+    padding: .7rem 1.25rem;
+  }
+  .progress-inner { max-width: 960px; margin: 0 auto; display: flex; align-items: center; gap: .9rem; }
+  .bar { flex: 1; height: 8px; border-radius: 99px; background: var(--panel-2); overflow: hidden; }
+  .bar span { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--violet), var(--cyan)); transition: width .3s; }
+  .progress-label { font-size: .85rem; color: var(--text-2); white-space: nowrap; }
+
+  .back { display: inline-block; margin-top: 2rem; color: var(--text-2); text-decoration: none; font-size: .9rem; }
+  .back:hover { color: var(--cyan); }
+
+  @media (max-width: 640px) {
+    .step-body { padding-inline-start: 0; }
+    .field { grid-template-columns: 1fr; }
+    .check .check-text { display: none; }
+    .hero h1 { font-size: 1.45rem; }
+    .flow-row { grid-template-columns: 1fr; gap: .15rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="progress">
+  <div class="progress-inner">
+    <span class="progress-label" id="progressLabel">0 מתוך 7 שלבים</span>
+    <div class="bar"><span id="progressBar"></span></div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <header class="hero">
+    <span class="kicker">// IVR GUIDE</span>
+    <h1>קו מבצע השינה — הגדרה בימות המשיח</h1>
+    <p>
+      מההתחלה ועד לשיחת בדיקה אמיתית. בקוד בצד השרת כבר הכל מוכן —
+      מה שנשאר הוא להקים את השלוחה במערכת ימות, לחבר אותה לאתר, ולוודא שכל בתה
+      רשומה עם מספר טלפון. הסימון בכל שלב נשמר בדפדפן — אפשר לסגור ולחזור.
+    </p>
+  </header>
+
+  <div class="secret-box">
+    <input id="secretInput" type="text" placeholder="הדביקי כאן את הסוד (SLEEP_PHONE_SECRET)" autocomplete="off" spellcheck="false">
+    <button id="secretSave" type="button">שמירה</button>
+    <button id="secretClear" type="button">ניקוי</button>
+    <span class="secret-state" id="secretState">הסוד נשמר רק בדפדפן הזה, ונכנס אוטומטית לכל תיבה במדריך.</span>
+  </div>
+
+  <nav class="toc">
+    <a href="#step1"><span class="num">1</span>לפני שמתחילים</a>
+    <a href="#step2"><span class="num">2</span>הסוד ל-Render</a>
+    <a href="#step3"><span class="num">3</span>יצירת השלוחה</a>
+    <a href="#step4"><span class="num">4</span>פרמטרי ה-API</a>
+    <a href="#step5"><span class="num">5</span>קובץ ההנחיה</a>
+    <a href="#step6"><span class="num">6</span>מספרי טלפון</a>
+    <a href="#step7"><span class="num">7</span>בדיקה ותקלות</a>
+  </nav>
+
+  <!-- ================= שלב 1 ================= -->
+  <section class="step" id="step1">
+    <div class="step-head">
+      <div class="step-num">1</div>
+      <div>
+        <h2 class="step-title">מה צריך שיהיה קיים לפני שמתחילים</h2>
+        <p class="step-sub">שלושה דברים — ואם הם חסרים, השיחה תיכשל גם אם הכל מוגדר נכון</p>
+      </div>
+      <label class="check"><input type="checkbox" data-step="step1"><span class="check-text">בוצע</span></label>
+    </div>
+    <div class="step-body">
+      <ol>
+        <li>
+          <strong>השרת פרוס ועובד.</strong> פיתחי את כתובת הבדיקה וצריך להופיע
+          <code>{"status":"ok"}</code>:
+          <div class="copy-box">
+            <code id="health-url">https://class-app-backend.onrender.com/api/health</code>
+            <button class="copy-btn" data-copy="health-url">העתקה</button>
+          </div>
+        </li>
+        <li>
+          <strong>משתני הסביבה מוגדרים ב-Render</strong> — פרט לשלב 2.
+          בלי <code>SLEEP_PHONE_SECRET</code> כל בקשה שמגיעה עם User-Agent של ימות תתקבל,
+          וזה חור אבטחה אמיתי.
+        </li>
+        <li>
+          <strong>הקוד החדש פרוס.</strong> השלוחה הזו מסתמכת על גרסה של
+          <code>routes/sleep.js</code> שקוראת את הספרות גם מ-<code>ApiTime</code>
+          (השם שימות שולחת בפועל). אם עדיין לא נדחף — קודם דוחפים, אחר כך בונים את השלוחה.
+        </li>
+      </ol>
+      <div class="warn">
+        <strong>Render במסלול החינמי נרדם</strong>
+        אחרי כ-15 דקות בלי תעבורה השירות נכנס לשינה. השיחה הראשונה בבוקר עלולה לחכות
+        לזמן ההתעוררות, ולפעמים תיענה "אירעה תקלה". אם זה קורה — להקיש שוב אחרי חצי דקה.
+        אפשר למנוע את זה לגמרי במסלול בתשלום, או בבדיקת ערנות תקופתית.
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= שלב 2 ================= -->
+  <section class="step" id="step2">
+    <div class="step-head">
+      <div class="step-num">2</div>
+      <div>
+        <h2 class="step-title">הוספת משתני הסביבה ב-Render</h2>
+        <p class="step-sub">הגורם היחיד שמאמת את הבקשות שמגיעות מיומות</p>
+      </div>
+      <label class="check"><input type="checkbox" data-step="step2"><span class="check-text">בוצע</span></label>
+    </div>
+    <div class="step-body">
+      <a class="link-btn" href="https://dashboard.render.com/" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14 21 3"/></svg>
+        פתיחת Render Dashboard
+      </a>
+      <ol>
+        <li>בחרי את השירות <strong>class-app-backend</strong> ← <strong>Environment</strong>.</li>
+        <li>לחצי <strong>+ Add Environment Variable</strong> והוסיפי שלושה משתנים:</li>
+      </ol>
+      <table class="params">
+        <thead><tr><th>שם המשתנה</th><th>הערך</th><th>למה</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>SLEEP_PHONE_SECRET</code></td>
+            <td>ערך ארוך ואקראי — בכותרת הדף</td>
+            <td>אימות הבקשות. חייב להיות זהה למה שנדביק בשלוחה</td>
+          </tr>
+          <tr>
+            <td><code>SLEEP_YEMOT_END_FOLDER</code></td>
+            <td><code>/5/8</code></td>
+            <td>תיקיית הסיום — לאן עוברים בסוף השיחה</td>
+          </tr>
+          <tr>
+            <td><code>PUBLIC_BASE_URL</code></td>
+            <td><code>https://class-app-backend.onrender.com</code></td>
+            <td>כתובת האתר הציבורי</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>לוחצים <strong>Save Changes</strong> — Render פורס מחדש אוטומטית (1–3 דקות).</p>
+
+      <div class="note">
+        <strong>אין לך סוד עדיין? לחצי כאן כדי ליצור אחד</strong>
+        <button class="link-btn" id="genSecret" type="button">יצירת סוד אקראי</button>
+        הסוד נוצר בדפדפן ונכנס לשדה שבכותרת. הוא נשמר רק במחשב הזה — שימרי גם במקום
+        אחר (למשל במנהל סיסמאות), כי אחרי ש-Render נשמר אין דרך לראות אותו חזרה.
+      </div>
+      <div class="tip">
+        <strong>שינוי הסוד בעתיד</strong>
+        אם הסוד דלף — מחליפים אותו ב-Render, מעדכנים את השדה בכותרת הדף, ומדביקים
+        את ערך <code>api_link</code> החדש בשלוחה (שלב 4). עד שמעדכנים את השלוחה,
+        השיחות יידחו בשקט.
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= שלב 3 ================= -->
+  <section class="step" id="step3">
+    <div class="step-head">
+      <div class="step-num">3</div>
+      <div>
+        <h2 class="step-title">יצירת השלוחה במערכת ימות</h2>
+        <p class="step-sub">שלוחה מסוג API — תקשור עם מחשבים וממשקי נתונים חיצוניים</p>
+      </div>
+      <label class="check"><input type="checkbox" data-step="step3"><span class="check-text">בוצע</span></label>
+    </div>
+    <div class="step-body">
+      <ol>
+        <li>כתובת הניהול: <code>www.call2all.co.il/ym</code> ← כניסה עם פרטי הניהול של המערכת.</li>
+        <li>תפריט <strong>ניהול שלוחות</strong> ← <strong>הוספת שלוחה</strong>.</li>
+        <li><strong>מספר השלוחה</strong> — מספר פנוי כלשהו, למשל <code>8</code>. שימו לב
+          שהמספר הזה הוא מה שמחייגים אליו, ושאף שלוחה אחרת לא משתמשת בו.</li>
+        <li><strong>סוג השלוחה</strong> — <em>API — תקשור עם מחשבים וממשקי נתונים חיצוניים</em>
+          (בקוד זה <code>type=api</code>).</li>
+        <li>שמירה — ואז <strong>עריכת הגדרות</strong> של השלוחה החדשה, להמשך בשלב 4.</li>
+      </ol>
+      <div class="warn">
+        <strong>אל תבחרי שלוחה מסוג "תפריט" או "השמעת קבצים"</strong>
+        רק שלוחת API יודעת לשלוח הקשות לשרת שלנו. סוג אחר פשוט ישמיע קובץ וינתק,
+        ובלי שום סימן שגיאה.
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= שלב 4 ================= -->
+  <section class="step" id="step4">
+    <div class="step-head">
+      <div class="step-num">4</div>
+      <div>
+        <h2 class="step-title">פרמטרי ה-API של השלוחה</h2>
+        <p class="step-sub">הלב של ההגדרה — כאן קורה כל החיבור</p>
+      </div>
+      <label class="check"><input type="checkbox" data-step="step4"><span class="check-text">בוצע</span></label>
+    </div>
+    <div class="step-body">
+      <p>
+        במסך <strong>עריכת הגדרות</strong> של השלוחה יש אזור של "הוספת משתנים" —
+        כל משתנה נכתב בפורמט <code>שם=ערך</code>, שורה אחת לכל משתנה. את הערך
+        בכתובת למטה אפשר להעתיק כמו שהוא (אחרי שהסוד נשמר בכותרת הדף).
+      </p>
+
+      <p><strong>1. הכתובת שהשלוחה קוראת לה</strong> — כאן הסוד מוכנס אוטומטית:</p>
+      <div class="copy-box">
+        <code id="api-link" class="dyn"
+              data-tpl="https://class-app-backend.onrender.com/api/sleep/yemot?secret={{secret}}">https://class-app-backend.onrender.com/api/sleep/yemot?secret={{secret}}</code>
+        <button class="copy-btn" data-copy="api-link">העתקה</button>
+      </div>
+      <p class="step-sub" style="margin-top:-.4rem;">
+        אם הסוד עדיין לא הוזן — יודבק טקסט עם <code>{{secret}}</code> במקום הערך,
+        וזה יידחה על ידי השרת.
+      </p>
+
+      <p><strong>2. שאר הפרמטרים</strong> — להזין אחד-אחד:</p>
+      <table class="params">
+        <thead><tr><th>פרמטר</th><th>ערך</th><th>מה הוא עושה</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>api_link</code></td>
+            <td>הכתובת למעלה</td>
+            <td>לאן ימות פונה בכל הקשה</td>
+          </tr>
+          <tr>
+            <td><code>api_url_post</code></td>
+            <td><code>yes</code></td>
+            <td>שליחה ב-POST ולא ב-GET</td>
+          </tr>
+          <tr>
+            <td><code>api_000</code></td>
+            <td><code>Time,no,Time,4,4,10,yes,yes</code></td>
+            <td>שאלת הקשה — פירוט למטה</td>
+          </tr>
+          <tr>
+            <td><code>api_hangup_send</code></td>
+            <td><code>no</code></td>
+            <td>לא לשלוח לנו בקשה נוספת כשהשיחה מנותקת</td>
+          </tr>
+          <tr>
+            <td><code>api_end_goto</code></td>
+            <td><code>/5/8</code></td>
+            <td>לאן לעבור בסוף, אם לא אמרנו אחרת</td>
+          </tr>
+          <tr>
+            <td><code>api_000_send</code></td>
+            <td><strong>דלוק</strong></td>
+            <td>חייב להישאר דלוק — אחרת ההקשה לא מגיעה אלינו</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="copy-box">
+        <code id="params-block" style="white-space:pre; line-height:1.7;">api_url_post=yes
+api_000=Time,no,Time,4,4,10,yes,yes
+api_hangup_send=no
+api_end_goto=/5/8</code>
+        <button class="copy-btn" data-copy="params-block">העתקה</button>
+      </div>
+
+      <h3 style="font-size:1rem; margin:1.3rem 0 .3rem;">פירוק <code>api_000</code> — ערך לפי ערך</h3>
+      <table class="params">
+        <thead><tr><th>#</th><th>הערך</th><th>המשמעות</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><code>Time</code></td><td>שם הפרמטר שיחזור אלינו — בפועל ההקשה תגיע כ-<code>ApiTime</code></td></tr>
+          <tr><td>2</td><td><code>no</code></td><td>לא להשתמש בהקשה קודמת אם קיימת</td></tr>
+          <tr><td>3</td><td><code>Time</code></td><td>סוג הנתון: שעה — ימות תקריא "עשרים ושתיים שלושים" לאישור</td></tr>
+          <tr><td>4–5</td><td><code>4,4</code></td><td>מקסימום ומינימום 4 ספרות — חובה לשעה</td></tr>
+          <tr><td>6</td><td><code>10</code></td><td>10 שניות המתנה להקשה</td></tr>
+          <tr><td>7</td><td><code>yes</code></td><td>חסימת מקש כוכבית</td></tr>
+          <tr><td>8</td><td><code>yes</code></td><td>חסימת אפס בודד</td></tr>
+        </tbody>
+      </table>
+
+      <div class="warn">
+        <strong>דקות ושעות — 4 ספרות תמיד</strong>
+        הבתה מקישה <code>2230</code> ולא <code>22:30</code>. המקש נקודה/כוכבית לא קיים בטלפון,
+        ולכן החוזה בין השיחה לשרת הוא ארבע ספרות בדיוק: שתי ספרות שעה ושתי ספרות דקות.
+      </div>
+      <div class="tip">
+        <strong>אם רוצים להעביר את הסוד כפרמטר ולא בכתובת</strong>
+        אפשר להוסיף <code>api_add_0=secret=&lt;הסוד&gt;</code> ולהשאיר את <code>api_link</code> בלי
+        <code>?secret=</code>. השרת בודק גם את ה-query וגם את <code>api_add</code> —
+        שתי הדרכים עובדות, אבל לא חייבות לפעול יחד.
+      </div>
+      <div class="note">
+        <strong>לחיצה על "שמירה" אינה מספיקה</strong>
+        אחרי כל שינוי בשלוחה — בצעי שיחת בדיקה אחת (שלב 7). ימות לא מתריעה על
+        פרמטר שגוי; התסמין היחיד הוא שיחה שלא מתנהגת כמצופה.
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= שלב 5 ================= -->
+  <section class="step" id="step5">
+    <div class="step-head">
+      <div class="step-num">5</div>
+      <div>
+        <h2 class="step-title">קובץ ההנחיה הקולי — 000.wav</h2>
+        <p class="step-sub">הקובץ שהבתה שומעת לפני שהיא מקישה</p>
+      </div>
+      <label class="check"><input type="checkbox" data-step="step5"><span class="check-text">בוצע</span></label>
+    </div>
+    <div class="step-body">
+      <p>
+        ימות משמיעה את הקובץ <code>000</code> בתחילת השיחה, <strong>ומיד אחריו</strong>
+        מתחילות 10 השניות להקשה. קובץ ארוך מדי "יבלע" את זמן ההקשה — הבנות יקישו
+        לשווא תוך כדי ההשמעה.
+      </p>
+      <ol>
+        <li>הקליטי או המירי טקסט לקול — עד 15–20 שניות.</li>
+        <li>שם הקובץ <strong>בדיוק</strong> <code>000.wav</code> (או <code>000.tts</code> אם המערכת
+          תומכת בטקסט-לדיבור).</li>
+        <li>העלי אותו אל <strong>תיקיית השלוחה עצמה</strong> (למשל <code>ivr2:8/000.wav</code>),
+          לא לתיקייה אחרת.</li>
+      </ol>
+      <div class="tip">
+        <strong>נוסח מוצע להקלטה</strong>
+        שלום, זהו קו מבצע השינה. להקיש בבקשה את שעת השינה בארבע ספרות —
+        למשל שתיים שלוש אפס אפס ללילה של עשר וחצי, או שתיים שתיים שלושים
+        ללילה של עשר וחצי בלילה.
+        <br>
+        החלק האחרון הוא דוגמה: עדיף דוגמה אחת ברורה מאשר שתיים מבלבלות.
+      </div>
+      <div class="note">
+        <strong>למה דווקא "000"</strong>
+        המספר בשם הקובץ הוא מיקום ההקשה בתוך השלוחה: 000 היא ההקשה הראשונה,
+        001 השנייה, וכן הלאה. זו גם הסיבה שפרמטר ההגדרה נקרא <code>api_000</code>.
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= שלב 6 ================= -->
+  <section class="step" id="step6">
+    <div class="step-head">
+      <div class="step-num">6</div>
+      <div>
+        <h2 class="step-title">מספרי הטלפון של הבנות</h2>
+        <p class="step-sub">בלי זה השיחה לא תזהה אותן — וזה השלב שהכי קל לשכוח</p>
+      </div>
+      <label class="check"><input type="checkbox" data-step="step6"><span class="check-text">בוצע</span></label>
+    </div>
+    <div class="step-body">
+      <ol>
+        <li>כל בתה נכנסת לאתר ← לשונית <strong>שינה</strong> ← ממלאת את <strong>מספר הטלפון לקו</strong>.
+          השדה היחיד שהיא יכולה למלא בעצמה.</li>
+        <li>המספר נשמר מנורמל לספרות בלבד, וההתאמה בשיחה נעשית לפי
+          <strong>9 הספרות האחרונות</strong>. כלומר:</li>
+      </ol>
+      <div class="copy-box">
+        <code id="phone-examples" style="white-space:pre; line-height:1.8;">050-123-4567
+0501234567
++972501234567</code>
+        <button class="copy-btn" data-copy="phone-examples">העתקה</button>
+      </div>
+      <p>שלושת הנוסחים הללו מזהים את אותה בתה. כל עוד המספר שממנו מחייגים
+        מגיע לאותן 9 ספרות — הזיהוי יעבוד.</p>
+
+      <div class="warn">
+        <strong>מספר שמשמש שתי בנות</strong>
+        נדחה בשמירה (שגיאה "המספר כבר משויך למשתמשת אחרת"). אם שתי אחיות משתמשות
+        באותו מספר בית — צריך החלטה: או שכל אחת תדווח ממספר נייד אחר,
+        או שהמנהלת רושמת רק אחת מהן ונעדכן בהתאם.
+      </div>
+      <div class="note">
+        <strong>בתה שלא רשומה</strong>
+        מחייגת ומוקישה — תשמע "המספר הזה אינו רשום במבצע. יש לפנות למזכירות לעדכון המספר."
+        את ההודעה הזו מכירה הבתה, לא השרת — ולכן כדאי לוודא שכל המספרים קיימים
+        <em>לפני</em> שמכריזים על המבצע.
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= שלב 7 ================= -->
+  <section class="step" id="step7">
+    <div class="step-head">
+      <div class="step-num">7</div>
+      <div>
+        <h2 class="step-title">בדיקה מקצה לקצה</h2>
+        <p class="step-sub">חמישה תרחישים — כל אחד בודק משהו אחר</p>
+      </div>
+      <label class="check"><input type="checkbox" data-step="step7"><span class="check-text">בוצע</span></label>
+    </div>
+    <div class="step-body">
+      <p><strong>איך נראית שיחה תקינה:</strong></p>
+      <div class="flow">
+        <div class="flow-row ym"><span class="who">ימות</span><span>משמיעה את <code>000.wav</code> — ו-10 שניות להקשה</span></div>
+        <div class="flow-row me"><span class="who">הבתה</span><span>מקישה <code>2230</code></span></div>
+
+        <div class="flow-row ym"><span class="who">ימות</span><span>מקריאה "עשרים ושתיים שלושים" לאישור</span></div>
+        <div class="flow-row me"><span class="who">הבתה</span><span>מאשרת</span></div>
+        <div class="flow-row ym"><span class="who">השרת</span><span>שולח <code>id_list_message=t-נרשם, לילה טוב</code> ואז <code>go_to_folder</code></span></div>
+        <div class="flow-row ym"><span class="who">ימות</span><span>משמיעה "נרשם, לילה טוב" ועוברת לתיקיית הסיום</span></div>
+      </div>
+
+      <p style="margin-top:1.2rem;"><strong>חמשת התרחישים:</strong></p>
+      <ol>
+        <li><strong>חיוג תקין</strong> — כנ"ל, ומוודאים באתר ← לשונית שינה שהשעה מוצגת
+          ושהמקום ביחס לכיתה התעדכן.</li>
+        <li><strong>שעת בוקר בטעות</strong> — מקישים <code>0900</code> ← "השעה שהוקשה אינה תקינה".</li>
+        <li><strong>מספר לא רשום</strong> — מחייגים ממספר שאינו באתר ← "המספר הזה אינו רשום במבצע".</li>
+        <li><strong>דיווח חוזר באותו לילה</strong> — מקישים <code>2215</code> ← הדיווח הקודם נדרס.</li>
+        <li><strong>אחרי חצות</strong> — דיווח ב-<code>0045</code> נספר ללילה הקודם,
+          ולא פותח יום חדש. לילה חדש מתחיל רק אחרי 04:00.</li>
+      </ol>
+
+      <div class="tip">
+      <strong>טבלת תקלות — לפי התסמין</strong>
+        <table class="params" style="margin-top:.5rem;">
+          <tbody>
+            <tr>
+              <td>"אין מענה משרת API" (קוד M1607)</td>
+              <td>השרת החזיר JSON או שגיאה במקום טקסט. בדקי את הלוגים ב-Render —
+                לרוב מדובר בשגיאת מסד נתונים, או בכתובת <code>api_link</code> שגויה.</td>
+            </tr>
+            <tr>
+              <td>"המספר הזה אינו רשום"</td>
+              <td>המספר לא מופיע בשדה של הבתה באתר, או שהספרות האחרונות שונות
+                (למשל 9 ספרות מול מספר קצר יותר).</td>
+            </tr>
+            <tr>
+              <td>אין 10 שניות להקשה / השיחה נופלת מיד</td>
+              <td><code>api_000_send</code> כבוי, או ש-<code>api_000</code> הוזן בפורמט לא תקין.</td>
+            </tr>
+            <tr>
+              <td>"נרשם, לילה טוב" אבל השעה שגויה באתר</td>
+              <td>בדקי את השדה הראשון ב-<code>api_000</code> — הוא קובע את שם הפרמטר
+                שבו מגיעות הספרות.</td>
+            </tr>
+            <tr>
+              <td>"אירעה תקלה, נסי שוב בעוד רגע"</td>
+              <td>שגיאה אמיתית בצד השרת — DB, חיבור, או השירות בהתעוררות. בדקי את הלוגים.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note">
+        <strong>מקום לבדוק כמות שיחות</strong>
+        כל שיחה נשמרת בטבלת <code>sleep_phone_calls</code> עם <code>call_id</code> — כך
+        בקשה כפולה מאותה שיחה מקבלת את אותה תשובה בדיוק ולא נרשמת פעמיים.
+        זו גם הדרך לראות אילו שיחות הגיעו ולא זוהו.
+      </div>
+    </div>
+  </section>
+
+  <a class="back" href="/">← חזרה לאתר</a>
+</div>
+
+<script>
+  // ------- סימון שלבים שנשמר בדפדפן -------
+  const STORAGE_KEY = 'yemot_sleep_setup_steps';
+  const SECRET_KEY = 'yemot_sleep_setup_secret';
+  const steps = ['step1', 'step2', 'step3', 'step4', 'step5', 'step6', 'step7'];
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch (e) { saved = {}; }
+
+  function updateProgress() {
+    const doneCount = steps.filter(id => saved[id]).length;
+    const total = steps.length;
+    document.getElementById('progressLabel').textContent = `${doneCount} מתוך ${total} שלבים`;
+    document.getElementById('progressBar').style.width = `${(doneCount / total) * 100}%`;
+  }
+
+  document.querySelectorAll('.check input[data-step]').forEach(cb => {
+    const id = cb.dataset.step;
+    cb.checked = Boolean(saved[id]);
+    if (cb.checked) cb.closest('.step').classList.add('done');
+
+    cb.addEventListener('change', () => {
+      saved[id] = cb.checked;
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(saved)); } catch (e) {}
+      cb.closest('.step').classList.toggle('done', cb.checked);
+      updateProgress();
+    });
+  });
+  updateProgress();
+
+  // ------- הסוד: נשמר בדפדפן הזה ומתמזג לכל בלוק שמסומן class="dyn" -------
+  const secretInput = document.getElementById('secretInput');
+  const secretState = document.getElementById('secretState');
+
+  function applySecret(secret) {
+    const value = String(secret || '').trim();
+    document.querySelectorAll('.dyn[data-tpl]').forEach(el => {
+      el.textContent = el.dataset.tpl.replace('{{secret}}', value || '{{secret}}');
+    });
+    if (value) {
+      secretState.textContent = 'הסוד הוזן — התיבה למעלה מתעדכנת אוטומטית. הוא נשמר רק בדפדפן הזה.';
+    } else {
+      secretState.textContent = 'הסוד נשמר רק בדפדפן הזה, ונכנס אוטומטית לכל תיבה במדריך.';
+    }
+  }
+
+  try {
+    const stored = localStorage.getItem(SECRET_KEY) || '';
+    secretInput.value = stored;
+    applySecret(stored);
+  } catch (e) { applySecret(''); }
+
+  document.getElementById('secretSave').addEventListener('click', () => {
+    const value = secretInput.value.trim();
+    try { localStorage.setItem(SECRET_KEY, value); } catch (e) {}
+    applySecret(value);
+  });
+
+  document.getElementById('secretClear').addEventListener('click', () => {
+    secretInput.value = '';
+    try { localStorage.removeItem(SECRET_KEY); } catch (e) {}
+    applySecret('');
+  });
+
+  // יצירת סוד אקראי — בצד הלקוח, בלי לשלוח לשום מקום
+  document.getElementById('genSecret').addEventListener('click', () => {
+    const bytes = new Uint8Array(18);
+    crypto.getRandomValues(bytes);
+    const alphabet = 'abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let out = 'sle_';
+    for (const b of bytes) out += alphabet[b % alphabet.length];
+    secretInput.value = out;
+    try { localStorage.setItem(SECRET_KEY, out); } catch (e) {}
+    applySecret(out);
+    secretState.textContent = 'נוצר סוד חדש. העתיקי אותו למקום בטוח ושמרי אותו ב-Render לפני שממשיכים.';
+  });
+
+  // ------- העתקה ללוח -------
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const source = document.getElementById(btn.dataset.copy);
+      if (!source) return;
+      try {
+        await navigator.clipboard.writeText(source.textContent.trim());
+        btn.textContent = 'הועתק ✓';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = 'העתקה';
+          btn.classList.remove('copied');
+        }, 1500);
+      } catch (e) {
+        // גיבוי לדפדפנים בלי הרשאת לוח
+        const range = document.createRange();
+        range.selectNodeContents(source);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        btn.textContent = 'סומן — Ctrl+C';
+      }
+    });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>הגדרת התחברות עם גוגל — מדריך שלב אחר שלב</title>
+<style>
+  :root {
+    --void: #060814;
+    --panel: #0D1024;
+    --panel-2: #131731;
+    --line: #262C52;
+    --line-soft: #1B2043;
+    --text: #EEF0FF;
+    --text-2: #A6ACD6;
+    --text-3: #6B7196;
+    --violet: #A855F7;
+    --magenta: #FF3D8B;
+    --cyan: #22D3EE;
+    --lime: #A3E635;
+    --gold: #FFC53D;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--void);
+    color: var(--text);
+    font-family: "Segoe UI", "Arial", system-ui, sans-serif;
+    line-height: 1.7;
+    font-size: 16px;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 2.5rem 1.25rem 4rem; }
+
+  /* ---------- כותרת ---------- */
+  .hero {
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 2rem 1.75rem;
+    background:
+      radial-gradient(120% 140% at 100% 0%, rgba(168, 85, 247, .18), transparent 55%),
+      radial-gradient(120% 140% at 0% 100%, rgba(34, 211, 238, .12), transparent 55%),
+      var(--panel);
+    margin-bottom: 2rem;
+  }
+  .kicker {
+    display: inline-block;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: .8rem;
+    letter-spacing: .08em;
+    color: var(--cyan);
+    margin-bottom: .6rem;
+  }
+  .hero h1 { margin: 0 0 .6rem; font-size: 1.9rem; line-height: 1.3; }
+  .hero p { margin: 0; color: var(--text-2); max-width: 62ch; }
+
+  /* ---------- תוכן עניינים ---------- */
+  .toc {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: .6rem;
+    margin-bottom: 2.25rem;
+  }
+  .toc a {
+    display: flex;
+    align-items: center;
+    gap: .7rem;
+    padding: .75rem .9rem;
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius);
+    background: var(--panel-2);
+    color: var(--text);
+    text-decoration: none;
+    font-size: .94rem;
+    transition: border-color .15s, transform .15s;
+  }
+  .toc a:hover { border-color: var(--violet); transform: translateY(-1px); }
+  .toc .num {
+    width: 1.9rem; height: 1.9rem; flex: none;
+    display: grid; place-items: center;
+    border-radius: 10px;
+    background: rgba(168, 85, 247, .14);
+    color: var(--violet);
+    font-weight: 700;
+    font-size: .9rem;
+  }
+
+  /* ---------- שלב ---------- */
+  .step {
+    position: relative;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: var(--panel);
+    padding: 1.5rem 1.6rem 1.4rem;
+    margin-bottom: 1.35rem;
+    transition: border-color .2s, opacity .2s;
+  }
+  .step.done { border-color: rgba(163, 230, 53, .55); }
+  .step.done > .step-body { opacity: .55; }
+  .step-head { display: flex; align-items: flex-start; gap: 1rem; margin-bottom: .9rem; }
+  .step-num {
+    width: 2.4rem; height: 2.4rem; flex: none;
+    display: grid; place-items: center;
+    border-radius: 12px;
+    font-weight: 800;
+    font-size: 1.05rem;
+    color: #fff;
+    background: linear-gradient(135deg, var(--violet), var(--magenta));
+  }
+  .step-title { margin: 0; font-size: 1.2rem; }
+  .step-sub { margin: .15rem 0 0; color: var(--text-3); font-size: .85rem; }
+  .check {
+    margin-inline-start: auto;
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: .45rem;
+    font-size: .82rem;
+    color: var(--text-3);
+    cursor: pointer;
+    user-select: none;
+  }
+  .check input { accent-color: var(--lime); width: 1.05rem; height: 1.05rem; cursor: pointer; }
+
+  .step-body { padding-inline-start: 3.4rem; }
+  .step-body ol, .step-body ul { margin: .5rem 0; padding-inline-start: 1.3rem; }
+  .step-body li { margin-bottom: .45rem; }
+  .step-body li::marker { color: var(--violet); }
+
+  /* ---------- רכיבי עזר ---------- */
+  code, .mono {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: .88em;
+    direction: ltr;
+    display: inline-block;
+    background: #070A18;
+    border: 1px solid var(--line-soft);
+    border-radius: 6px;
+    padding: .1rem .4rem;
+    color: var(--gold);
+    unicode-bidi: isolate;
+  }
+  .copy-box {
+    display: flex;
+    align-items: stretch;
+    gap: .5rem;
+    margin: .7rem 0;
+  }
+  .copy-box code {
+    flex: 1;
+    padding: .65rem .8rem;
+    text-align: left;
+    overflow-x: auto;
+    white-space: nowrap;
+    color: var(--text);
+    background: var(--code-bg, #070A18);
+    user-select: all;
+  }
+  .copy-btn {
+    flex: none;
+    border: 1px solid var(--line);
+    background: var(--panel-2);
+    color: var(--text-2);
+    border-radius: 8px;
+    padding: 0 .85rem;
+    font-family: inherit;
+    font-size: .82rem;
+    cursor: pointer;
+  }
+  .copy-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+  .copy-btn.copied { border-color: var(--lime); color: var(--lime); }
+
+  .tip, .warn, .note {
+    border-radius: 12px;
+    padding: .8rem 1rem;
+    margin: .9rem 0;
+    font-size: .92rem;
+    border: 1px solid;
+  }
+  .tip  { background: rgba(34, 211, 238, .07); border-color: rgba(34, 211, 238, .35); }
+  .warn { background: rgba(255, 61, 139, .07); border-color: rgba(255, 61, 139, .4); }
+  .note { background: rgba(255, 197, 61, .07); border-color: rgba(255, 197, 61, .35); }
+  .tip strong, .warn strong, .note strong { display: block; margin-bottom: .2rem; }
+  .tip strong  { color: var(--cyan); }
+  .warn strong { color: var(--magenta); }
+  .note strong { color: var(--gold); }
+
+  .link-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    margin: .35rem .3rem .35rem 0;
+    padding: .55rem .95rem;
+    border-radius: 10px;
+    background: rgba(168, 85, 247, .14);
+    border: 1px solid rgba(168, 85, 247, .4);
+    color: #E9D5FF;
+    text-decoration: none;
+    font-size: .9rem;
+  }
+  .link-btn:hover { background: rgba(168, 85, 247, .25); }
+  .link-btn svg { width: .95rem; height: .95rem; }
+
+  .field {
+    display: grid;
+    grid-template-columns: 11rem 1fr;
+    gap: .5rem;
+    padding: .55rem 0;
+    border-bottom: 1px dashed var(--line-soft);
+    font-size: .93rem;
+  }
+  .field:last-child { border-bottom: none; }
+  .field dt { color: var(--text-2); }
+  .field dd {
+    margin: 0;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: .88rem;
+    color: var(--gold);
+    direction: ltr;
+    text-align: right;
+    word-break: break-word;
+  }
+
+  .progress {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: rgba(6, 8, 20, .92);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+    padding: .7rem 1.25rem;
+  }
+  .progress-inner { max-width: 960px; margin: 0 auto; display: flex; align-items: center; gap: .9rem; }
+  .bar { flex: 1; height: 8px; border-radius: 99px; background: var(--panel-2); overflow: hidden; }
+  .bar span { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--violet), var(--cyan)); transition: width .3s; }
+  .progress-label { font-size: .85rem; color: var(--text-2); white-space: nowrap; }
+
+  .back { display: inline-block; margin-top: 2rem; color: var(--text-2); text-decoration: none; font-size: .9rem; }
+  .back:hover { color: var(--cyan); }
+
+  @media (max-width: 640px) {
+    .step-body { padding-inline-start: 0; }
+    .field { grid-template-columns: 1fr; }
+    .check .check-text { display: none; }
+    .hero h1 { font-size: 1.45rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="progress">
+  <div class="progress-inner">
+    <span class="progress-label" id="progressLabel">0 מתוך 6 שלבים</span>
+    <div class="bar"><span id="progressBar"></span></div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <header class="hero">
+    <span class="kicker">// SETUP GUIDE</span>
+    <h1>התחברות עם גוגל — מדריך שלב אחר שלב</h1>
+    <p>
+      הקוד בצד השרת כבר מוכן. מה שנשאר הוא להקים את האפליקציה ב-Google Cloud Console
+      ולהוסיף את המפתחות לשירות ב-Render. הסימון בכל שלב נשמר בדפדפן —
+      אפשר לסגור ולחזור.
+    </p>
+  </header>
+
+  <nav class="toc">
+    <a href="#step1"><span class="num">1</span>יצירת הפרויקט</a>
+    <a href="#step2"><span class="num">2</span>מסך ההסכמה</a>
+    <a href="#step3"><span class="num">3</span>יצירת OAuth Client</a>
+    <a href="#step4"><span class="num">4</span>הוספת כתובות</a>
+    <a href="#step5"><span class="num">5</span>משתני סביבה ב-Render</a>
+    <a href="#step6"><span class="num">6</span>בדיקה</a>
+  </nav>
+
+  <!-- ================= שלב 1 ================= -->
+  <section class="step" id="step1">
+    <div class="step-head">
+      <div class="step-num">1</div>
+      <div>
+        <h2 class="step-title">פתיחת Google Cloud Console ויצירת פרויקט</h2>
+        <p class="step-sub">פעם אחת בלבד</p>
+      </div>
+      <label class="check"><input type="checkbox" data-step="step1"><span class="check-text">בוצע</span></label>
+    </div>
+    <div class="step-body">
+      <a class="link-btn" href="https://console.cloud.google.com/" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14 21 3"/></svg>
+        פתיחת Google Cloud Console
+      </a>
+      <ol>
+        <li>התחברי עם חשבון הגוגל שאליו האפליקציה תהיה שייכת.</li>
+        <li>בסרגל העליון לחצי על בורר הפרויקטים ← <strong>New Project</strong>.</li>
+        <li>בשדה <strong>Project name</strong> כתבי שם כלשהו, ולחצי <strong>Create</strong>.</li>
+        <li>ודאי שהפרויקט החדש מסומן כפעיל בסרגל העליון לפני שממשיכות.</li>
+      </ol>
+      <div class="tip">
+        <strong>למה זה נדרש?</strong>
+        כל מפתחות ה-OAuth חיים בתוך פרויקט. בלי פרויקט פעיל, הכפתור ליצירת המפתח לא יהיה זמין.
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= שלב 2 ================= -->
+  <section class="step" id="step2">
+    <div class="step-head">
+      <div class="step-num">2</div>
+      <div>
+        <h2 class="step-title">הגדרת מסך ההסכמה (OAuth consent screen)</h2>
+        <p class="step-sub">המסך שהמשתמשת רואה לפני שהיא מאשרת</p>
+      </div>
+      <label class="check"><input type="checkbox" data-step="step2"><span class="check-text">בוצע</span></label>
+    </div>
+    <div class="step-body">
+      <a class="link-btn" href="https://console.cloud.google.com/apis/credentials/consent" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14 21 3"/></svg>
+        פתיחת מסך ההסכמה
+      </a>
+      <ol>
+        <li>אם זו הפעם הראשונה — לחצי <strong>Get started</strong> / <strong>Configure consent screen</strong>.</li>
+        <li>בחרי <strong>User Type: External</strong> (אלא אם יש לך Google Workspace ארגוני).</li>
+        <li>מלאי את השדות:
+          <dl class="field">
+            <dt>App name</dt><dd>Class App</dd>
+            <dt>User support email</dt><dd>המייל שלך</dd>
+            <dt>Developer contact</dt><dd>המייל שלך</dd>
+          </dl>
+        </li>
+        <li>בשלב <strong>Scopes</strong> — זה כבר מוגדר אוטומטית ב-<code>openid</code>, <code>email</code>, <code>profile</code>. אין צורך להוסיף כלום, פשוט לחצי <strong>Save and Continue</strong>.</li>
+        <li>בשלב <strong>Test users</strong> (אם מופיע) — הוסיפי את כתובות המייל של מי שאמורות להתחבר בזמן הבדיקה.</li>
+        <li>לחצי <strong>Back to Dashboard</strong> בסיום.</li>
+      </ol>
+      <div class="note">
+        <strong>מצב Testing מול Production</strong>
+        כל עוד האפליקציה במצב Testing, רק כתובות שהוספת ב-Test users יוכלו להתחבר. כשהכל עובד — לחצי <strong>Publish app</strong> כדי שכל אחת תוכל.
+        אפליקציה חיצונית בפרודקשן עם scopes בסיסיים בלבד (openid/email/profile) לא מחייבת בדיקת אבטחה של גוגל.
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= שלב 3 ================= -->
+  <section class="step" id="step3">
+    <div class="step-head">
+      <div class="step-num">3</div>
+      <div>
+        <h2 class="step-title">יצירת OAuth Client ID</h2>
+        <p class="step-sub">כאן נוצרים ה-Client ID וה-Secret</p>
+      </div>
+      <label class="check"><input type="checkbox" data-step="step3"><span class="check-text">בוצע</span></label>
+    </div>
+    <div class="step-body">
+      <a class="link-btn" href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14 21 3"/></svg>
+        פתיחת מסך ה-Credentials
+      </a>
+      <ol>
+        <li>לחצי על <strong>+ Create Credentials</strong> ← <strong>OAuth client ID</strong>.</li>
+        <li><strong>Application type</strong> — חייבת להיות <strong>Web application</strong>.</li>
+        <li><strong>Name</strong> — שם חופשי, למשל <code>Class App Login</code>.</li>
+        <li>אל תסגרי את החלון — בשלב הבא ממלאים את הכתובות.</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ================= שלב 4 ================= -->
+  <section class="step" id="step4">
+    <div class="step-head">
+      <div class="step-num">4</div>
+      <div>
+        <h2 class="step-title">הוספת כתובות ההחזרה (Redirect URIs)</h2>
+        <p class="step-sub">השלב שבו הכי הרבה שגיאות קורות</p>
+      </div>
+      <label class="check"><input type="checkbox" data-step="step4"><span class="check-text">בוצע</span></label>
+    </div>
+    <div class="step-body">
+      <p style="margin-top:.2rem;">באותו חלון של <strong>Create OAuth client ID</strong>, תחת <strong>Authorized redirect URIs</strong> לחצי <strong>Add URI</strong> והדביקי את הכתובת של האתר החי:</p>
+
+      <p><strong>כתובת ההחזרה — האתר ב-Render:</strong></p>
+      <div class="copy-box">
+        <code id="uri-prod">https://class-app-backend.onrender.com/api/auth/google/callback</code>
+        <button class="copy-btn" data-copy="uri-prod">העתקה</button>
+      </div>
+
+      <p><strong>Authorized JavaScript origins</strong> — כאן <u>אסור</u> להדביק את כתובת ה-callback. רק הדומיין עצמו, בלי נתיב ובלי <code>/</code> בסוף:</p>
+      <div class="copy-box">
+        <code id="origin-prod">https://class-app-backend.onrender.com</code>
+        <button class="copy-btn" data-copy="origin-prod">העתקה</button>
+      </div>
+      <p class="sub-hint">אם מופיעה השגיאה <code>Invalid Origin: URIs must not contain a path or end with '/'</code> — הודבקה שם כתובת ה-callback. מחקי אותה והדביקי רק את השורה למעלה.</p>
+
+      <p style="margin-top:1.2rem;"><strong>אופציונלי — לפיתוח מקומי בלבד:</strong></p>
+      <p class="sub-hint">רק אם את רוצה לבדוק גם מהמחשב שלך. האתר החי לא תלוי בזה.</p>
+      <div class="copy-box">
+        <code id="uri-local">http://localhost:3000/api/auth/google/callback</code>
+        <button class="copy-btn" data-copy="uri-local">העתקה</button>
+      </div>
+      <div class="copy-box">
+        <code id="origin-local">http://localhost:3000</code>
+        <button class="copy-btn" data-copy="origin-local">העתקה</button>
+      </div>
+
+      <ol style="margin-top:1rem;">
+        <li>לחצי <strong>Create</strong>.</li>
+        <li>ייפתח חלון עם <strong>Client ID</strong> ו-<strong>Client secret</strong> — לחצי <strong>Download JSON</strong> ושמרי אותו במקום בטוח, או פשוט השאירי את החלון פתוח לשלב הבא.</li>
+      </ol>
+
+      <div class="warn">
+        <strong>הכתובת חייבת להיות מדויקת לחלוטין</strong>
+        הקידומת (<code>https</code>), הדומיין, האותיות הגדולות/קטנות והנתיב — הכל חייב להתאים לתו האחרון.
+        אם מופיעה שגיאה <code>redirect_uri_mismatch</code>, הפתרון הוא להעתיק את הכתובת מתוך הודעת השגיאה עצמה ולהדביק אותה בדיוק כאן.
+      </div>
+      <div class="tip">
+        <strong>זהו הדומיין שמייצר השרת בעצמו</strong>
+        השרת ב-Render בונה את כתובת ההחזרה מ-<code>req.protocol</code> ו-<code>req.get('host')</code> —
+        כלומר בדיוק מהדומיין שהמשתמשת גלשה אליו — ב-Render כתובת ההחזרה תהיה <code>https://class-app-backend.onrender.com</code>.
+        אם בעתיד תשני את שם השירות — עדכני את הכתובת כאן ב-Google.
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= שלב 5 ================= -->
+  <section class="step" id="step5">
+    <div class="step-head">
+      <div class="step-num">5</div>
+      <div>
+        <h2 class="step-title">הוספת המפתחות ל-Render</h2>
+        <p class="step-sub">משתני הסביבה של השירות החי</p>
+      </div>
+      <label class="check"><input type="checkbox" data-step="step5"><span class="check-text">בוצע</span></label>
+    </div>
+    <div class="step-body">
+      <p>
+        השרת החי רץ ב-Render, ולכן המפתחות צריכים להיות בהגדרות השירות ב-Render —
+        <strong>לא</strong> בקובץ <code>.env</code> שעל המחשב שלך. קובץ <code>.env</code> מקומי משפיע רק על
+        הרצה מהמחשב.
+      </p>
+      <a class="link-btn" href="https://dashboard.render.com/" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14 21 3"/></svg>
+        פתיחת Render Dashboard
+      </a>
+      <ol>
+        <li>בחרי את השירות <strong>class-app-backend</strong>.</li>
+        <li>בתפריט הצד לחצי על <strong>Environment</strong>.</li>
+        <li>לחצי <strong>+ Add Environment Variable</strong> והוסיפי שני משתנים:
+          <dl class="field">
+            <dt>Key</dt><dd>GOOGLE_LOGIN_CLIENT_ID</dd>
+            <dt>Value</dt><dd>המזהה-מגוגל</dd>
+            <dt>Key</dt><dd>GOOGLE_LOGIN_CLIENT_SECRET</dd>
+            <dt>Value</dt><dd>הסוד-מגוגל</dd>
+          </dl>
+        </li>
+        <li>לחצי <strong>Save Changes</strong> — Render יפרוס את השירות מחדש אוטומטית (יכול לקחת 1–3 דקות).</li>
+      </ol>
+
+      <div class="note">
+        <strong>משתנה אופציונלי — קביעת הכתובת במפורש</strong>
+        אם תרצי לכפות את כתובת ההחזרה ולא להסתמך על מה שהשרת מחשב, הוסיפי גם:
+        <div class="copy-box">
+          <code id="env-redirect" style="white-space:pre; line-height:1.6;">GOOGLE_LOGIN_REDIRECT_URI=https://class-app-backend.onrender.com/api/auth/google/callback</code>
+          <button class="copy-btn" data-copy="env-redirect">העתקה</button>
+        </div>
+        אותה כתובת בדיוק שמופיעה בשלב 4. אין חובה — השרת כבר יודע את הדומיין שלו ב-Render.
+      </div>
+      <div class="note">
+        <strong>שני שמות אפשריים — אותו אפקט</strong>
+        אם כבר יש לך ב-Render את <code>GOOGLE_CLIENT_ID</code> ו-<code>GOOGLE_CLIENT_SECRET</code>,
+        השרת כבר משתמש בהם — אין צורך להוסיף כלום. השמות עם <code>GOOGLE_LOGIN_</code> קודמים להם רק אם קיימים,
+        ולכן עדיף להשתמש בהם כדי לא לפגוע בשימוש אחר.
+      </div>
+      <div class="warn">
+        <strong>הדף שלך לא מתעדכן?</strong>
+        אם סביבת הסינון טוענת גרסה שמורה של הדף, הוסיפי לסוף הכתובת
+        <code>?v=2</code> — כך הדפדפן והסינון יביאו את הקובץ המעודכן.
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= שלב 6 ================= -->
+  <section class="step" id="step6">
+    <div class="step-head">
+      <div class="step-num">6</div>
+      <div>
+        <h2 class="step-title">בדיקה שהכל עובד</h2>
+        <p class="step-sub">שלוש בדיקות מהירות</p>
+      </div>
+      <label class="check"><input type="checkbox" data-step="step6"><span class="check-text">בוצע</span></label>
+    </div>
+    <div class="step-body">
+      <ol>
+        <li>
+          <strong>בדיקת הגדרה:</strong> פיתחי את הכתובת
+          <div class="copy-box">
+            <code id="status-url">https://class-app-backend.onrender.com/api/auth/google/status</code>
+            <button class="copy-btn" data-copy="status-url">העתקה</button>
+          </div>
+          צריך להופיע <code>{"enabled":true}</code>.
+          אם מופיע <code>{"enabled":false}</code> — המפתחות לא נקראו ב-Render, חזרי לשלב 5.
+        </li>
+        <li>
+          <strong>בדיקת הכפתור:</strong> פתחי את האתר (<code>https://class-app-backend.onrender.com</code>) —
+          מתחת לטופס ההתחברות צריך להופיע כפתור לבן <strong>"התחברות באמצעות גוגל"</strong>.
+        </li>
+        <li>
+          <strong>בדיקת התחברות אמיתית:</strong> לחצי עליו ← בחרי חשבון גוגל ← מאשרי ←
+          חזרה לאתר מחוברת. אם זו הפעם הראשונה, נפתחת משתמשת חדשה עם המייל של גוגל —
+          שתופיע גם ברשימת המשתמשות שלך.
+        </li>
+      </ol>
+
+      <div class="tip">
+        <strong>טבלת תקלות</strong>
+        <ul style="margin:.4rem 0 0;">
+          <li><code>redirect_uri_mismatch</code> — הכתובת בשלב 4 לא זהה בדיוק. העתיקי את הכתובת מתוך הודעת השגיאה עצמה והדביקי אותה בגוגל.</li>
+          <li><code>Access blocked / App not verified</code> — האפליקציה במצב Testing. הוסיפי את המייל תחת Test users, או לחצי Publish app.</li>
+          <li>הכפתור לא מופיע — השרת לא הופעל מחדש, או שהמפתחות ריקים.</li>
+          <li>"פג תוקף ניסיון ההתחברות" — עברו 10 דקות מהלחיצה. פשוט נסי שוב.</li>
+          <li>הדף לא נטען בגוגל — הסינון (נטפרי/אתרוג/נתיב) חוסם את <code>accounts.google.com</code>. יש לבקש מהסינון לאשר אותו.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <a class="back" href="/">← חזרה לאתר</a>
+</div>
+
+<script>
+  // ------- סימון שלבים שנשמר בדפדפן -------
+  const STORAGE_KEY = 'google_setup_steps';
+  const steps = ['step1', 'step2', 'step3', 'step4', 'step5', 'step6'];
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch (e) { saved = {}; }
+
+  function updateProgress() {
+    const doneCount = steps.filter(id => saved[id]).length;
+    // המקסימום הוא 5 שלבים לביצוע — השלב השישי הוא בדיקה
+    const total = 5;
+    document.getElementById('progressLabel').textContent =
+      `${Math.min(doneCount, total)} מתוך ${total} שלבים`;
+    document.getElementById('progressBar').style.width =
+      `${Math.min(doneCount / total, 1) * 100}%`;
+  }
+
+  document.querySelectorAll('.check input[data-step]').forEach(cb => {
+    const id = cb.dataset.step;
+    cb.checked = Boolean(saved[id]);
+    if (cb.checked) cb.closest('.step').classList.add('done');
+
+    cb.addEventListener('change', () => {
+      saved[id] = cb.checked;
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(saved)); } catch (e) {}
+      cb.closest('.step').classList.toggle('done', cb.checked);
+      updateProgress();
+    });
+  });
+  updateProgress();
+
+  // ------- העתקה ללוח -------
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const source = document.getElementById(btn.dataset.copy);
+      if (!source) return;
+      try {
+        await navigator.clipboard.writeText(source.textContent.trim());
+        btn.textContent = 'הועתק ✓';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = 'העתקה';
+          btn.classList.remove('copied');
+        }, 1500);
+      } catch (e) {
+        // גיבוי לדפדפנים בלי הרשאת לוח
+        const range = document.createRange();
+        range.selectNodeContents(source);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        btn.textContent = 'סומן — Ctrl+C';
+      }
+    });
+  });
+</script>
+</body>
+</html>

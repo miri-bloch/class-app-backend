@@ -187,13 +187,13 @@ pool.query(`
   CREATE INDEX IF NOT EXISTS idx_notice_files_notice ON notice_files(notice_id);
 
   -- ===== מבצע שינה מוקדם =====
-  -- יעד אישי, השתתפות במבצע, טוקן לטופס אורח ומספר טלפון לקו
+  -- יעד אישי, השתתפות במבצע ומספר טלפון לזיהוי בקו ימות המשיח.
+  -- הדיווח היחיד הוא דרך הקו, ולכן אין עוד טוקן לטופס אורח.
   ALTER TABLE users ADD COLUMN IF NOT EXISTS sleep_target_time TIME DEFAULT '22:30';
   ALTER TABLE users ADD COLUMN IF NOT EXISTS sleep_opt_in BOOLEAN DEFAULT TRUE;
-  ALTER TABLE users ADD COLUMN IF NOT EXISTS sleep_guest_token VARCHAR(64);
+  DROP INDEX IF EXISTS idx_users_sleep_guest_token;
+  ALTER TABLE users DROP COLUMN IF EXISTS sleep_guest_token;
   ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_number VARCHAR(20);
-  CREATE UNIQUE INDEX IF NOT EXISTS idx_users_sleep_guest_token
-    ON users (sleep_guest_token) WHERE sleep_guest_token IS NOT NULL;
   CREATE UNIQUE INDEX IF NOT EXISTS idx_users_phone_number
     ON users (phone_number) WHERE phone_number IS NOT NULL;
 
