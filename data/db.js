@@ -3,8 +3,15 @@ const { Pool } = require('pg');
 require('dotenv').config();
 
 // הגדרות החיבור למסד הנתונים מתוך משתני הסביבה.
+//
+// max ו-idleTimeoutMillis מגבילים את מספר החיבורים הפתוחים ל-Postgres.
+// ברירת המחדל של pg היא 10 חיבורים שנשארים פתוחים, וכל חיבור כזה מחזיק
+// זיכרון גם אצלנו וגם אצל ספק המסד (Neon). השרת שלנו קטן, ולכן 5 מספיק
+// בהחלט, וחיבור שלא בשימוש נסגר אחרי חצי דקה במקום להישאר תלוי.
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
+  max: 5,
+  idleTimeoutMillis: 30000,
   ssl: {
     rejectUnauthorized: false
   }

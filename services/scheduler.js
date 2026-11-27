@@ -3,6 +3,10 @@ const pool = require('../db');
 const { sendHomeworkDigest, sendSleepWeeklyEmail } = require('./emailService');
 const sleepService = require('./sleepService');
 
+// קצב בדיקת המיילים. קבוע כדי שיהיה ברור שהחלון בשאילתה (15 דקות)
+// חייב להתאים לקצב הזה — אחרת או שנפספס שעות, או שנשלח פעמיים.
+const EMAIL_TICK = '*/15 * * * *';
+
 function initScheduler() {
   cron.schedule('5 0 * * *', async () => {
     try {
@@ -26,15 +30,10 @@ function initScheduler() {
     }
   }, { timezone: 'Asia/Jerusalem' });
 
-  cron.schedule('* * * * *', async () => {
+  // פעם ב-15 דקות ולא כל דקה: כל הרצה פותחת חיבור למסד ומעירה את השרת,
+  // ובשביל מייל מטלות אין משמעות לדיוק של דקה. החלון למטה מפצה על כך.
+  cron.schedule(EMAIL_TICK, async () => {
     try {
-      const timeParts = new Intl.DateTimeFormat('en-GB', {
-        timeZone: 'Asia/Jerusalem',
-        hour: '2-digit',
-        minute: '2-digit',
-        hourCycle: 'h23'
-      }).formatToParts(new Date());
-      const currentTime = `${timeParts.find(part => part.type === 'hour').value}:${timeParts.find(part => part.type === 'minute').value}`;
       const weekday = new Intl.DateTimeFormat('en-US', {
         timeZone: 'Asia/Jerusalem',
         weekday: 'long'
@@ -44,12 +43,18 @@ function initScheduler() {
         : weekday === 'Monday'
           ? 'ביום שני יש ללמוד לבוחן ב-CORE, שיתקיים מחר.'
           : '';
+
+      // חלון של 15 דקות אחורה במקום השוואה מדויקת לשעה:00.
+      // כולם קובעים שעה עגולה (17:00, 20:00), ואם נשווה דקה בדיוק — כל
+      // דקה שההרצה מפספסת (השרת עסוק, הרצה נכשלת) גורמת למייל לא להישלח
+      // בכלל, בלי שמישהי תדע. החלון מבטיח שכל שעה שנקבעה נקלטת בסיבוב
+      // הקרוב, ובדיוק פעם אחת כי השעה יוצאת מהחלון מיד אחר כך.
       const usersResult = await pool.query(
         `SELECT id, full_name, email
-         FROM users 
+         FROM users
          WHERE email_notifications = TRUE
-           AND to_char(notification_time, 'HH24:MI') = $1`,
-        [currentTime]
+           AND notification_time >  (LOCALTIME AT TIME ZONE 'Asia/Jerusalem') - INTERVAL '15 minutes'
+           AND notification_time <= (LOCALTIME AT TIME ZONE 'Asia/Jerusalem')`
       );
 
       if (usersResult.rows.length === 0) return;
